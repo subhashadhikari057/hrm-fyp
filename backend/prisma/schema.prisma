@@ -9,3 +9,34 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  super_admin
+  company_admin
+  hr_manager
+  manager
+  employee
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  password    String    // hashed with bcrypt
+  fullName    String?
+  phone       String?   @db.VarChar(20)
+  avatarUrl   String?   // optional profile photo
+  role        UserRole  @default(employee)
+  // Multi-tenant ready (we'll link later)
+  companyId   String?   // null for super_admin or before company setup
+  // Account status
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([companyId])
+  @@index([isActive])
+  @@map("users")
+}
