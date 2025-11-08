@@ -70,12 +70,12 @@ cd backend
 npm run start:dev
 ```
 
-The server will start on `http://localhost:3000` by default.
+The server will start on `http://localhost:8080` by default.
 
 You should see:
 
 - ✅ **Database connected successfully** - Confirms Prisma connection
-- 🚀 **Application is running on: http://localhost:3000** - Server is ready
+- 🚀 **Application is running on: http://localhost:8080** - Server is ready
 
 ## 📁 Project Structure
 
@@ -127,7 +127,7 @@ The following environment variables are required:
 | Variable       | Description                              | Example                                        |
 | -------------- | ---------------------------------------- | ---------------------------------------------- |
 | `DATABASE_URL` | PostgreSQL connection string             | `postgresql://user:pass@localhost:5432/hrmfyp` |
-| `PORT`         | Server port (optional, defaults to 3000) | `3000`                                         |
+| `PORT`         | Server port (optional, defaults to 8080) | `8080`                                         |
 
 ## 🧪 Testing
 

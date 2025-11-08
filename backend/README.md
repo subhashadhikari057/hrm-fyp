@@ -16,7 +16,7 @@ Create a `.env` file in the root of the `backend` directory:
 
 ```env
 DATABASE_URL="postgresql://postgres:your_password@localhost:5432/hrmfyp?schema=public"
-PORT=3000
+PORT=8080
 ```
 
 **Important**: Replace `your_password` with your actual PostgreSQL password.
@@ -35,7 +35,7 @@ This generates the Prisma Client based on your schema.
 npm run start:dev
 ```
 
-The server will start on `http://localhost:3000` (or the port specified in `PORT` env variable).
+The server will start on `http://localhost:8080` (or the port specified in `PORT` env variable).
 
 ## ✅ Verification
 
@@ -43,7 +43,7 @@ When the server starts successfully, you should see:
 
 ```
 [PrismaService] ✅ Database connected successfully
-[Bootstrap] 🚀 Application is running on: http://localhost:3000
+[Bootstrap] 🚀 Application is running on: http://localhost:8080
 ```
 
 ## 📜 Available Scripts
@@ -129,7 +129,7 @@ export class YourService {
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string | - |
-| `PORT` | No | Server port | `3000` |
+| `PORT` | No | Server port | `8080` |
 
 ## 🧪 Testing
 
@@ -172,7 +172,7 @@ npm run prisma:generate
 
 ### Port Already in Use
 
-Change the `PORT` in `.env` or kill the process using port 3000.
+Change the `PORT` in `.env` or kill the process using port 8080.
 
 ## 📚 Resources
 
