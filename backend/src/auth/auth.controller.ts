@@ -1,7 +1,10 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res, UseGuards, Request, Patch } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { CreateSuperAdminDto } from './dto/create-superadmin.dto';
+import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -258,6 +261,61 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto) {
     return this.authService.createSuperAdmin(createSuperAdminDto);
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(loginDto);
+
+    // Set HttpOnly cookie with JWT token
+    res.cookie('access_token', result.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+      path: '/',
+    });
+
+    // Return user data without token (token is in cookie)
+    return {
+      message: result.message,
+      user: result.user,
+    };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Res({ passthrough: true }) res: Response) {
+    // Clear the cookie
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    });
+
+    return {
+      message: 'Logged out successfully',
+    };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Request() req: any) {
+    // User is attached to request by JWT strategy
+    const user = await this.authService.getUserById(req.user.id);
+
+    return {
+      user,
+    };
+  }
+
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.id, changePasswordDto);
   }
 }
 
