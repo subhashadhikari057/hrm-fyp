@@ -98,3 +98,6 @@ out/
 
 # Optional stylelint cache
 .stylelintcache
+
+# Uploaded files
+uploads/

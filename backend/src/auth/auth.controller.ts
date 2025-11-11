@@ -1,16 +1,20 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res, UseGuards, Request, Patch } from '@nestjs/common';
 import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiCookieAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateSuperAdminDto } from './dto/create-superadmin.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('super-admin')
+  @ApiOperation({ summary: 'Get super admin creation form (HTML page)' })
+  @ApiResponse({ status: 200, description: 'Returns HTML form for creating super admin' })
   getSuperAdminForm(@Res() res: Response) {
     const html = `
 <!DOCTYPE html>
@@ -259,12 +263,49 @@ export class AuthController {
 
   @Post('super-admin')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new super admin user' })
+  @ApiBody({ type: CreateSuperAdminDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Super admin created successfully',
+    schema: {
+      example: {
+        message: 'Super admin created successfully',
+        user: {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          email: 'admin@example.com',
+          fullName: 'John Doe',
+          role: 'super_admin'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
   async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto) {
     return this.authService.createSuperAdmin(createSuperAdminDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login user and set JWT token in cookie' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Login successful - JWT token set in HttpOnly cookie',
+    schema: {
+      example: {
+        message: 'Login successful',
+        user: {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          email: 'admin@example.com',
+          fullName: 'John Doe',
+          role: 'super_admin'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(loginDto);
 
@@ -286,6 +327,17 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout user and clear JWT token cookie' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Logout successful',
+    schema: {
+      example: {
+        message: 'Logged out successfully'
+      }
+    }
+  })
   async logout(@Res({ passthrough: true }) res: Response) {
     // Clear the cookie
     res.clearCookie('access_token', {
@@ -302,6 +354,24 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current authenticated user information' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns current user information',
+    schema: {
+      example: {
+        user: {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          email: 'admin@example.com',
+          fullName: 'John Doe',
+          role: 'super_admin'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing token' })
   async getMe(@Request() req: any) {
     // User is attached to request by JWT strategy
     const user = await this.authService.getUserById(req.user.id);
@@ -314,6 +384,22 @@ export class AuthController {
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password for authenticated user' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiCookieAuth('access_token')
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Password changed successfully',
+    schema: {
+      example: {
+        message: 'Password changed successfully'
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing token' })
+  @ApiResponse({ status: 403, description: 'Forbidden - current password is incorrect' })
   async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.id, changePasswordDto);
   }
