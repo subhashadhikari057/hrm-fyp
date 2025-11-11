@@ -33,6 +33,8 @@ export class CompanyController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new company with admin user (Super Admin only)' })
   @ApiBody({
+    type: CreateCompanyWithAdminDto,
+    description: 'Company and admin details. For multipart/form-data, use the schema below.',
     schema: {
       type: 'object',
       properties: {
@@ -61,17 +63,20 @@ export class CompanyController {
     description: 'Company and admin created successfully',
     schema: {
       example: {
-        company: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Acme Corporation',
-          code: 'ACME001',
-          status: 'active'
-        },
-        admin: {
-          id: '123e4567-e89b-12d3-a456-426614174001',
-          email: 'admin@acme.com',
-          fullName: 'Jane Smith',
-          role: 'company_admin'
+        message: 'Company and admin created successfully',
+        data: {
+          company: {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            name: 'Acme Corporation',
+            code: 'ACME001',
+            status: 'active'
+          },
+          admin: {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            email: 'admin@acme.com',
+            fullName: 'Jane Smith',
+            role: 'company_admin'
+          }
         }
       }
     }
@@ -116,15 +121,19 @@ export class CompanyController {
     status: 200, 
     description: 'Returns list of all companies',
     schema: {
-      example: [
-        {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Acme Corporation',
-          code: 'ACME001',
-          status: 'active',
-          createdAt: '2024-01-01T00:00:00.000Z'
-        }
-      ]
+      example: {
+        message: 'Companies retrieved successfully',
+        data: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            name: 'Acme Corporation',
+            code: 'ACME001',
+            status: 'active',
+            userCount: 5,
+            createdAt: '2024-01-01T00:00:00.000Z'
+          }
+        ]
+      }
     }
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -142,11 +151,15 @@ export class CompanyController {
     description: 'Returns company details',
     schema: {
       example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Acme Corporation',
-        code: 'ACME001',
-        status: 'active',
-        createdAt: '2024-01-01T00:00:00.000Z'
+        message: 'Company retrieved successfully',
+        data: {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          name: 'Acme Corporation',
+          code: 'ACME001',
+          status: 'active',
+          userCount: 5,
+          createdAt: '2024-01-01T00:00:00.000Z'
+        }
       }
     }
   })
@@ -169,7 +182,7 @@ export class CompanyController {
     schema: {
       example: {
         message: 'Company status updated successfully',
-        company: {
+        data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
           name: 'Acme Corporation',
           code: 'ACME001',
@@ -201,6 +214,8 @@ export class CompanyController {
   @ApiOperation({ summary: 'Update company details (Super Admin only)' })
   @ApiParam({ name: 'id', description: 'Company ID', example: '123e4567-e89b-12d3-a456-426614174000' })
   @ApiBody({
+    type: UpdateCompanyDto,
+    description: 'Company details to update. For multipart/form-data, use the schema below.',
     schema: {
       type: 'object',
       properties: {
@@ -226,7 +241,7 @@ export class CompanyController {
     schema: {
       example: {
         message: 'Company updated successfully',
-        company: {
+        data: {
           id: '123e4567-e89b-12d3-a456-426614174000',
           name: 'Acme Corporation Updated',
           code: 'ACME002',

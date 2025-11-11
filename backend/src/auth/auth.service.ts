@@ -157,6 +157,15 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        company: {
+          select: {
+            id: true,
+            status: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -165,6 +174,16 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is inactive. Please contact administrator.');
+    }
+
+    // Check company status for company-level users (not super_admin)
+    if (user.companyId && user.company) {
+      if (user.company.status === 'suspended') {
+        throw new UnauthorizedException('Your company account has been suspended. Please contact support.');
+      }
+      if (user.company.status === 'archived') {
+        throw new UnauthorizedException('Your company account has been archived.');
+      }
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -231,6 +250,13 @@ export class AuthService {
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        company: {
+          select: {
+            id: true,
+            status: true,
+            name: true,
+          },
+        },
       },
     });
   }
@@ -239,13 +265,20 @@ export class AuthService {
    * Change password for authenticated user
    */
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
-    // Get user with password
+    // Get user with password and company status
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         password: true,
         isActive: true,
+        companyId: true,
+        company: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -255,6 +288,16 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is inactive');
+    }
+
+    // Check company status for company-level users (not super_admin)
+    if (user.companyId && user.company) {
+      if (user.company.status === 'suspended') {
+        throw new UnauthorizedException('Your company account has been suspended. Please contact support.');
+      }
+      if (user.company.status === 'archived') {
+        throw new UnauthorizedException('Your company account has been archived.');
+      }
     }
 
     // Verify current password

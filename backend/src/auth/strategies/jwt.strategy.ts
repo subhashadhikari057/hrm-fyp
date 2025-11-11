@@ -25,6 +25,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
+    // Check company status for company-level users (not super_admin)
+    if (user.companyId && user.company) {
+      if (user.company.status === 'suspended') {
+        throw new UnauthorizedException('Your company account has been suspended. Please contact support.');
+      }
+      if (user.company.status === 'archived') {
+        throw new UnauthorizedException('Your company account has been archived.');
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,

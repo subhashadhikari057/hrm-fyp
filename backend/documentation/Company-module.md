@@ -43,27 +43,29 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
   ```json
   {
     "message": "Company and admin created successfully",
-    "company": {
-      "id": "uuid",
-      "name": "Acme Corporation",
-      "code": "ACME001",
-      "logoUrl": "companies/logo-1234567890.jpg",
-      "industry": "Technology",
-      "address": "123 Main Street",
-      "city": "New York",
-      "country": "United States",
-      "planExpiresAt": "2025-12-31T23:59:59.000Z",
-      "maxEmployees": 100,
-      "status": "active",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    },
-    "admin": {
-      "id": "uuid",
-      "email": "admin@acme.com",
-      "fullName": "Jane Smith",
-      "role": "company_admin",
-      "companyId": "company-uuid",
-      "isActive": true
+    "data": {
+      "company": {
+        "id": "uuid",
+        "name": "Acme Corporation",
+        "code": "ACME001",
+        "logoUrl": "companies/logo-1234567890.jpg",
+        "industry": "Technology",
+        "address": "123 Main Street",
+        "city": "New York",
+        "country": "United States",
+        "planExpiresAt": "2025-12-31T23:59:59.000Z",
+        "maxEmployees": 100,
+        "status": "active",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      },
+      "admin": {
+        "id": "uuid",
+        "email": "admin@acme.com",
+        "fullName": "Jane Smith",
+        "role": "company_admin",
+        "companyId": "company-uuid",
+        "isActive": true
+      }
     }
   }
   ```
@@ -86,16 +88,27 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
 - **Access**: Super Admin only
 - **Response** (200 OK):
   ```json
-  [
-    {
-      "id": "uuid",
-      "name": "Acme Corporation",
-      "code": "ACME001",
-      "logoUrl": "companies/logo-1234567890.jpg",
-      "status": "active",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  ]
+  {
+    "message": "Companies retrieved successfully",
+    "data": [
+      {
+        "id": "uuid",
+        "name": "Acme Corporation",
+        "code": "ACME001",
+        "logoUrl": "companies/logo-1234567890.jpg",
+        "industry": "Technology",
+        "address": "123 Main Street",
+        "city": "New York",
+        "country": "United States",
+        "planExpiresAt": "2025-12-31T23:59:59.000Z",
+        "maxEmployees": 100,
+        "status": "active",
+        "userCount": 5,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ]
+  }
   ```
 
 #### 3. Get Company by ID
@@ -108,19 +121,23 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
 - **Response** (200 OK):
   ```json
   {
-    "id": "uuid",
-    "name": "Acme Corporation",
-    "code": "ACME001",
-    "logoUrl": "companies/logo-1234567890.jpg",
-    "industry": "Technology",
-    "address": "123 Main Street",
-    "city": "New York",
-    "country": "United States",
-    "planExpiresAt": "2025-12-31T23:59:59.000Z",
-    "maxEmployees": 100,
-    "status": "active",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "message": "Company retrieved successfully",
+    "data": {
+      "id": "uuid",
+      "name": "Acme Corporation",
+      "code": "ACME001",
+      "logoUrl": "companies/logo-1234567890.jpg",
+      "industry": "Technology",
+      "address": "123 Main Street",
+      "city": "New York",
+      "country": "United States",
+      "planExpiresAt": "2025-12-31T23:59:59.000Z",
+      "maxEmployees": 100,
+      "status": "active",
+      "userCount": 5,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
   }
   ```
 - **Errors**:
@@ -143,9 +160,10 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
   ```json
   {
     "message": "Company status updated successfully",
-    "company": {
+    "data": {
       "id": "uuid",
       "name": "Acme Corporation",
+      "code": "ACME001",
       "status": "suspended",
       "updatedAt": "2024-01-01T00:00:00.000Z"
     }
@@ -154,6 +172,12 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
 - **Errors**:
   - `400 Bad Request`: Invalid status value
   - `404 Not Found`: Company not found
+- **Status Impact**:
+  - Changing status to `suspended` or `archived` immediately blocks all company users from:
+    - Logging in (new login attempts)
+    - Accessing protected endpoints (existing sessions blocked on next request)
+    - Changing passwords
+  - Changing status back to `active` restores access for all company users
 
 #### 5. Update Company Details
 
@@ -179,11 +203,18 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
   ```json
   {
     "message": "Company updated successfully",
-    "company": {
+    "data": {
       "id": "uuid",
       "name": "Acme Corporation Updated",
       "code": "ACME002",
       "logoUrl": "companies/new-logo-1234567890.jpg",
+      "industry": "Technology",
+      "address": "456 New Street",
+      "city": "Los Angeles",
+      "country": "United States",
+      "planExpiresAt": "2026-12-31T23:59:59.000Z",
+      "maxEmployees": 200,
+      "status": "active",
       "updatedAt": "2024-01-01T00:00:00.000Z"
     }
   }
@@ -210,16 +241,40 @@ The Company module manages multi-tenant company entities. It provides full CRUD 
   }
   ```
 - **Errors**:
+  - `400 Bad Request`: Company has users associated (cannot delete)
   - `404 Not Found`: Company not found
 - **Note**:
   - Deletes company logo file from disk
-  - Company users are not deleted (orphaned, can be reassigned)
+  - **Data Integrity**: Company can only be deleted if it has no associated users
+  - If users exist, the API returns a `400 Bad Request` with a message indicating the number of users
+  - To delete a company with users, first remove all users or archive the company instead
 
 ### Company Status Values
 
 - `active` - Company is operational
+  - Users can log in and access the system normally
+  - All company-level users have full access
 - `suspended` - Company temporarily disabled
+  - **Access Control**: Users from this company **cannot log in**
+  - **Existing Sessions**: Blocked on next API request
+  - **Password Changes**: Blocked for all company users
+  - **Error Message**: "Your company account has been suspended. Please contact support."
+  - **Reactivation**: Can be changed back to `active` by Super Admin
+  - **Use Case**: Payment issues, temporary violations, maintenance
 - `archived` - Company permanently disabled
+  - **Access Control**: Users from this company **cannot log in**
+  - **Existing Sessions**: Blocked on next API request
+  - **Password Changes**: Blocked for all company users
+  - **Error Message**: "Your company account has been archived."
+  - **Reactivation**: Can be changed back to `active` by Super Admin (if needed)
+  - **Use Case**: Company closure, permanent termination
+
+**Important Notes**:
+
+- Super Admin users are **not affected** by company status (they have no `companyId`)
+- Status changes take effect immediately for login attempts
+- Existing JWT tokens are invalidated on next API request when company status changes
+- Super Admin can change company status to any value (`active`, `suspended`, `archived`)
 
 ### File Upload Details
 
@@ -337,6 +392,42 @@ curl -X GET http://localhost:8080/companies \
 }
 ```
 
+### 400 Bad Request (Delete with Users)
+
+```json
+{
+  "statusCode": 400,
+  "message": "Cannot delete company. It has 5 user(s) associated. Please remove all users first or archive the company instead.",
+  "error": "Bad Request"
+}
+```
+
+### 401 Unauthorized (Company Suspended)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Your company account has been suspended. Please contact support.",
+  "error": "Unauthorized"
+}
+```
+
+### 401 Unauthorized (Company Archived)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Your company account has been archived.",
+  "error": "Unauthorized"
+}
+```
+
+**Note**: These errors occur when:
+
+- User attempts to log in from a suspended/archived company
+- User with existing session tries to access API (company status changed after login)
+- User attempts to change password from a suspended/archived company
+
 ---
 
 ## Environment Variables
@@ -362,8 +453,59 @@ Interactive API documentation is available at:
   - Test endpoints directly
   - View request/response schemas
   - Authentication via cookie
+  - DTO classes referenced for better maintainability
+  - Multipart/form-data endpoints include both DTO type reference and inline schema
 
 ---
+
+## Response Format
+
+All endpoints follow a consistent response envelope:
+
+```json
+{
+  "message": "Operation message",
+  "data": {
+    /* response data */
+  }
+}
+```
+
+- **Success responses**: Always include `message` and `data` fields
+- **Error responses**: Follow NestJS standard format with `statusCode`, `message`, and `error` fields
+- **List endpoints**: `data` is an array
+- **Single resource endpoints**: `data` is an object
+- **Delete endpoints**: Only return `message` (no `data` field)
+
+## Company Status Enforcement
+
+When a company's status is changed to `suspended` or `archived`, the following access restrictions are automatically enforced:
+
+### Login Restrictions
+
+- Users from suspended/archived companies **cannot log in**
+- Login attempts return `401 Unauthorized` with appropriate error message
+- Only applies to company-level users (not `super_admin`)
+
+### Session Invalidation
+
+- Existing JWT tokens are validated on each API request
+- If company status changes to `suspended` or `archived`, existing sessions are blocked
+- Users receive `401 Unauthorized` on their next API call
+
+### Password Changes
+
+- Users from suspended/archived companies **cannot change their password**
+- Password change attempts return `401 Unauthorized` with company status error
+
+### Implementation Details
+
+- Status checks occur in:
+  - `POST /auth/login` - Blocks login for suspended/archived companies
+  - JWT Strategy validation - Blocks API access for existing sessions
+  - `PATCH /auth/change-password` - Blocks password changes
+- Super Admin users are exempt (no `companyId` association)
+- Status changes take effect immediately
 
 ## Notes
 
@@ -373,3 +515,6 @@ Interactive API documentation is available at:
 - Company code can be used as a slug in frontend routing
 - File uploads are stored locally (consider cloud storage for production)
 - JWT tokens expire after 30 days (configurable)
+- **Data Integrity**: Companies with associated users cannot be deleted
+- All responses use consistent `{ message, data }` format for better API predictability
+- **Company Status**: Suspended and archived companies block all user access automatically

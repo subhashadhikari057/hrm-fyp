@@ -95,21 +95,23 @@ export class CompanyService {
 
     return {
       message: 'Company and admin created successfully',
-      company: {
-        id: result.company.id,
-        name: result.company.name,
-        code: result.company.code,
-        logoUrl: result.company.logoUrl,
-        industry: result.company.industry,
-        address: result.company.address,
-        city: result.company.city,
-        country: result.company.country,
-        planExpiresAt: result.company.planExpiresAt,
-        maxEmployees: result.company.maxEmployees,
-        status: result.company.status,
-        createdAt: result.company.createdAt,
+      data: {
+        company: {
+          id: result.company.id,
+          name: result.company.name,
+          code: result.company.code,
+          logoUrl: result.company.logoUrl,
+          industry: result.company.industry,
+          address: result.company.address,
+          city: result.company.city,
+          country: result.company.country,
+          planExpiresAt: result.company.planExpiresAt,
+          maxEmployees: result.company.maxEmployees,
+          status: result.company.status,
+          createdAt: result.company.createdAt,
+        },
+        admin: result.admin,
       },
-      admin: result.admin,
     };
   }
 
@@ -144,7 +146,8 @@ export class CompanyService {
     });
 
     return {
-      companies: companies.map((company) => ({
+      message: 'Companies retrieved successfully',
+      data: companies.map((company) => ({
         id: company.id,
         name: company.name,
         code: company.code,
@@ -196,20 +199,23 @@ export class CompanyService {
     }
 
     return {
-      id: company.id,
-      name: company.name,
-      code: company.code,
-      logoUrl: company.logoUrl,
-      industry: company.industry,
-      address: company.address,
-      city: company.city,
-      country: company.country,
-      planExpiresAt: company.planExpiresAt,
-      maxEmployees: company.maxEmployees,
-      status: company.status,
-      userCount: company._count.users,
-      createdAt: company.createdAt,
-      updatedAt: company.updatedAt,
+      message: 'Company retrieved successfully',
+      data: {
+        id: company.id,
+        name: company.name,
+        code: company.code,
+        logoUrl: company.logoUrl,
+        industry: company.industry,
+        address: company.address,
+        city: company.city,
+        country: company.country,
+        planExpiresAt: company.planExpiresAt,
+        maxEmployees: company.maxEmployees,
+        status: company.status,
+        userCount: company._count.users,
+        createdAt: company.createdAt,
+        updatedAt: company.updatedAt,
+      },
     };
   }
 
@@ -291,7 +297,7 @@ export class CompanyService {
 
     return {
       message: 'Company updated successfully',
-      company: updatedCompany,
+      data: updatedCompany,
     };
   }
 
@@ -325,7 +331,7 @@ export class CompanyService {
 
     return {
       message: 'Company status updated successfully',
-      company: updatedCompany,
+      data: updatedCompany,
     };
   }
 
