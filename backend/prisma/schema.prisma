@@ -24,6 +24,25 @@ enum CompanyStatus {
   archived
 }
 
+enum EmployeeStatus {
+  active
+  on_leave
+  terminated
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  contract
+  intern
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
 model Company {
   id            String         @id @default(uuid())
   name          String         @db.VarChar(150)
@@ -42,6 +61,7 @@ model Company {
   users         User[]
   departments   Department[]
   designations  Designation[]
+  employees     Employee[]
 
   @@index([name])
   @@index([status])
@@ -72,6 +92,7 @@ model User {
   @@index([companyId])
   @@index([isActive])
   @@index([companyId, role])
+  employee      Employee?
   @@map("users")
 }
 
@@ -90,6 +111,7 @@ model Department {
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
+  employees     Employee[]
   @@map("departments")
 }
 
@@ -108,5 +130,60 @@ model Designation {
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
+  employees     Employee[]
   @@map("designations")
+}
+
+model Employee {
+  id            String         @id @default(uuid())
+  // Relations
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id])
+  departmentId  String?
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  designationId String?
+  designation   Designation?   @relation(fields: [designationId], references: [id])
+  
+  // Core HR identity
+  employeeCode  String         // e.g. "EMP-0001"
+  firstName     String         @db.VarChar(80)
+  lastName      String         @db.VarChar(80)
+  middleName    String?        @db.VarChar(80)
+  gender        Gender?
+  dateOfBirth   DateTime?
+  
+  // Job & employment
+  joinDate        DateTime?
+  probationEnd    DateTime?
+  employmentType  EmploymentType?
+  locationId      String?              // (optional future relation to CompanyLocation)
+  
+  // Contacts
+  workEmail      String?
+  personalEmail  String?
+  phone          String?        @db.VarChar(20)
+  address        String?
+  emergencyContactName  String?
+  emergencyContactPhone String? @db.VarChar(20)
+  
+  // Profile image
+  imageUrl     String?                 // e.g. "employees/emp-0001.jpg" or full CDN URL
+  
+  // Payroll starter fields
+  baseSalary   Float?
+  
+  // Status & audit
+  status       EmployeeStatus @default(active)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([companyId, employeeCode])        // code unique per company
+  @@index([companyId])
+  @@index([companyId, departmentId])
+  @@index([companyId, designationId])
+  @@index([companyId, status])
+  @@index([companyId, employmentType])
+  @@map("employees")
 }
