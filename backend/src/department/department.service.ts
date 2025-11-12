@@ -265,6 +265,17 @@ export class DepartmentService {
       throw new ForbiddenException('You can only delete departments from your own company');
     }
 
+    // Check if any employee references this department
+    const employeeCount = await this.prisma.employee.count({
+      where: { departmentId: id },
+    });
+
+    if (employeeCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete department. ${employeeCount} employee(s) are assigned to this department. Please reassign employees before deleting.`,
+      );
+    }
+
     // Delete department
     await this.prisma.department.delete({
       where: { id },

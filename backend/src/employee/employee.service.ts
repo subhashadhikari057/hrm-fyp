@@ -89,6 +89,10 @@ export class EmployeeService {
       if (department.companyId !== companyId) {
         throw new ForbiddenException('Department does not belong to your company');
       }
+
+      if (!department.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive department');
+      }
     }
 
     // Validate designation belongs to company (if provided)
@@ -103,6 +107,10 @@ export class EmployeeService {
 
       if (designation.companyId !== companyId) {
         throw new ForbiddenException('Designation does not belong to your company');
+      }
+
+      if (!designation.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive designation');
       }
     }
 
@@ -398,6 +406,10 @@ export class EmployeeService {
       if (department.companyId !== companyId) {
         throw new ForbiddenException('Department does not belong to your company');
       }
+
+      if (!department.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive department');
+      }
     }
 
     // Validate designation belongs to company (if provided)
@@ -412,6 +424,10 @@ export class EmployeeService {
 
       if (designation.companyId !== companyId) {
         throw new ForbiddenException('Designation does not belong to your company');
+      }
+
+      if (!designation.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive designation');
       }
     }
 

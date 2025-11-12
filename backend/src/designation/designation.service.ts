@@ -265,6 +265,17 @@ export class DesignationService {
       throw new ForbiddenException('You can only delete designations from your own company');
     }
 
+    // Check if any employee references this designation
+    const employeeCount = await this.prisma.employee.count({
+      where: { designationId: id },
+    });
+
+    if (employeeCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete designation. ${employeeCount} employee(s) are assigned to this designation. Please reassign employees before deleting.`,
+      );
+    }
+
     // Delete designation
     await this.prisma.designation.delete({
       where: { id },
