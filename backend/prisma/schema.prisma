@@ -40,6 +40,7 @@ model Company {
   updatedAt     DateTime       @updatedAt
   // Relations
   users         User[]
+  departments   Department[]
 
   @@index([name])
   @@index([status])
@@ -71,4 +72,22 @@ model User {
   @@index([isActive])
   @@index([companyId, role])
   @@map("users")
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  name        String   @db.VarChar(100)   // e.g. "Human Resources"
+  code        String?  @db.VarChar(20)    // e.g. "HR", "DEV"
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // A company cannot have two departments with same name/code
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@map("departments")
 }

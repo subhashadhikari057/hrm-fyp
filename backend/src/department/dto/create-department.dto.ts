@@ -1,0 +1,45 @@
+import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateDepartmentDto {
+  @ApiProperty({
+    description: 'Department name',
+    example: 'Human Resources',
+    maxLength: 100,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100, { message: 'Department name must not exceed 100 characters' })
+  name: string;
+
+  @ApiPropertyOptional({
+    description: 'Department code (2-20 uppercase alphanumeric characters)',
+    example: 'HR',
+    maxLength: 20,
+    pattern: '^[A-Z0-9]{2,20}$',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(20, { message: 'Department code must not exceed 20 characters' })
+  @Matches(/^[A-Z0-9]{2,20}$/, {
+    message: 'Department code must be 2-20 uppercase alphanumeric characters',
+  })
+  code?: string;
+
+  @ApiPropertyOptional({
+    description: 'Department description',
+    example: 'Handles recruitment, employee relations, and HR policies',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether the department is active',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  isActive?: boolean;
+}
+
