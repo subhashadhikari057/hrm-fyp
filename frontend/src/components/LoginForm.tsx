@@ -3,32 +3,38 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-type UserRole = 'superadmin' | 'companyadmin' | 'hrmanager' | 'employee';
-
-const roles: { value: UserRole; label: string; description: string }[] = [
-  { value: 'superadmin', label: 'Super Admin', description: 'Full system access' },
-  { value: 'companyadmin', label: 'Company Admin', description: 'Company management' },
-  { value: 'hrmanager', label: 'HR Manager', description: 'HR operations' },
-  { value: 'employee', label: 'Employee', description: 'Employee portal' },
-];
-
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('employee');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
     
+    // Basic validation
+    if (!email.trim()) {
+      setError('Email is required');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Password is required');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // Dummy login - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-      await login(email || 'user@example.com', password, selectedRole);
+      await login(email.trim(), password);
+      // Redirect happens in AuthContext after successful login
     } catch (error) {
-      console.error('Login failed:', error);
+      // Handle error from backend
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -46,6 +52,21 @@ export default function LoginForm() {
       </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -56,10 +77,15 @@ export default function LoginForm() {
               name="email"
               type="email"
               autoComplete="email"
+              required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null); // Clear error when user types
+              }}
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="Enter your email"
+              disabled={isLoading}
             />
           </div>
 
@@ -72,49 +98,16 @@ export default function LoginForm() {
               name="password"
               type="password"
               autoComplete="current-password"
+              required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null); // Clear error when user types
+              }}
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="Enter your password"
+              disabled={isLoading}
             />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-              Select Role
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {roles.map((role) => (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={() => setSelectedRole(role.value)}
-                  className={`relative rounded-lg border-2 p-3 text-left transition-all ${
-                    selectedRole === role.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">
-                        {role.label}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {role.description}
-                      </div>
-                    </div>
-                    {selectedRole === role.value && (
-                      <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
-                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -136,12 +129,6 @@ export default function LoginForm() {
               'Sign in'
             )}
           </button>
-        </div>
-
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            For demo purposes, you can leave fields empty and select a role to login
-          </p>
         </div>
       </form>
     </div>

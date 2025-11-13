@@ -2,22 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// Uncomment when ready to integrate with backend:
-// import { api } from '../lib/api';
-
-type UserRole = 'superadmin' | 'companyadmin' | 'hrmanager' | 'employee';
+import { api, mapBackendRoleToFrontend, getDashboardRoute, type FrontendUserRole, type BackendUser } from '../lib/api';
 
 interface User {
+  id: string;
   email: string;
-  role: UserRole;
-  name?: string;
+  role: FrontendUserRole;
+  name?: string | null;
+  fullName?: string | null;
+  companyId?: string | null;
+  avatarUrl?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   isLoading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,77 +29,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    // Check for stored auth on mount
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = async (email: string, password: string, role: UserRole) => {
-    // DUMMY LOGIN - Replace with actual API call when ready:
-    // 
-    // try {
-    //   const response = await api.login(email, password);
-    //   const userData: User = {
-    //     email: response.user.email,
-    //     role: response.user.role,
-    //     name: response.user.name,
-    //   };
-    //   setUser(userData);
-    //   localStorage.setItem('user', JSON.stringify(userData));
-    //   localStorage.setItem('token', response.token);
-    //   
-    //   const dashboardRoutes: Record<UserRole, string> = {
-    //     superadmin: '/dashboard/superadmin',
-    //     companyadmin: '/dashboard/companyadmin',
-    //     hrmanager: '/dashboard/hrmanager',
-    //     employee: '/dashboard/employee',
-    //   };
-    //   router.push(dashboardRoutes[userData.role]);
-    // } catch (error) {
-    //   throw error; // Handle error in LoginForm component
-    // }
-
-    // Current dummy implementation:
-    const userData: User = {
-      email,
-      role,
-      name: email.split('@')[0],
+  /**
+   * Convert backend user to frontend user format
+   */
+  const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
+    return {
+      id: backendUser.id,
+      email: backendUser.email,
+      role: mapBackendRoleToFrontend(backendUser.role),
+      name: backendUser.fullName,
+      fullName: backendUser.fullName,
+      companyId: backendUser.companyId || undefined,
+      avatarUrl: backendUser.avatarUrl || undefined,
     };
-
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-
-    // Redirect based on role
-    const dashboardRoutes: Record<UserRole, string> = {
-      superadmin: '/dashboard/superadmin',
-      companyadmin: '/dashboard/companyadmin',
-      hrmanager: '/dashboard/hrmanager',
-      employee: '/dashboard/employee',
-    };
-
-    router.push(dashboardRoutes[role]);
   };
 
+  /**
+   * Check authentication status on mount
+   */
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await api.getCurrentUser();
+        const frontendUser = mapBackendUserToFrontend(response.user);
+        setUser(frontendUser);
+      } catch (error) {
+        // Not authenticated or token expired
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  /**
+   * Login user with backend
+   */
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await api.login(email, password);
+      const frontendUser = mapBackendUserToFrontend(response.user);
+      
+      setUser(frontendUser);
+      
+      // Get dashboard route based on role
+      const dashboardRoute = getDashboardRoute(frontendUser.role);
+      
+      // Redirect to appropriate dashboard
+      router.push(dashboardRoute);
+    } catch (error) {
+      // Re-throw error to be handled by LoginForm
+      throw error;
+    }
+  };
+
+  /**
+   * Logout user
+   */
   const logout = async () => {
-    // Uncomment when ready to integrate with backend:
-    // try {
-    //   await api.logout();
-    // } catch (error) {
-    //   console.error('Logout error:', error);
-    // }
+    try {
+      await api.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with logout even if API call fails
+    }
     
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
     router.push('/');
   };
 
+  /**
+   * Refresh current user data
+   */
+  const refreshUser = async () => {
+    try {
+      const response = await api.getCurrentUser();
+      const frontendUser = mapBackendUserToFrontend(response.user);
+      setUser(frontendUser);
+    } catch (error) {
+      // If refresh fails, user might be logged out
+      setUser(null);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
