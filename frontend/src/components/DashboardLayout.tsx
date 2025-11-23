@@ -112,8 +112,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
           <div className="px-3 sm:px-4 lg:px-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center h-auto sm:h-16 gap-3 sm:gap-0 py-3 sm:py-0">
-              {/* Search Bar */}
-              <div className="flex-1 w-full sm:max-w-lg" ref={searchRef}>
+                {/* Search Bar */}
+                <div className="flex-1 w-full sm:max-w-lg" ref={searchRef}>
                 <div className="relative w-full">
                   <form onSubmit={handleSearch} className="w-full">
                     <div className="relative">

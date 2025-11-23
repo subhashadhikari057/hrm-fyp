@@ -213,7 +213,24 @@ export default function Sidebar() {
   const menuItems = getMenuItems();
 
   const isActive = (href: string) => {
-    return pathname === href || pathname.startsWith(href + '/');
+    // Exact match
+    if (pathname === href) {
+      return true;
+    }
+    // Check if pathname is a sub-route of href
+    if (pathname.startsWith(href + '/')) {
+      // Check if there's a more specific menu item that also matches
+      // (either exact match or a sub-route of that item)
+      const moreSpecificMatch = menuItems.find(
+        (item) => 
+          item.href !== href && 
+          (pathname === item.href || pathname.startsWith(item.href + '/')) &&
+          item.href.startsWith(href + '/')
+      );
+      // Only active if no more specific match exists
+      return !moreSpecificMatch;
+    }
+    return false;
   };
 
   const handleNavigation = (href: string) => {
@@ -252,7 +269,8 @@ export default function Sidebar() {
           {/* Logo and Toggle Button */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
             {!isCollapsed && (
-              <h2 className="text-xl font-bold text-gray-900">EMS</h2>
+              <h2 className="text-xl font-bold text-gray-900">Karyasetu</h2>
+              
             )}
             <button
               onClick={toggleSidebar}

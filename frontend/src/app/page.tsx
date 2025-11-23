@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoginForm from '../components/LoginForm';
 import { useAuth } from '../contexts/AuthContext';
-import { getDashboardRoute } from '../lib/api';
+import { getDashboardRoute } from '../lib/api/types';
 
 export default function LoginPage() {
   const { user, isLoading } = useAuth();

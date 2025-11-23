@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -9,6 +11,8 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +33,23 @@ export default function LoginForm() {
     }
 
     try {
-      await login(email.trim(), password);
-      // Redirect happens in AuthContext after successful login
+      const user = await login(email.trim(), password);
+      // Show welcome toast with user's name
+      const userName = user.name || user.email.split('@')[0];
+      showToast(`Welcome back, ${userName}!`, 'success');
+      
+      // Small delay to show toast before redirect
+      setTimeout(() => {
+        // Get dashboard route based on role
+        const roleRoutes: Record<string, string> = {
+          superadmin: '/dashboard/superadmin',
+          companyadmin: '/dashboard/companyadmin',
+          hrmanager: '/dashboard/hrmanager',
+          employee: '/dashboard/employee',
+        };
+        const dashboardRoute = roleRoutes[user.role] || '/dashboard/employee';
+        router.push(dashboardRoute);
+      }, 800);
     } catch (error) {
       // Handle error from backend
       const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your credentials.';

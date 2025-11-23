@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, mapBackendRoleToFrontend, getDashboardRoute, type FrontendUserRole, type BackendUser } from '../lib/api';
+import { authApi } from '../lib/api/auth';
+import { mapBackendRoleToFrontend, getDashboardRoute, type FrontendUserRole, type BackendUser } from '../lib/api/types';
 
 interface User {
   id: string;
@@ -16,7 +17,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   isLoading: boolean;
   refreshUser: () => Promise<void>;
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await api.getCurrentUser();
+        const response = await authApi.getCurrentUser();
         const frontendUser = mapBackendUserToFrontend(response.user);
         setUser(frontendUser);
       } catch (error) {
@@ -67,18 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * Login user with backend
    */
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     try {
-      const response = await api.login(email, password);
+            const response = await authApi.login(email, password);
       const frontendUser = mapBackendUserToFrontend(response.user);
       
       setUser(frontendUser);
       
-      // Get dashboard route based on role
-      const dashboardRoute = getDashboardRoute(frontendUser.role);
-      
-      // Redirect to appropriate dashboard
-      router.push(dashboardRoute);
+      // Return user so caller can show welcome message
+      return frontendUser;
     } catch (error) {
       // Re-throw error to be handled by LoginForm
       throw error;
@@ -90,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const logout = async () => {
     try {
-      await api.logout();
+            await authApi.logout();
     } catch (error) {
       console.error('Logout error:', error);
       // Continue with logout even if API call fails
@@ -105,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const refreshUser = async () => {
     try {
-      const response = await api.getCurrentUser();
+            const response = await authApi.getCurrentUser();
       const frontendUser = mapBackendUserToFrontend(response.user);
       setUser(frontendUser);
     } catch (error) {
