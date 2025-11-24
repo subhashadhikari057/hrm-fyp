@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { StatsGrid } from '../../../components/StatsGrid';
 import { PageHeader } from '../../../components/PageHeader';
+import { QuickActionsGrid } from '../../../components/QuickActionsGrid';
 import { statsApi } from '../../../lib/api/stats';
 
 export default function HRManagerDashboard() {
@@ -123,20 +124,42 @@ export default function HRManagerDashboard() {
           <StatsGrid stats={stats} columns={4} />
         )}
 
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">HR Operations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-              Manage Employees
-            </button>
-            <button className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
-              Process Leave Requests
-            </button>
-            <button className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors">
-              Employee Reviews
-            </button>
-          </div>
-        </div>
+        <QuickActionsGrid
+          title="HR Operations"
+          columns={3}
+          actions={[
+            {
+              label: 'Manage Employees',
+              href: '/dashboard/hrmanager/employees',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ),
+              color: 'blue',
+            },
+            {
+              label: 'Process Leave Requests',
+              href: '/dashboard/hrmanager/leave-requests',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ),
+              color: 'green',
+            },
+            {
+              label: 'Employee Reviews',
+              href: '/dashboard/hrmanager/reviews',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              ),
+              color: 'purple',
+            },
+          ]}
+        />
       </div>
     </DashboardLayout>
   );

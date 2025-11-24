@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { StatsGrid } from '../../../components/StatsGrid';
 import { PageHeader } from '../../../components/PageHeader';
+import { QuickActionsGrid } from '../../../components/QuickActionsGrid';
 import { statsApi } from '../../../lib/api/stats';
 
 export default function SuperAdminDashboard() {
@@ -168,20 +169,42 @@ export default function SuperAdminDashboard() {
           <StatsGrid stats={stats} columns={4} />
         )}
 
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-              Manage Companies
-            </button>
-            <button className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
-              View System Logs
-            </button>
-            <button className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors">
-              Generate Reports
-            </button>
-          </div>
-        </div>
+        <QuickActionsGrid
+          title="Quick Actions"
+          columns={3}
+          actions={[
+            {
+              label: 'Manage Companies',
+              href: '/dashboard/superadmin/companies',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              ),
+              color: 'blue',
+            },
+            {
+              label: 'View System Logs',
+              href: '/dashboard/superadmin/logs',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              ),
+              color: 'green',
+            },
+            {
+              label: 'Generate Reports',
+              href: '/dashboard/superadmin/reports',
+              icon: (
+                <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              ),
+              color: 'purple',
+            },
+          ]}
+        />
       </div>
     </DashboardLayout>
   );

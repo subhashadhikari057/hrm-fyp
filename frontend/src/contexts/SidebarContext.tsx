@@ -5,12 +5,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface SidebarContextType {
   isCollapsed: boolean;
   toggleSidebar: () => void;
+  isMobileOpen: boolean;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -29,8 +33,16 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     setIsCollapsed((prev) => !prev);
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileOpen((prev) => !prev);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileOpen(false);
+  };
+
   return (
-    <SidebarContext.Provider value={{ isCollapsed, toggleSidebar }}>
+    <SidebarContext.Provider value={{ isCollapsed, toggleSidebar, isMobileOpen, toggleMobileMenu, closeMobileMenu }}>
       {children}
     </SidebarContext.Provider>
   );

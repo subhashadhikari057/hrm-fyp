@@ -51,6 +51,7 @@ export function DataTable<T extends Record<string, any>>({
   } | null>(null);
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
 
   // Filter data based on search query and filters
   const filteredData = useMemo(() => {
@@ -195,10 +196,10 @@ export function DataTable<T extends Record<string, any>>({
     <div className="w-full">
       {/* Search Bar and Filters */}
       <div className="mb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Search Bar */}
           {searchable && (
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 w-full sm:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg
                   className="h-4 w-4 text-gray-400"
@@ -219,17 +220,17 @@ export function DataTable<T extends Record<string, any>>({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="block w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="block w-full pl-9 pr-3 py-2 sm:py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
           )}
 
           {/* Filters Dropdown */}
           {filters && filters.length > 0 && (
-            <div className="relative">
+            <div className="relative sm:flex-shrink-0">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
               >
                 <svg
                   className="w-4 h-4 text-gray-500"
@@ -274,7 +275,7 @@ export function DataTable<T extends Record<string, any>>({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowFilters(false)}
                   />
-                  <div className="absolute top-full right-0 mt-2 w-full md:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-20 p-4 max-h-96 overflow-y-auto">
+                  <div className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-full sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-20 p-4 max-h-[80vh] sm:max-h-96 overflow-y-auto">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-900">Filter Options</h3>
                     {hasActiveFilters && (
@@ -384,8 +385,47 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+      {/* View Toggle - Mobile Only */}
+      <div className="md:hidden mb-3 flex items-center justify-between">
+        <div className="text-xs sm:text-sm text-gray-500">
+          {sortedData.length > 0 && (
+            <>
+              Showing <span className="font-medium">{sortedData.length}</span> of <span className="font-medium">{data.length}</span> {data.length === 1 ? 'result' : 'results'}
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setMobileViewMode('card')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+              mobileViewMode === 'card'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            aria-label="Card view"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setMobileViewMode('table')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+              mobileViewMode === 'table'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            aria-label="Table view"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Table - Desktop View */}
+      <div className="hidden md:block bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -394,7 +434,7 @@ export function DataTable<T extends Record<string, any>>({
                   <th
                     key={column.key}
                     scope="col"
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                    className={`px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                       column.className || ''
                     }`}
                   >
@@ -412,13 +452,13 @@ export function DataTable<T extends Record<string, any>>({
                     </div>
                   </th>
                 ))}
-                {actions && <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
+                {actions && <th scope="col" className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12 text-center">
+                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 lg:px-6 py-12 text-center">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
@@ -427,7 +467,7 @@ export function DataTable<T extends Record<string, any>>({
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12 text-center">
+                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 lg:px-6 py-12 text-center">
                     <p className="text-sm text-gray-500">{emptyMessage}</p>
                   </td>
                 </tr>
@@ -443,7 +483,7 @@ export function DataTable<T extends Record<string, any>>({
                     {columns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                        className={`px-4 lg:px-6 py-3 lg:py-4 text-sm text-gray-900 ${
                           column.className || ''
                         }`}
                       >
@@ -453,7 +493,7 @@ export function DataTable<T extends Record<string, any>>({
                       </td>
                     ))}
                     {actions && (
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-4 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
                           {actions(item)}
                         </div>
@@ -467,10 +507,141 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* Results Count */}
+      {/* Mobile Views */}
+      <div className="md:hidden">
+        {loading ? (
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center">
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">Loading...</p>
+          </div>
+        ) : sortedData.length === 0 ? (
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center">
+            <p className="text-sm text-gray-500">{emptyMessage}</p>
+          </div>
+        ) : mobileViewMode === 'card' ? (
+          /* Card View - Mobile */
+          <div className="space-y-3">
+            {sortedData.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => onRowClick?.(item)}
+                className={`bg-white rounded-lg shadow border border-gray-200 p-4 space-y-3 ${
+                  onRowClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+                }`}
+              >
+                {columns.map((column, colIndex) => {
+                  const isLastColumn = colIndex === columns.length - 1 && !actions;
+                  return (
+                    <div
+                      key={column.key}
+                      className={`flex flex-col gap-1 ${
+                        isLastColumn ? '' : 'border-b border-gray-100 pb-3'
+                      }`}
+                    >
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {column.header}
+                      </div>
+                      <div className={`text-sm text-gray-900 break-words ${column.className || ''}`}>
+                        {column.render
+                          ? column.render(item)
+                          : item[column.key]?.toString() || '-'}
+                      </div>
+                    </div>
+                  );
+                })}
+                {actions && (
+                  <div className="pt-3 border-t border-gray-200 flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    {actions(item)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Compact Table View - Mobile with Horizontal Scroll */
+          <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {columns.map((column) => (
+                      <th
+                        key={column.key}
+                        scope="col"
+                        className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>{column.header}</span>
+                          {column.sortable && (
+                            <button
+                              onClick={() => handleSort(column.key)}
+                              className="hover:text-gray-700 transition-colors flex-shrink-0"
+                              aria-label={`Sort by ${column.header}`}
+                            >
+                              {getSortIcon(column.key)}
+                            </button>
+                          )}
+                        </div>
+                      </th>
+                    ))}
+                    {actions && (
+                      <th scope="col" className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50 z-10">
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedData.map((item, index) => (
+                    <tr
+                      key={index}
+                      onClick={() => onRowClick?.(item)}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        onRowClick ? 'cursor-pointer' : ''
+                      }`}
+                    >
+                      {columns.map((column) => (
+                        <td
+                          key={column.key}
+                          className="px-3 py-2.5 text-sm text-gray-900 whitespace-nowrap"
+                        >
+                          <div className="max-w-[150px] truncate" title={item[column.key]?.toString() || '-'}>
+                            {column.render
+                              ? column.render(item)
+                              : item[column.key]?.toString() || '-'}
+                          </div>
+                        </td>
+                      ))}
+                      {actions && (
+                        <td className="px-3 py-2.5 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white z-10">
+                          <div className="flex justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+                            {actions(item)}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
+              <span className="inline-flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                </svg>
+                Swipe horizontally to see all columns
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Results Count - Desktop Only */}
       {!loading && sortedData.length > 0 && (
-        <div className="mt-4 text-sm text-gray-500">
-          Showing {sortedData.length} of {data.length} {data.length === 1 ? 'result' : 'results'}
+        <div className="hidden md:block mt-4 text-sm text-gray-500">
+          Showing <span className="font-medium">{sortedData.length}</span> of <span className="font-medium">{data.length}</span> {data.length === 1 ? 'result' : 'results'}
         </div>
       )}
     </div>

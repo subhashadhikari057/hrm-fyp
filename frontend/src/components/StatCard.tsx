@@ -40,21 +40,23 @@ export function StatCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg shadow p-6 border border-gray-200 h-full ${
+      className={`bg-white rounded-lg shadow p-4 sm:p-5 lg:p-6 border border-gray-200 h-full ${
         isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
       }`}
     >
-      <div className="flex items-center h-full">
-        <div className={`p-3 rounded-lg flex-shrink-0 ${bgColorClass}`}>
-          {icon}
+      <div className="flex items-center h-full gap-3 sm:gap-4">
+        <div className={`p-2 sm:p-2.5 lg:p-3 rounded-lg flex-shrink-0 ${bgColorClass}`}>
+          <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
+            {icon}
+          </div>
         </div>
-        <div className="ml-4 flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <div className="flex items-baseline space-x-2">
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate mb-0.5 sm:mb-1">{label}</p>
+          <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
+            <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 truncate">{value}</p>
             {trend && (
               <span
-                className={`text-xs font-medium ${
+                className={`text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap ${
                   trend.isPositive ? 'text-green-600' : 'text-red-600'
                 }`}
               >

@@ -8,7 +8,7 @@ import Sidebar, { getMenuItemsForRole } from './Sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading } = useAuth();
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, toggleMobileMenu, isMobileOpen } = useSidebar();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -107,19 +107,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       
       {/* Main content area */}
-      <div className={`transition-all duration-300 ${isCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
+      <div className={`transition-all duration-300 ${
+        // Mobile: no padding (sidebar is overlay)
+        // Desktop: add padding for sidebar based on collapsed state
+        isCollapsed ? 'lg:pl-16' : 'lg:pl-64'
+      }`}>
         {/* Navbar */}
         <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
           <div className="px-3 sm:px-4 lg:px-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center h-auto sm:h-16 gap-3 sm:gap-0 py-3 sm:py-0">
-                {/* Search Bar */}
-                <div className="flex-1 w-full sm:max-w-lg" ref={searchRef}>
+            <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 h-14 sm:h-16">
+              {/* Hamburger Menu Button - Mobile only */}
+              <button
+                onClick={toggleMobileMenu}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0"
+                aria-label="Toggle menu"
+              >
+                {isMobileOpen ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Search Bar */}
+              <div className="flex-1 w-full sm:max-w-lg" ref={searchRef}>
                 <div className="relative w-full">
                   <form onSubmit={handleSearch} className="w-full">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg
-                          className="h-5 w-5 text-gray-400"
+                          className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -138,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         onChange={handleSearchChange}
                         onFocus={() => setShowSearchResults(true)}
                         placeholder="Search menu..."
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                        className="block w-full pl-9 sm:pl-10 pr-8 sm:pr-10 py-1.5 sm:py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                       {searchQuery && (
                         <button
@@ -147,7 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             setSearchQuery('');
                             setShowSearchResults(false);
                           }}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center"
                           aria-label="Clear search"
                         >
                           <svg
@@ -177,9 +198,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <button
                               key={item.href}
                               onClick={() => handleMenuItemClick(item.href)}
-                              className="w-full flex items-center px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                              className="w-full flex items-center px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
                             >
-                              <span className="mr-3 text-gray-500">{item.icon}</span>
+                              <span className="mr-3 text-gray-500 flex-shrink-0">{item.icon}</span>
                               <span className="text-sm font-medium text-gray-900">
                                 {item.name}
                               </span>
@@ -187,7 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           ))}
                         </div>
                       ) : (
-                        <div className="px-4 py-8 text-center">
+                        <div className="px-4 py-6 text-center">
                           <p className="text-sm text-gray-500">No menu items found</p>
                           <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
                         </div>
@@ -198,15 +219,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               {/* Right side actions */}
-              <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-end">
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                 {/* User Menu */}
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 sm:space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center space-x-2 p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     {/* Avatar */}
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                       {getInitials(user.email)}
                     </div>
                     <div className="hidden sm:block text-left">
@@ -218,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </div>
                     </div>
                     <svg
-                      className={`w-4 h-4 text-gray-500 transition-transform ${
+                      className={`hidden sm:block w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${
                         showUserMenu ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -241,10 +262,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         className="fixed inset-0 z-10"
                         onClick={() => setShowUserMenu(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                         <div className="py-1">
                           <div className="px-4 py-2 border-b border-gray-200">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 truncate">
                               {user.name || user.email.split('@')[0]}
                             </p>
                             <p className="text-xs text-gray-500 truncate">
@@ -256,7 +277,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               router.push('/dashboard/profile');
                               setShowUserMenu(false);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                           >
                             Profile
                           </button>
@@ -265,14 +286,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               router.push('/dashboard/settings');
                               setShowUserMenu(false);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                           >
                             Settings
                           </button>
                           <div className="border-t border-gray-200">
                             <button
                               onClick={handleLogout}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
                             >
                               Logout
                             </button>

@@ -10,13 +10,13 @@ export interface StatsGridProps {
 
 export function StatsGrid({ stats, columns = 4 }: StatsGridProps) {
   const gridCols = {
-    2: 'md:grid-cols-2',
-    3: 'md:grid-cols-2 lg:grid-cols-3',
-    4: 'md:grid-cols-2 lg:grid-cols-4',
+    2: 'grid-cols-2',
+    3: 'grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-2 lg:grid-cols-4',
   };
 
   return (
-    <div className={`grid grid-cols-1 ${gridCols[columns]} gap-6`}>
+    <div className={`grid ${gridCols[columns]} gap-3 sm:gap-4 lg:gap-6`}>
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
