@@ -8,8 +8,11 @@ import { PageHeader } from '../../../../components/PageHeader';
 import { AddButton } from '../../../../components/AddButton';
 import { AddCompanyModal } from '../../../../components/AddCompanyModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
+import { ViewCompanyModal } from '../../../../components/ViewCompanyModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { companyApi, type Company } from '../../../../lib/api/company';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -17,6 +20,10 @@ export default function CompaniesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [viewModal, setViewModal] = useState<{
+    isOpen: boolean;
+    companyId: string | null;
+  }>({ isOpen: false, companyId: null });
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     company: Company | null;
@@ -31,6 +38,12 @@ export default function CompaniesPage() {
       setError(null);
       try {
         const response = await companyApi.getCompanies();
+        console.log('Fetched companies:', response.data);
+        // Log the first company's logoUrl to debug
+        if (response.data.length > 0) {
+          console.log('First company logoUrl:', response.data[0].logoUrl);
+          console.log('Constructed URL:', response.data[0].logoUrl ? `${API_BASE_URL}/uploads/${response.data[0].logoUrl}` : 'No logo');
+        }
         setCompanies(response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch companies');
@@ -123,9 +136,8 @@ export default function CompaniesPage() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          statusStyles[status as keyof typeof statusStyles] || statusStyles.active
-        }`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status as keyof typeof statusStyles] || statusStyles.active
+          }`}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -137,16 +149,50 @@ export default function CompaniesPage() {
       key: 'name',
       header: 'Company Name',
       sortable: true,
-      render: (company) => (
-        <div className="flex items-center">
-          <div>
-            <div className="font-medium text-gray-900">{company.name}</div>
-            {company.industry && (
-              <div className="text-xs text-gray-500">{company.industry}</div>
-            )}
+      render: (company) => {
+        const logoUrl = company.logoUrl ? `${API_BASE_URL}/uploads/${company.logoUrl}` : null;
+
+        // Debug logging
+        if (company.logoUrl) {
+          console.log(`Company: ${company.name}, logoUrl: ${company.logoUrl}, Full URL: ${logoUrl}`);
+        }
+
+        return (
+          <div className="flex items-center">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${company.name} logo`}
+                className="w-10 h-10 rounded-full object-cover mr-3"
+                onError={(e) => {
+                  // Fallback to initial avatar if image fails to load
+                  console.error(`Failed to load image: ${logoUrl}`);
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.classList.remove('hidden');
+                }}
+                onLoad={() => {
+                  console.log(`Successfully loaded image: ${logoUrl}`);
+                }}
+              />
+            ) : null}
+            <div
+              className={`w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3 ${logoUrl ? 'hidden' : ''
+                }`}
+            >
+              <span className="text-blue-600 font-semibold text-sm">
+                {company.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">{company.name}</div>
+              {company.industry && (
+                <div className="text-xs text-gray-500">{company.industry}</div>
+              )}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'code',
@@ -183,8 +229,7 @@ export default function CompaniesPage() {
   ];
 
   const handleRowClick = (company: Company) => {
-    console.log('Clicked company:', company);
-    // Navigate to company details page
+    setViewModal({ isOpen: true, companyId: company.id });
   };
 
   const handleEdit = (company: Company) => {
@@ -227,7 +272,33 @@ export default function CompaniesPage() {
   const actions = (company: Company) => (
     <>
       <button
-        onClick={() => handleEdit(company)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setViewModal({ isOpen: true, companyId: company.id });
+        }}
+        className="text-green-600 hover:text-green-900 transition-colors"
+        title="View"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+          />
+        </svg>
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleEdit(company);
+        }}
         className="text-blue-600 hover:text-blue-900 transition-colors"
         title="Edit"
       >
@@ -241,7 +312,10 @@ export default function CompaniesPage() {
         </svg>
       </button>
       <button
-        onClick={() => handleDeleteClick(company)}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDeleteClick(company);
+        }}
         className="text-red-600 hover:text-red-900 transition-colors"
         title="Delete"
       >
@@ -311,6 +385,13 @@ export default function CompaniesPage() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleAddCompanySuccess}
+        />
+
+        {/* View Company Modal */}
+        <ViewCompanyModal
+          isOpen={viewModal.isOpen}
+          onClose={() => setViewModal({ isOpen: false, companyId: null })}
+          companyId={viewModal.companyId}
         />
 
         {/* Delete Confirmation Dialog */}

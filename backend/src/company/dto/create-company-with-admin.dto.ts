@@ -52,6 +52,16 @@ export class CreateCompanyWithAdminDto {
   adminFullName?: string;
 
   @ApiPropertyOptional({
+    description: 'Phone number of the company admin',
+    example: '+1234567890',
+    maxLength: 20,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(20, { message: 'Phone number must not exceed 20 characters' })
+  adminPhone?: string;
+
+  @ApiPropertyOptional({
     description: 'Industry of the company',
     example: 'Technology',
   })

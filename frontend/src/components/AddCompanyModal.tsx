@@ -16,6 +16,7 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
     adminEmail: '',
     adminPassword: '',
     adminFullName: '',
+    adminPhone: '',
     industry: '',
     address: '',
     city: '',
@@ -73,6 +74,10 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
         submitData.adminFullName = formData.adminFullName.trim();
       }
 
+      if (formData.adminPhone?.trim()) {
+        submitData.adminPhone = formData.adminPhone.trim();
+      }
+
       if (formData.industry?.trim()) {
         submitData.industry = formData.industry.trim();
       }
@@ -118,6 +123,7 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
       adminEmail: '',
       adminPassword: '',
       adminFullName: '',
+      adminPhone: '',
       industry: '',
       address: '',
       city: '',
@@ -270,6 +276,23 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Jane Smith"
+                />
+              </div>
+
+              {/* Admin Phone */}
+              <div>
+                <label htmlFor="adminPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Admin Phone
+                </label>
+                <input
+                  type="tel"
+                  id="adminPhone"
+                  name="adminPhone"
+                  value={formData.adminPhone}
+                  onChange={handleChange}
+                  maxLength={20}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="+1234567890"
                 />
               </div>
 

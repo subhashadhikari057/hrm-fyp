@@ -43,6 +43,7 @@ export class CompanyController {
         adminEmail: { type: 'string', example: 'admin@acme.com' },
         adminPassword: { type: 'string', example: 'AdminPassword123!' },
         adminFullName: { type: 'string', example: 'Jane Smith' },
+        adminPhone: { type: 'string', example: '+1234567890' },
         industry: { type: 'string', example: 'Technology' },
         address: { type: 'string', example: '123 Main Street' },
         city: { type: 'string', example: 'New York' },

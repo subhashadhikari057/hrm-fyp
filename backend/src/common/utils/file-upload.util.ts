@@ -33,8 +33,8 @@ export class FileUploadUtil {
   static generateFileName(originalName: string, prefix: string = ''): string {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = extname(originalName);
-    const baseName = originalName.replace(ext, '').replace(/[^a-zA-Z0-9]/g, '-');
-    return `${prefix}${baseName}-${uniqueSuffix}${ext}`;
+    // Simple, clean filename without original name
+    return `${prefix}${uniqueSuffix}${ext}`;
   }
 
   /**

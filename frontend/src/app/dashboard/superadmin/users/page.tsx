@@ -7,6 +7,8 @@ import { StatsGrid } from '../../../../components/StatsGrid';
 import { PageHeader } from '../../../../components/PageHeader';
 import { AddButton } from '../../../../components/AddButton';
 import { AddUserModal } from '../../../../components/AddUserModal';
+import { UpdateUserModal } from '../../../../components/UpdateUserModal';
+import { ViewUserModal } from '../../../../components/ViewUserModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
 import { useToast } from '../../../../contexts/ToastContext';
 import { superadminApi, type User, type BackendUserRole } from '../../../../lib/api/superadmin';
@@ -39,6 +41,9 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
@@ -57,7 +62,7 @@ export default function UsersPage() {
           page: 1,
           limit: 100, // Get all users for now
         });
-        
+
         // Map backend users to frontend format
         const mappedUsers: FrontendUser[] = response.data.map((user) => ({
           id: user.id,
@@ -68,7 +73,7 @@ export default function UsersPage() {
           company: user.company?.name || undefined,
           createdAt: user.createdAt,
         }));
-        
+
         setUsers(mappedUsers);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch users');
@@ -145,9 +150,8 @@ export default function UsersPage() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          statusStyles[status as keyof typeof statusStyles] || statusStyles.active
-        }`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status as keyof typeof statusStyles] || statusStyles.active
+          }`}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -165,9 +169,8 @@ export default function UsersPage() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          roleStyles[role] || roleStyles.Employee
-        }`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleStyles[role] || roleStyles.Employee
+          }`}
       >
         {role}
       </span>
@@ -177,6 +180,11 @@ export default function UsersPage() {
   const handleAddUserSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
     showToast('User created successfully', 'success');
+  };
+
+  const handleUpdateUserSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    showToast('User updated successfully', 'success');
   };
 
   const handleDeleteClick = (user: FrontendUser) => {
@@ -213,6 +221,11 @@ export default function UsersPage() {
       sortable: true,
       render: (user) => (
         <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+            <span className="text-blue-600 font-semibold text-sm">
+              {user.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
           <div>
             <div className="font-medium text-gray-900">{user.name}</div>
             <div className="text-xs text-gray-500">{user.email}</div>
@@ -253,13 +266,13 @@ export default function UsersPage() {
   ];
 
   const handleRowClick = (user: FrontendUser) => {
-    console.log('Clicked user:', user);
-    // Navigate to user details page
+    setSelectedUserId(user.id);
+    setIsViewModalOpen(true);
   };
 
   const handleEdit = (user: FrontendUser) => {
-    console.log('Edit user:', user);
-    // Open edit dialog
+    setSelectedUserId(user.id);
+    setIsUpdateModalOpen(true);
   };
 
 
@@ -362,6 +375,27 @@ export default function UsersPage() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleAddUserSuccess}
+        />
+
+        {/* Update User Modal */}
+        <UpdateUserModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false);
+            setSelectedUserId(null);
+          }}
+          onSuccess={handleUpdateUserSuccess}
+          userId={selectedUserId}
+        />
+
+        {/* View User Modal */}
+        <ViewUserModal
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedUserId(null);
+          }}
+          userId={selectedUserId}
         />
 
         {/* Delete Confirmation Dialog */}

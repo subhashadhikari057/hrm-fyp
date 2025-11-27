@@ -159,9 +159,8 @@ export default function CompanyAdminsPage() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          statusStyles[status as keyof typeof statusStyles] || statusStyles.active
-        }`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status as keyof typeof statusStyles] || statusStyles.active
+          }`}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -175,6 +174,11 @@ export default function CompanyAdminsPage() {
       sortable: true,
       render: (admin) => (
         <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+            <span className="text-blue-600 font-semibold text-sm">
+              {admin.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
           <div>
             <div className="font-medium text-gray-900">{admin.name}</div>
             <div className="text-xs text-gray-500">{admin.email}</div>

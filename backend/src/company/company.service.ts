@@ -75,6 +75,7 @@ export class CompanyService {
           email: createDto.adminEmail,
           password: hashedPassword,
           fullName: createDto.adminFullName,
+          phone: createDto.adminPhone,
           role: 'company_admin',
           companyId: company.id,
           isActive: true,

@@ -39,6 +39,7 @@ export interface CreateCompanyWithAdminRequest {
   adminEmail: string;
   adminPassword: string;
   adminFullName?: string;
+  adminPhone?: string;
   industry?: string;
   address?: string;
   city?: string;
@@ -121,10 +122,11 @@ export const companyApi = {
     const formData = new FormData();
     formData.append('companyName', companyData.companyName);
     if (companyData.companyCode) formData.append('companyCode', companyData.companyCode);
-    formData.append('adminEmail', companyData.adminEmail);
-    formData.append('adminPassword', companyData.adminPassword);
-    if (companyData.adminFullName) formData.append('adminFullName', companyData.adminFullName);
-    if (companyData.industry) formData.append('industry', companyData.industry);
+      formData.append('adminEmail', companyData.adminEmail);
+      formData.append('adminPassword', companyData.adminPassword);
+      if (companyData.adminFullName) formData.append('adminFullName', companyData.adminFullName);
+      if (companyData.adminPhone) formData.append('adminPhone', companyData.adminPhone);
+      if (companyData.industry) formData.append('industry', companyData.industry);
     if (companyData.address) formData.append('address', companyData.address);
     if (companyData.city) formData.append('city', companyData.city);
     if (companyData.country) formData.append('country', companyData.country);

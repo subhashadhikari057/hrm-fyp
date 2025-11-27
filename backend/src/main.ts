@@ -9,21 +9,24 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
   // Serve static files from uploads directory
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // __dirname in compiled code is dist/src, so we need to go up 2 levels to reach project root
+  const uploadsPath = join(__dirname, '..', '..', 'uploads');
+  logger.log(`📁 Serving static files from: ${uploadsPath}`);
+  app.useStaticAssets(uploadsPath, {
     prefix: '/uploads/',
   });
-  
+
   // Enable CORS with credentials for cookie support
   app.enableCors({
     origin: 'http://localhost:3000', // Frontend URL
     credentials: true, // Allow cookies
   });
-  
+
   // Enable cookie parser middleware
   app.use(cookieParser());
-  
+
   // Enable validation globally
   app.useGlobalPipes(
     new ValidationPipe({
@@ -32,7 +35,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  
+
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('HRM System API')
@@ -56,16 +59,16 @@ async function bootstrap() {
       description: 'JWT token stored in HttpOnly cookie',
     })
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
   });
-  
+
   const port = process.env.PORT ?? 8080;
-  
+
   await app.listen(port);
   logger.log(`🚀 Application is running on: http://localhost:${port}`);
   logger.log(`📚 Swagger documentation available at: http://localhost:${port}/api`);
