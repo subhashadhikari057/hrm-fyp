@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { companyApi, type Company } from '../lib/api/company';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export interface ViewCompanyModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -69,18 +71,16 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
 
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-          statusStyles[status] || statusStyles.active
-        }`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusStyles[status] || statusStyles.active
+          }`}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            status === 'active'
-              ? 'bg-green-600'
-              : status === 'suspended'
+          className={`w-1.5 h-1.5 rounded-full ${status === 'active'
+            ? 'bg-green-600'
+            : status === 'suspended'
               ? 'bg-yellow-600'
               : 'bg-gray-600'
-          }`}
+            }`}
         ></span>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -140,11 +140,26 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
                   <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 md:gap-6 pb-4 sm:pb-6 border-b border-gray-200">
                     <div className="flex-shrink-0 mx-auto sm:mx-0">
                       {company.logoUrl ? (
-                        <img
-                          src={company.logoUrl}
-                          alt={company.name}
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl object-cover border-2 border-gray-200"
-                        />
+                        <>
+                          <img
+                            src={`${API_BASE_URL}/uploads/${company.logoUrl}`}
+                            alt={company.name}
+                            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl object-cover border-2 border-gray-200"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl bg-blue-600 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold border-2 border-gray-200 hidden">
+                            {company.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')
+                              .toUpperCase()
+                              .slice(0, 2)}
+                          </div>
+                        </>
                       ) : (
                         <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl bg-blue-600 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold border-2 border-gray-200">
                           {company.name
