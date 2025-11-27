@@ -7,6 +7,7 @@ import { StatsGrid } from '../../../../components/StatsGrid';
 import { PageHeader } from '../../../../components/PageHeader';
 import { AddButton } from '../../../../components/AddButton';
 import { AddCompanyModal } from '../../../../components/AddCompanyModal';
+import { UpdateCompanyModal } from '../../../../components/UpdateCompanyModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
 import { ViewCompanyModal } from '../../../../components/ViewCompanyModal';
 import { useToast } from '../../../../contexts/ToastContext';
@@ -21,6 +22,10 @@ export default function CompaniesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [viewModal, setViewModal] = useState<{
+    isOpen: boolean;
+    companyId: string | null;
+  }>({ isOpen: false, companyId: null });
+  const [updateModal, setUpdateModal] = useState<{
     isOpen: boolean;
     companyId: string | null;
   }>({ isOpen: false, companyId: null });
@@ -233,13 +238,17 @@ export default function CompaniesPage() {
   };
 
   const handleEdit = (company: Company) => {
-    console.log('Edit company:', company);
-    // Open edit dialog
+    setUpdateModal({ isOpen: true, companyId: company.id });
   };
 
   const handleAddCompanySuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
     showToast('Company created successfully', 'success');
+  };
+
+  const handleUpdateCompanySuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    showToast('Company updated successfully', 'success');
   };
 
   const handleDeleteClick = (company: Company) => {
@@ -392,6 +401,14 @@ export default function CompaniesPage() {
           isOpen={viewModal.isOpen}
           onClose={() => setViewModal({ isOpen: false, companyId: null })}
           companyId={viewModal.companyId}
+        />
+
+        {/* Update Company Modal */}
+        <UpdateCompanyModal
+          isOpen={updateModal.isOpen}
+          onClose={() => setUpdateModal({ isOpen: false, companyId: null })}
+          companyId={updateModal.companyId}
+          onSuccess={handleUpdateCompanySuccess}
         />
 
         {/* Delete Confirmation Dialog */}
