@@ -132,17 +132,17 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                                 Employment Information
                             </h4>
                             <div className="space-y-3">
-                                <DetailItem 
-                                    label="Department" 
-                                    value={employee.department ? `${employee.department.name}${employee.department.code ? ` (${employee.department.code})` : ''}` : 'N/A'} 
+                                <DetailItem
+                                    label="Department"
+                                    value={employee.department ? `${employee.department.name}${employee.department.code ? ` (${employee.department.code})` : ''}` : 'N/A'}
                                 />
-                                <DetailItem 
-                                    label="Designation" 
-                                    value={employee.designation ? `${employee.designation.name}${employee.designation.code ? ` (${employee.designation.code})` : ''}` : 'N/A'} 
+                                <DetailItem
+                                    label="Designation"
+                                    value={employee.designation ? `${employee.designation.name}${employee.designation.code ? ` (${employee.designation.code})` : ''}` : 'N/A'}
                                 />
-                                <DetailItem 
-                                    label="Employment Type" 
-                                    value={getEmploymentTypeLabel(employee.employmentType)} 
+                                <DetailItem
+                                    label="Employment Type"
+                                    value={getEmploymentTypeLabel(employee.employmentType)}
                                 />
                                 <DetailItem label="Join Date" value={formatDate(employee.joinDate)} />
                                 <DetailItem label="Probation End" value={formatDate(employee.probationEnd)} />
@@ -170,13 +170,13 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                                 Emergency Contact
                             </h4>
                             <div className="space-y-3">
-                                <DetailItem 
-                                    label="Contact Name" 
-                                    value={employee.emergencyContactName || 'N/A'} 
+                                <DetailItem
+                                    label="Contact Name"
+                                    value={employee.emergencyContactName || 'N/A'}
                                 />
-                                <DetailItem 
-                                    label="Contact Phone" 
-                                    value={employee.emergencyContactPhone || 'N/A'} 
+                                <DetailItem
+                                    label="Contact Phone"
+                                    value={employee.emergencyContactPhone || 'N/A'}
                                 />
                             </div>
                         </div>
@@ -189,9 +189,9 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                                     Compensation
                                 </h4>
                                 <div className="space-y-3">
-                                    <DetailItem 
-                                        label="Base Salary" 
-                                        value={`$${employee.baseSalary.toLocaleString()}`} 
+                                    <DetailItem
+                                        label="Base Salary"
+                                        value={`$${employee.baseSalary.toLocaleString()}`}
                                     />
                                 </div>
                             </div>
