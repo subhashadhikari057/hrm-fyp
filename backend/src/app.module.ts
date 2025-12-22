@@ -8,9 +8,19 @@ import { UserModule } from './user/user.module';
 import { DepartmentModule } from './department/department.module';
 import { DesignationModule } from './designation/designation.module';
 import { EmployeeModule } from './employee/employee.module';
+import { WorkShiftModule } from './workshift/workshift.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CompanyModule, UserModule, DepartmentModule, DesignationModule, EmployeeModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    CompanyModule,
+    UserModule,
+    DepartmentModule,
+    DesignationModule,
+    WorkShiftModule,
+    EmployeeModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
