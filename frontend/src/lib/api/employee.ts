@@ -10,6 +10,7 @@ export interface Employee {
     companyId: string;
     departmentId: string | null;
     designationId: string | null;
+    workShiftId?: string | null;
     employeeCode: string;
     firstName: string;
     lastName: string;
@@ -46,6 +47,13 @@ export interface Employee {
         name: string;
         code: string | null;
     };
+    workShift?: {
+        id: string;
+        name: string;
+        code: string | null;
+        startTime?: string;
+        endTime?: string;
+    };
 }
 
 export interface EmployeeFilters {
@@ -53,6 +61,7 @@ export interface EmployeeFilters {
     status?: 'active' | 'on_leave' | 'terminated';
     departmentId?: string;
     designationId?: string;
+    workShiftId?: string;
     employmentType?: 'full_time' | 'part_time' | 'contract' | 'intern';
     joinDateFrom?: string;
     joinDateTo?: string;
@@ -71,6 +80,7 @@ export interface CreateEmployeeData {
     employeeCode?: string;
     departmentId?: string;
     designationId?: string;
+    workShiftId?: string;
     employmentType?: 'full_time' | 'part_time' | 'contract' | 'intern';
     gender?: 'male' | 'female' | 'other';
     dateOfBirth?: string;
@@ -199,6 +209,7 @@ const employeeApi = {
             if (data.employeeCode) formData.append('employeeCode', data.employeeCode);
             if (data.departmentId) formData.append('departmentId', data.departmentId);
             if (data.designationId) formData.append('designationId', data.designationId);
+            if (data.workShiftId) formData.append('workShiftId', data.workShiftId);
             if (data.employmentType) formData.append('employmentType', data.employmentType);
             if (data.gender) formData.append('gender', data.gender);
             if (data.dateOfBirth) formData.append('dateOfBirth', data.dateOfBirth);
@@ -252,6 +263,7 @@ const employeeApi = {
             if (data.middleName !== undefined) formData.append('middleName', data.middleName);
             if (data.departmentId !== undefined) formData.append('departmentId', data.departmentId);
             if (data.designationId !== undefined) formData.append('designationId', data.designationId);
+            if (data.workShiftId !== undefined) formData.append('workShiftId', data.workShiftId);
             if (data.employmentType) formData.append('employmentType', data.employmentType);
             if (data.gender) formData.append('gender', data.gender);
             if (data.dateOfBirth) formData.append('dateOfBirth', data.dateOfBirth);

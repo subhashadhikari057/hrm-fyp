@@ -1,6 +1,7 @@
 'use client';
 
 import { Employee } from '@/lib/api/employee';
+import { API_BASE_URL } from '@/lib/api/types';
 import { X, User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, AlertCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -47,6 +48,7 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
 
     const fullName = [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(' ');
     const initials = `${employee.firstName.charAt(0)}${employee.lastName.charAt(0)}`.toUpperCase();
+    const imageUrl = employee.imageUrl ? `${API_BASE_URL}/uploads/${employee.imageUrl}` : null;
 
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -67,12 +69,26 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                     {/* Profile Section */}
                     <div className="flex items-start gap-6 mb-8 pb-8 border-b border-gray-200">
                         <div className="flex-shrink-0">
-                            {employee.imageUrl ? (
-                                <img
-                                    src={`${process.env.NEXT_PUBLIC_API_URL}${employee.imageUrl}`}
-                                    alt={fullName}
-                                    className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100"
-                                />
+                            {imageUrl ? (
+                                <>
+                                    <img
+                                        src={imageUrl}
+                                        alt={fullName}
+                                        className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            const fallback = target.nextElementSibling as HTMLElement;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                    <div
+                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center border-4 border-indigo-100"
+                                        style={{ display: 'none' }}
+                                    >
+                                        <span className="text-white text-2xl font-semibold">{initials}</span>
+                                    </div>
+                                </>
                             ) : (
                                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center border-4 border-indigo-100">
                                     <span className="text-white text-2xl font-semibold">{initials}</span>

@@ -8,6 +8,8 @@ import { PageHeader } from '../../../../components/PageHeader';
 import { AddButton } from '../../../../components/AddButton';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
 import EmployeeViewModal from '../../../../components/EmployeeViewModal';
+import { AddEmployeeModal } from '../../../../components/AddEmployeeModal';
+import { UpdateEmployeeModal } from '../../../../components/UpdateEmployeeModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { employeeApi, type Employee } from '../../../../lib/api/employee';
 
@@ -18,6 +20,11 @@ export default function EmployeesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [addModal, setAddModal] = useState(false);
+    const [updateModal, setUpdateModal] = useState<{
+        isOpen: boolean;
+        employeeId: string | null;
+    }>({ isOpen: false, employeeId: null });
     const [deleteDialog, setDeleteDialog] = useState<{
         isOpen: boolean;
         employee: Employee | null;
@@ -274,8 +281,11 @@ export default function EmployeesPage() {
     };
 
     const handleEdit = (employee: Employee) => {
-        console.log('Edit employee:', employee);
-        // Open update modal
+        setUpdateModal({ isOpen: true, employeeId: employee.id });
+    };
+
+    const handleUpdateSuccess = () => {
+        setRefreshTrigger((prev) => prev + 1);
     };
 
     const handleDeleteClick = (employee: Employee) => {
@@ -377,7 +387,7 @@ export default function EmployeesPage() {
                     actions={
                         <AddButton
                             label="Add Employee"
-                            onClick={() => console.log('Add employee')}
+                            onClick={() => setAddModal(true)}
                         />
                     }
                 />
@@ -447,6 +457,21 @@ export default function EmployeesPage() {
                     isOpen={viewModal.isOpen}
                     onClose={handleViewClose}
                     employee={viewModal.employee}
+                />
+
+                {/* Add Modal */}
+                <AddEmployeeModal
+                    isOpen={addModal}
+                    onClose={() => setAddModal(false)}
+                    onSuccess={handleUpdateSuccess}
+                />
+
+                {/* Update Modal */}
+                <UpdateEmployeeModal
+                    isOpen={updateModal.isOpen}
+                    onClose={() => setUpdateModal({ isOpen: false, employeeId: null })}
+                    employeeId={updateModal.employeeId}
+                    onSuccess={handleUpdateSuccess}
                 />
 
                 {/* Delete Confirmation Dialog */}
