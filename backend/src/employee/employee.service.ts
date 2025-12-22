@@ -114,6 +114,25 @@ export class EmployeeService {
       }
     }
 
+    // Validate work shift belongs to company (if provided)
+    if (createEmployeeDto.workShiftId) {
+      const workShift = await this.prisma.workShift.findUnique({
+        where: { id: createEmployeeDto.workShiftId },
+      });
+
+      if (!workShift) {
+        throw new NotFoundException(`Work shift with ID "${createEmployeeDto.workShiftId}" not found`);
+      }
+
+      if (workShift.companyId !== companyId) {
+        throw new ForbiddenException('Work shift does not belong to your company');
+      }
+
+      if (!workShift.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive work shift');
+      }
+    }
+
     // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, saltRounds);
@@ -153,6 +172,7 @@ export class EmployeeService {
           middleName: createEmployeeDto.middleName,
           departmentId: createEmployeeDto.departmentId,
           designationId: createEmployeeDto.designationId,
+          workShiftId: createEmployeeDto.workShiftId,
           gender: createEmployeeDto.gender,
           dateOfBirth: createEmployeeDto.dateOfBirth,
           joinDate: createEmployeeDto.joinDate || new Date(),
@@ -192,6 +212,15 @@ export class EmployeeService {
               code: true,
             },
           },
+          workShift: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
         },
       });
 
@@ -213,6 +242,7 @@ export class EmployeeService {
       status,
       departmentId,
       designationId,
+      workShiftId,
       employmentType,
       joinDateFrom,
       joinDateTo,
@@ -234,6 +264,7 @@ export class EmployeeService {
     if (status) where.status = status;
     if (departmentId) where.departmentId = departmentId;
     if (designationId) where.designationId = designationId;
+    if (workShiftId) where.workShiftId = workShiftId;
     if (employmentType) where.employmentType = employmentType;
 
     // Date range filters
@@ -306,6 +337,15 @@ export class EmployeeService {
             code: true,
           },
         },
+        workShift: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
       },
     });
 
@@ -353,6 +393,16 @@ export class EmployeeService {
             name: true,
             code: true,
             description: true,
+          },
+        },
+        workShift: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            description: true,
+            startTime: true,
+            endTime: true,
           },
         },
       },
@@ -431,6 +481,25 @@ export class EmployeeService {
       }
     }
 
+    // Validate work shift belongs to company (if provided)
+    if (updateEmployeeDto.workShiftId) {
+      const workShift = await this.prisma.workShift.findUnique({
+        where: { id: updateEmployeeDto.workShiftId },
+      });
+
+      if (!workShift) {
+        throw new NotFoundException(`Work shift with ID "${updateEmployeeDto.workShiftId}" not found`);
+      }
+
+      if (workShift.companyId !== companyId) {
+        throw new ForbiddenException('Work shift does not belong to your company');
+      }
+
+      if (!workShift.isActive) {
+        throw new BadRequestException('Cannot assign employee to an inactive work shift');
+      }
+    }
+
     // Build update data
     const updateData: any = {};
     if (updateEmployeeDto.firstName !== undefined) updateData.firstName = updateEmployeeDto.firstName;
@@ -438,6 +507,7 @@ export class EmployeeService {
     if (updateEmployeeDto.middleName !== undefined) updateData.middleName = updateEmployeeDto.middleName;
     if (updateEmployeeDto.departmentId !== undefined) updateData.departmentId = updateEmployeeDto.departmentId;
     if (updateEmployeeDto.designationId !== undefined) updateData.designationId = updateEmployeeDto.designationId;
+    if (updateEmployeeDto.workShiftId !== undefined) updateData.workShiftId = updateEmployeeDto.workShiftId;
     if (updateEmployeeDto.employmentType !== undefined) updateData.employmentType = updateEmployeeDto.employmentType;
     if (updateEmployeeDto.gender !== undefined) updateData.gender = updateEmployeeDto.gender;
     if (updateEmployeeDto.dateOfBirth !== undefined) updateData.dateOfBirth = updateEmployeeDto.dateOfBirth;
@@ -524,6 +594,15 @@ export class EmployeeService {
             id: true,
             name: true,
             code: true,
+          },
+        },
+        workShift: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            startTime: true,
+            endTime: true,
           },
         },
       },
@@ -820,6 +899,16 @@ export class EmployeeService {
             description: true,
           },
         },
+        workShift: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            description: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
       },
     });
 
@@ -833,4 +922,3 @@ export class EmployeeService {
     };
   }
 }
-

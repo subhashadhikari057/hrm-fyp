@@ -49,6 +49,11 @@ export class CreateEmployeeDto {
   @IsOptional()
   designationId?: string;
 
+  @ApiPropertyOptional({ description: 'Work shift ID', example: 'uuid' })
+  @IsString()
+  @IsOptional()
+  workShiftId?: string;
+
   @ApiPropertyOptional({ description: 'Employment type', enum: EmploymentType, example: 'full_time' })
   @IsEnum(EmploymentType)
   @IsOptional()
@@ -120,4 +125,3 @@ export class CreateEmployeeDto {
   @IsOptional()
   baseSalary?: number;
 }
-

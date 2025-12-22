@@ -24,6 +24,11 @@ export class FilterEmployeesDto {
   @IsOptional()
   designationId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by work shift ID', example: 'uuid' })
+  @IsString()
+  @IsOptional()
+  workShiftId?: string;
+
   @ApiPropertyOptional({ description: 'Filter by employment type', enum: EmploymentType, example: 'full_time' })
   @IsEnum(EmploymentType)
   @IsOptional()
@@ -111,4 +116,3 @@ export class FilterEmployeesDto {
   @IsOptional()
   sortOrder?: 'asc' | 'desc' = 'desc';
 }
-

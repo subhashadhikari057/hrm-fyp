@@ -507,3 +507,4 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
   );
 }
 
+

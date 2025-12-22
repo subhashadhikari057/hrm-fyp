@@ -72,6 +72,7 @@ export class EmployeeController {
         employeeCode: { type: 'string', example: 'EMP001', description: 'Auto-generated if not provided' },
         departmentId: { type: 'string', example: 'uuid' },
         designationId: { type: 'string', example: 'uuid' },
+        workShiftId: { type: 'string', example: 'uuid' },
         employmentType: { type: 'string', enum: ['full_time', 'part_time', 'contract', 'intern'], example: 'full_time' },
         gender: { type: 'string', enum: ['male', 'female', 'other'], example: 'male' },
         dateOfBirth: { type: 'string', format: 'date-time', example: '1990-01-15T00:00:00.000Z' },
@@ -155,6 +156,7 @@ export class EmployeeController {
   @ApiQuery({ name: 'status', required: false, enum: ['active', 'on_leave', 'terminated'] })
   @ApiQuery({ name: 'departmentId', required: false, type: String })
   @ApiQuery({ name: 'designationId', required: false, type: String })
+  @ApiQuery({ name: 'workShiftId', required: false, type: String })
   @ApiQuery({ name: 'employmentType', required: false, enum: ['full_time', 'part_time', 'contract', 'intern'] })
   @ApiQuery({ name: 'joinDateFrom', required: false, type: String, format: 'date-time', description: 'Filter by join date from' })
   @ApiQuery({ name: 'joinDateTo', required: false, type: String, format: 'date-time', description: 'Filter by join date to' })
@@ -326,6 +328,7 @@ export class EmployeeController {
         middleName: { type: 'string', example: 'Michael' },
         departmentId: { type: 'string', example: 'uuid' },
         designationId: { type: 'string', example: 'uuid' },
+        workShiftId: { type: 'string', example: 'uuid' },
         employmentType: { type: 'string', enum: ['full_time', 'part_time', 'contract', 'intern'] },
         gender: { type: 'string', enum: ['male', 'female', 'other'], example: 'male' },
         dateOfBirth: { type: 'string', format: 'date-time' },
@@ -461,4 +464,3 @@ export class EmployeeController {
     return this.employeeService.remove(id, companyId, shouldHardDelete);
   }
 }
-
