@@ -29,9 +29,16 @@ export function UpdateEmployeeModal({
         workShiftId: '',
         employmentType: '',
         gender: '',
+        dateOfBirth: '',
         joinDate: '',
+        probationEnd: '',
+        locationId: '',
         workEmail: '',
+        personalEmail: '',
         phone: '',
+        address: '',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
         baseSalary: '',
         image: null as File | null,
     });
@@ -87,9 +94,16 @@ export function UpdateEmployeeModal({
                     workShiftId: employee.workShiftId || '',
                     employmentType: employee.employmentType || '',
                     gender: employee.gender || '',
+                    dateOfBirth: employee.dateOfBirth ? employee.dateOfBirth.slice(0, 10) : '',
                     joinDate: employee.joinDate ? employee.joinDate.slice(0, 10) : '',
+                    probationEnd: employee.probationEnd ? employee.probationEnd.slice(0, 10) : '',
+                    locationId: employee.locationId || '',
                     workEmail: employee.workEmail || '',
+                    personalEmail: employee.personalEmail || '',
                     phone: employee.phone || '',
+                    address: employee.address || '',
+                    emergencyContactName: employee.emergencyContactName || '',
+                    emergencyContactPhone: employee.emergencyContactPhone || '',
                     baseSalary: employee.baseSalary ? String(employee.baseSalary) : '',
                     image: null,
                 });
@@ -169,9 +183,16 @@ export function UpdateEmployeeModal({
                 ? (formData.employmentType as UpdateEmployeeData['employmentType'])
                 : undefined;
             payload.gender = formData.gender ? (formData.gender as UpdateEmployeeData['gender']) : undefined;
+            payload.dateOfBirth = formData.dateOfBirth || undefined;
             payload.joinDate = formData.joinDate || undefined;
+            payload.probationEnd = formData.probationEnd || undefined;
+            payload.locationId = formData.locationId.trim() || undefined;
             payload.workEmail = formData.workEmail.trim() || undefined;
+            payload.personalEmail = formData.personalEmail.trim() || undefined;
             payload.phone = formData.phone.trim() || undefined;
+            payload.address = formData.address.trim() || undefined;
+            payload.emergencyContactName = formData.emergencyContactName.trim() || undefined;
+            payload.emergencyContactPhone = formData.emergencyContactPhone.trim() || undefined;
             payload.baseSalary = formData.baseSalary ? Number(formData.baseSalary) : undefined;
             if (formData.image) payload.image = formData.image;
 
@@ -379,6 +400,22 @@ export function UpdateEmployeeModal({
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Date of Birth
+                                </label>
+                                <input
+                                    type="date"
+                                    name="dateOfBirth"
+                                    value={formData.dateOfBirth}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Join Date
                                 </label>
                                 <input
@@ -390,9 +427,36 @@ export function UpdateEmployeeModal({
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Probation End
+                                </label>
+                                <input
+                                    type="date"
+                                    name="probationEnd"
+                                    value={formData.probationEnd}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Location ID
+                                </label>
+                                <input
+                                    type="text"
+                                    name="locationId"
+                                    value={formData.locationId}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                    placeholder="Location UUID"
+                                />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Work Email
@@ -409,12 +473,72 @@ export function UpdateEmployeeModal({
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Personal Email
+                                </label>
+                                <input
+                                    type="email"
+                                    name="personalEmail"
+                                    value={formData.personalEmail}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Phone
                                 </label>
                                 <input
                                     type="text"
                                     name="phone"
                                     value={formData.phone}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Address
+                                </label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Emergency Contact Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="emergencyContactName"
+                                    value={formData.emergencyContactName}
+                                    onChange={handleInputChange}
+                                    disabled={loading}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Emergency Contact Phone
+                                </label>
+                                <input
+                                    type="text"
+                                    name="emergencyContactPhone"
+                                    value={formData.emergencyContactPhone}
                                     onChange={handleInputChange}
                                     disabled={loading}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"

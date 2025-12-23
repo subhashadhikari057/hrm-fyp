@@ -103,6 +103,7 @@ export interface UpdateEmployeeData {
     middleName?: string;
     departmentId?: string;
     designationId?: string;
+    workShiftId?: string;
     employmentType?: 'full_time' | 'part_time' | 'contract' | 'intern';
     gender?: 'male' | 'female' | 'other';
     dateOfBirth?: string;
@@ -196,6 +197,27 @@ const employeeApi = {
         }
     },
 
+    async getMyProfile(): Promise<EmployeeResponse> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/employees/me`, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw await handleApiError(response);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Response) {
+                throw await handleApiError(error);
+            }
+            throw error;
+        }
+    },
+
     async createEmployee(data: CreateEmployeeData): Promise<EmployeeResponse> {
         try {
             const formData = new FormData();
@@ -263,6 +285,7 @@ const employeeApi = {
             if (data.middleName !== undefined) formData.append('middleName', data.middleName);
             if (data.departmentId !== undefined) formData.append('departmentId', data.departmentId);
             if (data.designationId !== undefined) formData.append('designationId', data.designationId);
+            if (data.workShiftId !== undefined) formData.append('workShiftId', data.workShiftId);
             if (data.workShiftId !== undefined) formData.append('workShiftId', data.workShiftId);
             if (data.employmentType) formData.append('employmentType', data.employmentType);
             if (data.gender) formData.append('gender', data.gender);

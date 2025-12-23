@@ -30,9 +30,16 @@ export function AddEmployeeModal({
         workShiftId: '',
         employmentType: '',
         gender: '',
+        dateOfBirth: '',
         joinDate: '',
+        probationEnd: '',
+        locationId: '',
         workEmail: '',
+        personalEmail: '',
         phone: '',
+        address: '',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
         baseSalary: '',
         image: null as File | null,
     });
@@ -141,9 +148,16 @@ export function AddEmployeeModal({
             if (formData.workShiftId) payload.workShiftId = formData.workShiftId;
             if (formData.employmentType) payload.employmentType = formData.employmentType as CreateEmployeeData['employmentType'];
             if (formData.gender) payload.gender = formData.gender as CreateEmployeeData['gender'];
+            if (formData.dateOfBirth) payload.dateOfBirth = formData.dateOfBirth;
             if (formData.joinDate) payload.joinDate = formData.joinDate;
+            if (formData.probationEnd) payload.probationEnd = formData.probationEnd;
+            if (formData.locationId.trim()) payload.locationId = formData.locationId.trim();
             if (formData.workEmail.trim()) payload.workEmail = formData.workEmail.trim();
+            if (formData.personalEmail.trim()) payload.personalEmail = formData.personalEmail.trim();
             if (formData.phone.trim()) payload.phone = formData.phone.trim();
+            if (formData.address.trim()) payload.address = formData.address.trim();
+            if (formData.emergencyContactName.trim()) payload.emergencyContactName = formData.emergencyContactName.trim();
+            if (formData.emergencyContactPhone.trim()) payload.emergencyContactPhone = formData.emergencyContactPhone.trim();
             if (formData.baseSalary) payload.baseSalary = Number(formData.baseSalary);
             if (formData.image) payload.image = formData.image;
 
@@ -176,9 +190,16 @@ export function AddEmployeeModal({
                 workShiftId: '',
                 employmentType: '',
                 gender: '',
+                dateOfBirth: '',
                 joinDate: '',
+                probationEnd: '',
+                locationId: '',
                 workEmail: '',
+                personalEmail: '',
                 phone: '',
+                address: '',
+                emergencyContactName: '',
+                emergencyContactPhone: '',
                 baseSalary: '',
                 image: null,
             });
@@ -336,6 +357,23 @@ export function AddEmployeeModal({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Personal Email
+                            </label>
+                            <input
+                                type="email"
+                                name="personalEmail"
+                                value={formData.personalEmail}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                placeholder="john.doe@gmail.com"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Phone
                             </label>
                             <input
@@ -346,6 +384,51 @@ export function AddEmployeeModal({
                                 disabled={loading}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 placeholder="+1234567890"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Address
+                            </label>
+                            <input
+                                type="text"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                placeholder="123 Main St"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Emergency Contact Name
+                            </label>
+                            <input
+                                type="text"
+                                name="emergencyContactName"
+                                value={formData.emergencyContactName}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                placeholder="Jane Doe"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Emergency Contact Phone
+                            </label>
+                            <input
+                                type="text"
+                                name="emergencyContactPhone"
+                                value={formData.emergencyContactPhone}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                placeholder="+1234567891"
                             />
                         </div>
                     </div>
@@ -452,6 +535,22 @@ export function AddEmployeeModal({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Date of Birth
+                            </label>
+                            <input
+                                type="date"
+                                name="dateOfBirth"
+                                value={formData.dateOfBirth}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Join Date
                             </label>
                             <input
@@ -461,6 +560,33 @@ export function AddEmployeeModal({
                                 onChange={handleInputChange}
                                 disabled={loading}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Probation End
+                            </label>
+                            <input
+                                type="date"
+                                name="probationEnd"
+                                value={formData.probationEnd}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Location ID
+                            </label>
+                            <input
+                                type="text"
+                                name="locationId"
+                                value={formData.locationId}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                                placeholder="Location UUID"
                             />
                         </div>
                     </div>
