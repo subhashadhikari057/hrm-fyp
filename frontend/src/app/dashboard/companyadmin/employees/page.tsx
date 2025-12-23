@@ -10,7 +10,7 @@ import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog'
 import EmployeeViewModal from '../../../../components/EmployeeViewModal';
 import { AddEmployeeModal } from '../../../../components/AddEmployeeModal';
 import { UpdateEmployeeModal } from '../../../../components/UpdateEmployeeModal';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { employeeApi, type Employee } from '../../../../lib/api/employee';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -34,7 +34,6 @@ export default function EmployeesPage() {
         employee: Employee | null;
     }>({ isOpen: false, employee: null });
     const [deleting, setDeleting] = useState(false);
-    const { showToast } = useToast();
 
     // Fetch employees from backend
     useEffect(() => {
@@ -299,13 +298,12 @@ export default function EmployeesPage() {
         try {
             await employeeApi.deleteEmployee(deleteDialog.employee.id);
             const fullName = `${deleteDialog.employee.firstName} ${deleteDialog.employee.lastName}`;
-            showToast(`Employee "${fullName}" deleted successfully`, 'success');
+            toast.success(`Employee "${fullName}" deleted successfully`);
             setDeleteDialog({ isOpen: false, employee: null });
             setRefreshTrigger((prev) => prev + 1);
         } catch (err) {
-            showToast(
-                err instanceof Error ? err.message : 'Failed to delete employee',
-                'error'
+            toast.error(
+                err instanceof Error ? err.message : 'Failed to delete employee'
             );
         } finally {
             setDeleting(false);

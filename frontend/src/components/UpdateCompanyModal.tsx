@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { companyApi, type Company, type UpdateCompanyRequest } from '../lib/api/company';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 
 export interface UpdateCompanyModalProps {
     isOpen: boolean;
@@ -31,7 +31,6 @@ export function UpdateCompanyModal({
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [fetchingCompany, setFetchingCompany] = useState(false);
-    const { showToast } = useToast();
 
     // Fetch company data when modal opens
     useEffect(() => {
@@ -63,7 +62,7 @@ export function UpdateCompanyModal({
                 maxEmployees: company.maxEmployees || undefined,
             });
         } catch (error) {
-            showToast('Failed to load company data', 'error');
+            toast.error('Failed to load company data');
             onClose();
         } finally {
             setFetchingCompany(false);
@@ -100,13 +99,13 @@ export function UpdateCompanyModal({
         if (file) {
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                showToast('Please select an image file', 'error');
+                toast.error('Please select an image file');
                 return;
             }
 
             // Validate file size (5MB max)
             if (file.size > 5 * 1024 * 1024) {
-                showToast('Image size must be less than 5MB', 'error');
+                toast.error('Image size must be less than 5MB');
                 return;
             }
 
@@ -145,11 +144,11 @@ export function UpdateCompanyModal({
 
             await companyApi.updateCompany(companyId, updateData);
 
-            showToast('Company updated successfully', 'success');
+            toast.success('Company updated successfully');
             onSuccess();
             onClose();
         } catch (error: any) {
-            showToast(error.message || 'Failed to update company', 'error');
+            toast.error(error.message || 'Failed to update company');
         } finally {
             setLoading(false);
         }

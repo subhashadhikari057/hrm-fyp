@@ -10,7 +10,7 @@ import { AddCompanyModal } from '../../../../components/AddCompanyModal';
 import { UpdateCompanyModal } from '../../../../components/UpdateCompanyModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
 import { ViewCompanyModal } from '../../../../components/ViewCompanyModal';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { companyApi, type Company } from '../../../../lib/api/company';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -34,7 +34,6 @@ export default function CompaniesPage() {
     company: Company | null;
   }>({ isOpen: false, company: null });
   const [deleting, setDeleting] = useState(false);
-  const { showToast } = useToast();
 
   // Fetch companies from backend
   useEffect(() => {
@@ -243,12 +242,12 @@ export default function CompaniesPage() {
 
   const handleAddCompanySuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
-    showToast('Company created successfully', 'success');
+    toast.success('Company created successfully');
   };
 
   const handleUpdateCompanySuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
-    showToast('Company updated successfully', 'success');
+    toast.success('Company updated successfully');
   };
 
   const handleDeleteClick = (company: Company) => {
@@ -261,13 +260,12 @@ export default function CompaniesPage() {
     setDeleting(true);
     try {
       await companyApi.deleteCompany(deleteDialog.company.id);
-      showToast(`Company "${deleteDialog.company.name}" deleted successfully`, 'success');
+      toast.success(`Company "${deleteDialog.company.name}" deleted successfully`);
       setDeleteDialog({ isOpen: false, company: null });
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : 'Failed to delete company',
-        'error'
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete company'
       );
     } finally {
       setDeleting(false);
@@ -425,4 +423,3 @@ export default function CompaniesPage() {
     </DashboardLayout>
   );
 }
-

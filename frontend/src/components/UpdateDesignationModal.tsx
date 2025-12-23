@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { designationApi, type Designation } from '../lib/api/designation';
 
 interface UpdateDesignationModalProps {
@@ -26,7 +26,6 @@ export function UpdateDesignationModal({
     const [loading, setLoading] = useState(false);
     const [fetchingData, setFetchingData] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     // Fetch designation data when modal opens
     useEffect(() => {
@@ -47,7 +46,7 @@ export function UpdateDesignationModal({
                 setErrors({});
             } catch (error) {
                 console.error('Error fetching designation:', error);
-                showToast('Failed to load designation data', 'error');
+                toast.error('Failed to load designation data');
                 onClose();
             } finally {
                 setFetchingData(false);
@@ -55,7 +54,7 @@ export function UpdateDesignationModal({
         };
 
         fetchDesignationData();
-    }, [designationId, isOpen, showToast, onClose]);
+    }, [designationId, isOpen, onClose]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -141,14 +140,14 @@ export function UpdateDesignationModal({
 
             await designationApi.updateDesignation(designationId, updateData);
 
-            showToast('Designation updated successfully', 'success');
+            toast.success('Designation updated successfully');
             onSuccess?.();
             onClose();
         } catch (error: unknown) {
             console.error('Error updating designation:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to update designation';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

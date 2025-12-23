@@ -6,7 +6,7 @@ import { DataTable, Column, FilterOption } from '../../../../components/DataTabl
 import { StatsGrid } from '../../../../components/StatsGrid';
 import { PageHeader } from '../../../../components/PageHeader';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { companyApi } from '../../../../lib/api/company';
 import { type User } from '../../../../lib/api/superadmin';
 
@@ -28,7 +28,6 @@ export default function CompanyAdminsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<CompanyAdmin | null>(null);
-  const { showToast } = useToast();
 
   const fetchCompanyAdmins = async () => {
     setIsLoading(true);
@@ -69,7 +68,7 @@ export default function CompanyAdminsPage() {
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch company admins');
-      showToast(err.message || 'Failed to fetch company admins', 'error');
+      toast.error(err.message || 'Failed to fetch company admins');
     } finally {
       setIsLoading(false);
     }
@@ -242,10 +241,10 @@ export default function CompanyAdminsPage() {
     if (adminToDelete) {
       try {
         await companyApi.deleteCompanyAdmin(adminToDelete.id);
-        showToast(`Company Admin "${adminToDelete.name}" deleted successfully`, 'success');
+        toast.success(`Company Admin "${adminToDelete.name}" deleted successfully`);
         fetchCompanyAdmins(); // Refresh the list
       } catch (err: any) {
-        showToast(err.message || 'Failed to delete company admin', 'error');
+        toast.error(err.message || 'Failed to delete company admin');
       } finally {
         setIsDeleteConfirmOpen(false);
         setAdminToDelete(null);
@@ -345,4 +344,3 @@ export default function CompanyAdminsPage() {
     </DashboardLayout>
   );
 }
-

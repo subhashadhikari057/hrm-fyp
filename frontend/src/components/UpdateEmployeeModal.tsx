@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { employeeApi, type Employee, type UpdateEmployeeData } from '../lib/api/employee';
 import { departmentApi, type Department } from '../lib/api/department';
 import { designationApi, type Designation } from '../lib/api/designation';
@@ -42,7 +42,6 @@ export function UpdateEmployeeModal({
     const [fetchingData, setFetchingData] = useState(false);
     const [fetchingOptions, setFetchingOptions] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -61,14 +60,14 @@ export function UpdateEmployeeModal({
                 setWorkShifts(workShiftsRes.data);
             } catch (error) {
                 console.error('Error fetching employee form options:', error);
-                showToast('Failed to load departments, designations, or work shifts', 'error');
+                toast.error('Failed to load departments, designations, or work shifts');
             } finally {
                 setFetchingOptions(false);
             }
         };
 
         fetchOptions();
-    }, [isOpen, showToast]);
+    }, [isOpen]);
 
     useEffect(() => {
         const fetchEmployee = async () => {
@@ -97,7 +96,7 @@ export function UpdateEmployeeModal({
                 setErrors({});
             } catch (error) {
                 console.error('Error fetching employee:', error);
-                showToast('Failed to load employee data', 'error');
+                toast.error('Failed to load employee data');
                 onClose();
             } finally {
                 setFetchingData(false);
@@ -105,7 +104,7 @@ export function UpdateEmployeeModal({
         };
 
         fetchEmployee();
-    }, [employeeId, isOpen, showToast, onClose]);
+    }, [employeeId, isOpen, onClose]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -178,14 +177,14 @@ export function UpdateEmployeeModal({
 
             await employeeApi.updateEmployee(employeeId, payload);
 
-            showToast('Employee updated successfully', 'success');
+            toast.success('Employee updated successfully');
             onSuccess?.();
             onClose();
         } catch (error: unknown) {
             console.error('Error updating employee:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to update employee';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

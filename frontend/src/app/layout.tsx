@@ -3,7 +3,7 @@ import { DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { SidebarProvider } from "../contexts/SidebarContext";
-import { ToastProvider } from "../contexts/ToastContext";
+import { Toaster } from "react-hot-toast";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -32,9 +32,8 @@ export default function RootLayout({
       >
         <AuthProvider>
           <SidebarProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
+            {children}
+            <Toaster position="top-center" />
           </SidebarProvider>
         </AuthProvider>
       </body>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { employeeApi, type CreateEmployeeData } from '../lib/api/employee';
 import { departmentApi, type Department } from '../lib/api/department';
 import { designationApi, type Designation } from '../lib/api/designation';
@@ -42,7 +42,6 @@ export function AddEmployeeModal({
     const [loading, setLoading] = useState(false);
     const [fetchingOptions, setFetchingOptions] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -61,14 +60,14 @@ export function AddEmployeeModal({
                 setWorkShifts(workShiftsRes.data);
             } catch (error) {
                 console.error('Error fetching employee form options:', error);
-                showToast('Failed to load departments, designations, or work shifts', 'error');
+                toast.error('Failed to load departments, designations, or work shifts');
             } finally {
                 setFetchingOptions(false);
             }
         };
 
         fetchOptions();
-    }, [isOpen, showToast]);
+    }, [isOpen]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -150,14 +149,14 @@ export function AddEmployeeModal({
 
             await employeeApi.createEmployee(payload);
 
-            showToast('Employee created successfully', 'success');
+            toast.success('Employee created successfully');
             onSuccess?.();
             handleClose();
         } catch (error: unknown) {
             console.error('Error creating employee:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to create employee';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

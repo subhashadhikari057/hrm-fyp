@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { departmentApi } from '../lib/api/department';
 
 interface AddDepartmentModalProps {
@@ -23,7 +23,6 @@ export function AddDepartmentModal({
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -110,14 +109,14 @@ export function AddDepartmentModal({
 
             await departmentApi.createDepartment(createData);
 
-            showToast('Department created successfully', 'success');
+            toast.success('Department created successfully');
             onSuccess?.();
             handleClose();
         } catch (error: unknown) {
             console.error('Error creating department:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to create department';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

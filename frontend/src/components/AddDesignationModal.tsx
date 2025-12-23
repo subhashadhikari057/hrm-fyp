@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { designationApi } from '../lib/api/designation';
 
 interface AddDesignationModalProps {
@@ -23,7 +23,6 @@ export function AddDesignationModal({
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -110,14 +109,14 @@ export function AddDesignationModal({
 
             await designationApi.createDesignation(createData);
 
-            showToast('Designation created successfully', 'success');
+            toast.success('Designation created successfully');
             onSuccess?.();
             handleClose();
         } catch (error: unknown) {
             console.error('Error creating designation:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to create designation';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

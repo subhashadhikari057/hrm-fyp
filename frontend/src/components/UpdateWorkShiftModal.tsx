@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { workShiftApi, type WorkShift } from '../lib/api/workshift';
 
 interface UpdateWorkShiftModalProps {
@@ -49,7 +49,6 @@ export function UpdateWorkShiftModal({
     const [loading, setLoading] = useState(false);
     const [fetchingData, setFetchingData] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     useEffect(() => {
         const fetchWorkShiftData = async () => {
@@ -71,7 +70,7 @@ export function UpdateWorkShiftModal({
                 setErrors({});
             } catch (error) {
                 console.error('Error fetching work shift:', error);
-                showToast('Failed to load work shift data', 'error');
+                toast.error('Failed to load work shift data');
                 onClose();
             } finally {
                 setFetchingData(false);
@@ -79,7 +78,7 @@ export function UpdateWorkShiftModal({
         };
 
         fetchWorkShiftData();
-    }, [workShiftId, isOpen, showToast, onClose]);
+    }, [workShiftId, isOpen, onClose]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -187,14 +186,14 @@ export function UpdateWorkShiftModal({
 
             await workShiftApi.updateWorkShift(workShiftId, updateData);
 
-            showToast('Work shift updated successfully', 'success');
+            toast.success('Work shift updated successfully');
             onSuccess?.();
             onClose();
         } catch (error: unknown) {
             console.error('Error updating work shift:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to update work shift';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

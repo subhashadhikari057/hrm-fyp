@@ -7,11 +7,10 @@ import { useEffect, useState, useRef } from 'react';
 import Sidebar, { getMenuItemsForRole } from './Sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const { isCollapsed, toggleMobileMenu, isMobileOpen } = useSidebar();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -60,23 +59,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  const roleLabels: Record<string, string> = {
-    superadmin: 'Super Admin',
-    companyadmin: 'Company Admin',
-    hrmanager: 'HR Manager',
-    employee: 'Employee',
-  };
-
-  const getInitials = (email: string) => {
-    return email
-      .split('@')[0]
-      .split('.')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchResults.length > 0) {
@@ -95,11 +77,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push(href);
     setSearchQuery('');
     setShowSearchResults(false);
-  };
-
-  const handleLogout = async () => {
-    setShowUserMenu(false);
-    await logout();
   };
 
   return (
@@ -218,92 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
 
-              {/* Right side actions */}
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                {/* User Menu */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    {/* Avatar */}
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                      {getInitials(user.email)}
-                    </div>
-                    <div className="hidden sm:block text-left">
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.name || user.email.split('@')[0]}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {roleLabels[user.role]}
-                      </div>
-                    </div>
-                    <svg
-                      className={`hidden sm:block w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${
-                        showUserMenu ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {showUserMenu && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setShowUserMenu(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                        <div className="py-1">
-                          <div className="px-4 py-2 border-b border-gray-200">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {user.name || user.email.split('@')[0]}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {user.email}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              router.push('/dashboard/profile');
-                              setShowUserMenu(false);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                          >
-                            Profile
-                          </button>
-                          <button
-                            onClick={() => {
-                              router.push('/dashboard/settings');
-                              setShowUserMenu(false);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                          >
-                            Settings
-                          </button>
-                          <div className="border-t border-gray-200">
-                            <button
-                              onClick={handleLogout}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
-                            >
-                              Logout
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0" />
             </div>
           </div>
         </nav>

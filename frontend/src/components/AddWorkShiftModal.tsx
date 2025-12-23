@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { workShiftApi } from '../lib/api/workshift';
 
 interface AddWorkShiftModalProps {
@@ -35,7 +35,6 @@ export function AddWorkShiftModal({
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const { showToast } = useToast();
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -143,14 +142,14 @@ export function AddWorkShiftModal({
 
             await workShiftApi.createWorkShift(createData);
 
-            showToast('Work shift created successfully', 'success');
+            toast.success('Work shift created successfully');
             onSuccess?.();
             handleClose();
         } catch (error: unknown) {
             console.error('Error creating work shift:', error);
             const errorMessage =
                 error instanceof Error ? error.message : 'Failed to create work shift';
-            showToast(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

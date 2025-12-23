@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '../lib/api/auth';
+import toast from 'react-hot-toast';
 import { mapBackendRoleToFrontend, getDashboardRoute, type FrontendUserRole, type BackendUser } from '../lib/api/types';
 
 interface User {
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     setUser(null);
+    toast.success('Logged out successfully');
     router.push('/');
   };
 
@@ -127,4 +129,3 @@ export function useAuth() {
   }
   return context;
 }
-

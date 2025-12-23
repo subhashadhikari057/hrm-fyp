@@ -9,7 +9,7 @@ import { AddButton } from '../../../../components/AddButton';
 import { AddWorkShiftModal } from '../../../../components/AddWorkShiftModal';
 import { UpdateWorkShiftModal } from '../../../../components/UpdateWorkShiftModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { workShiftApi, type WorkShift } from '../../../../lib/api/workshift';
 
 function formatTime(value: string) {
@@ -36,7 +36,6 @@ export default function WorkShiftsPage() {
         workShift: WorkShift | null;
     }>({ isOpen: false, workShift: null });
     const [deleting, setDeleting] = useState(false);
-    const { showToast } = useToast();
 
     useEffect(() => {
         const fetchWorkShifts = async () => {
@@ -196,13 +195,12 @@ export default function WorkShiftsPage() {
         setDeleting(true);
         try {
             await workShiftApi.deleteWorkShift(deleteDialog.workShift.id);
-            showToast(`Work shift "${deleteDialog.workShift.name}" deleted successfully`, 'success');
+            toast.success(`Work shift "${deleteDialog.workShift.name}" deleted successfully`);
             setDeleteDialog({ isOpen: false, workShift: null });
             setRefreshTrigger((prev) => prev + 1);
         } catch (err) {
-            showToast(
-                err instanceof Error ? err.message : 'Failed to delete work shift',
-                'error'
+            toast.error(
+                err instanceof Error ? err.message : 'Failed to delete work shift'
             );
         } finally {
             setDeleting(false);

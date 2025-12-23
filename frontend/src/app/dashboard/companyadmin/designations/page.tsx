@@ -9,7 +9,7 @@ import { AddButton } from '../../../../components/AddButton';
 import { AddDesignationModal } from '../../../../components/AddDesignationModal';
 import { UpdateDesignationModal } from '../../../../components/UpdateDesignationModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { designationApi, type Designation } from '../../../../lib/api/designation';
 
 export default function DesignationsPage() {
@@ -27,7 +27,6 @@ export default function DesignationsPage() {
         designation: Designation | null;
     }>({ isOpen: false, designation: null });
     const [deleting, setDeleting] = useState(false);
-    const { showToast } = useToast();
 
     // Fetch designations from backend
     useEffect(() => {
@@ -184,13 +183,12 @@ export default function DesignationsPage() {
         setDeleting(true);
         try {
             await designationApi.deleteDesignation(deleteDialog.designation.id);
-            showToast(`Designation "${deleteDialog.designation.name}" deleted successfully`, 'success');
+            toast.success(`Designation "${deleteDialog.designation.name}" deleted successfully`);
             setDeleteDialog({ isOpen: false, designation: null });
             setRefreshTrigger((prev) => prev + 1);
         } catch (err) {
-            showToast(
-                err instanceof Error ? err.message : 'Failed to delete designation',
-                'error'
+            toast.error(
+                err instanceof Error ? err.message : 'Failed to delete designation'
             );
         } finally {
             setDeleting(false);

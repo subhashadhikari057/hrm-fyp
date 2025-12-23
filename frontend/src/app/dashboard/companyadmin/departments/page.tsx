@@ -9,7 +9,7 @@ import { AddButton } from '../../../../components/AddButton';
 import { AddDepartmentModal } from '../../../../components/AddDepartmentModal';
 import { UpdateDepartmentModal } from '../../../../components/UpdateDepartmentModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { departmentApi, type Department } from '../../../../lib/api/department';
 
 export default function DepartmentsPage() {
@@ -27,7 +27,6 @@ export default function DepartmentsPage() {
         department: Department | null;
     }>({ isOpen: false, department: null });
     const [deleting, setDeleting] = useState(false);
-    const { showToast } = useToast();
 
     // Fetch departments from backend
     useEffect(() => {
@@ -184,13 +183,12 @@ export default function DepartmentsPage() {
         setDeleting(true);
         try {
             await departmentApi.deleteDepartment(deleteDialog.department.id);
-            showToast(`Department "${deleteDialog.department.name}" deleted successfully`, 'success');
+            toast.success(`Department "${deleteDialog.department.name}" deleted successfully`);
             setDeleteDialog({ isOpen: false, department: null });
             setRefreshTrigger((prev) => prev + 1);
         } catch (err) {
-            showToast(
-                err instanceof Error ? err.message : 'Failed to delete department',
-                'error'
+            toast.error(
+                err instanceof Error ? err.message : 'Failed to delete department'
             );
         } finally {
             setDeleting(false);

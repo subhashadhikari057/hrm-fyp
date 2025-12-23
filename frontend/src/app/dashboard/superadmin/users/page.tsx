@@ -10,7 +10,7 @@ import { AddUserModal } from '../../../../components/AddUserModal';
 import { UpdateUserModal } from '../../../../components/UpdateUserModal';
 import { ViewUserModal } from '../../../../components/ViewUserModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
-import { useToast } from '../../../../contexts/ToastContext';
+import toast from 'react-hot-toast';
 import { superadminApi, type User, type BackendUserRole } from '../../../../lib/api/superadmin';
 
 // Frontend user type (mapped from backend)
@@ -50,7 +50,6 @@ export default function UsersPage() {
     user: FrontendUser | null;
   }>({ isOpen: false, user: null });
   const [deleting, setDeleting] = useState(false);
-  const { showToast } = useToast();
 
   // Fetch users from backend
   useEffect(() => {
@@ -179,12 +178,12 @@ export default function UsersPage() {
 
   const handleAddUserSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
-    showToast('User created successfully', 'success');
+    toast.success('User created successfully');
   };
 
   const handleUpdateUserSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
-    showToast('User updated successfully', 'success');
+    toast.success('User updated successfully');
   };
 
   const handleDeleteClick = (user: FrontendUser) => {
@@ -197,13 +196,12 @@ export default function UsersPage() {
     setDeleting(true);
     try {
       await superadminApi.deleteUser(deleteDialog.user.id);
-      showToast(`User "${deleteDialog.user.name}" deleted successfully`, 'success');
+      toast.success(`User "${deleteDialog.user.name}" deleted successfully`);
       setDeleteDialog({ isOpen: false, user: null });
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : 'Failed to delete user',
-        'error'
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete user'
       );
     } finally {
       setDeleting(false);
@@ -412,4 +410,3 @@ export default function UsersPage() {
     </DashboardLayout>
   );
 }
-

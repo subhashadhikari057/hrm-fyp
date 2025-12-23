@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { departmentApi, type Department, type UpdateDepartmentRequest } from '../lib/api/department';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 
 export interface UpdateDepartmentModalProps {
     isOpen: boolean;
@@ -25,7 +25,6 @@ export function UpdateDepartmentModal({
     });
     const [loading, setLoading] = useState(false);
     const [fetchingDepartment, setFetchingDepartment] = useState(false);
-    const { showToast } = useToast();
 
     // Fetch department data when modal opens
     useEffect(() => {
@@ -51,7 +50,7 @@ export function UpdateDepartmentModal({
                 isActive: department.isActive,
             });
         } catch (error) {
-            showToast('Failed to load department data', 'error');
+            toast.error('Failed to load department data');
             onClose();
         } finally {
             setFetchingDepartment(false);
@@ -94,11 +93,11 @@ export function UpdateDepartmentModal({
 
             await departmentApi.updateDepartment(departmentId, updateData);
 
-            showToast('Department updated successfully', 'success');
+            toast.success('Department updated successfully');
             onSuccess();
             onClose();
         } catch (error: any) {
-            showToast(error.message || 'Failed to update department', 'error');
+            toast.error(error.message || 'Failed to update department');
         } finally {
             setLoading(false);
         }

@@ -3,15 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import toast from 'react-hot-toast';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
-  const { showToast } = useToast();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +36,7 @@ export default function LoginForm() {
       const user = await login(email.trim(), password);
       // Show welcome toast with user's name
       const userName = user.name || user.email.split('@')[0];
-      showToast(`Welcome back, ${userName}!`, 'success');
+      toast.success(`Welcome back, ${userName}!`);
       
       // Small delay to show toast before redirect
       setTimeout(() => {
@@ -60,19 +60,24 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-          Welcome back
-        </h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Sign in to your account to continue
-        </p>
+    <div className="w-full space-y-8">
+      <div className="text-center space-y-3">
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+          Secure Login
+        </span>
+        <div>
+          <h2 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+            Welcome back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to manage your company workspace
+          </p>
+        </div>
       </div>
 
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+          <div className="rounded-xl bg-red-50 border border-red-200 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -102,7 +107,7 @@ export default function LoginForm() {
                 setEmail(e.target.value);
                 setError(null); // Clear error when user types
               }}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+              className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="Enter your email"
               disabled={isLoading}
             />
@@ -112,21 +117,56 @@ export default function LoginForm() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null); // Clear error when user types
-              }}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
+            <div className="relative mt-1">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null); // Clear error when user types
+                }}
+                className="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-50 disabled:text-gray-500"
+                placeholder="Enter your password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                disabled={isLoading}
+              >
+                {showPassword ? (
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3l18 18M10.477 10.463a3 3 0 104.243 4.243M9.88 9.88A3 3 0 0112 9c1.657 0 3 1.343 3 3 0 .52-.132 1.01-.364 1.438M6.228 6.228C4.594 7.518 3.35 9.092 2.75 10c1.5 2.25 4.75 5.25 9.25 5.25 1.32 0 2.53-.246 3.61-.64M9.5 5.12A9.47 9.47 0 0112 4.75c4.5 0 7.75 3 9.25 5.25-.44.66-1.21 1.7-2.29 2.72"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.75 12c1.5-2.25 4.75-5.25 9.25-5.25s7.75 3 9.25 5.25c-1.5 2.25-4.75 5.25-9.25 5.25S4.25 14.25 2.75 12z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9a3 3 0 100 6 3 3 0 000-6z"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -134,7 +174,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center">
@@ -153,4 +193,3 @@ export default function LoginForm() {
     </div>
   );
 }
-
