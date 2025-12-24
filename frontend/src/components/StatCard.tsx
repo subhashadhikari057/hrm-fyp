@@ -1,12 +1,22 @@
 'use client';
 
 import React from 'react';
+import { Card, CardContent } from './ui/card';
 
 export interface StatCardProps {
   label: string;
   value: string | number;
   icon: React.ReactNode;
-  iconBgColor?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow' | 'indigo' | 'pink' | 'gray';
+  iconBgColor?:
+    | 'blue'
+    | 'green'
+    | 'purple'
+    | 'orange'
+    | 'red'
+    | 'yellow'
+    | 'indigo'
+    | 'pink'
+    | 'gray';
   trend?: {
     value: number;
     isPositive: boolean;
@@ -14,7 +24,7 @@ export interface StatCardProps {
   onClick?: () => void;
 }
 
-const iconBgColors = {
+const iconBgColors: Record<NonNullable<StatCardProps['iconBgColor']>, string> = {
   blue: 'bg-blue-100 text-blue-600',
   green: 'bg-green-100 text-green-600',
   purple: 'bg-purple-100 text-purple-600',
@@ -38,36 +48,42 @@ export function StatCard({
   const isClickable = !!onClick;
 
   return (
-    <div
+    <Card
       onClick={onClick}
-      className={`bg-white rounded-lg shadow p-4 sm:p-5 lg:p-6 border border-gray-200 h-full ${
-        isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+      className={`h-full border border-slate-200 bg-white shadow-none ${
+        isClickable ? 'cursor-pointer hover:border-slate-300 transition-colors' : ''
       }`}
     >
-      <div className="flex items-center h-full gap-3 sm:gap-4">
-        <div className={`p-2 sm:p-2.5 lg:p-3 rounded-lg flex-shrink-0 ${bgColorClass}`}>
-          <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
-            {icon}
+      <CardContent className="px-4 py-2 sm:px-5 sm:py-2.5">
+        <div className="flex items-center gap-2">
+          <div className={`rounded-md p-1.5 ${bgColorClass}`}>
+            <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
+              {icon}
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-col justify-center leading-none">
+              <p className="text-sm text-slate-500 truncate">{label}</p>
+
+              <div className="mt-1 flex items-center gap-1">
+                <p className="text-xl font-semibold text-slate-900">{value}</p>
+
+                {trend && (
+                  <span
+                    className={`text-xs font-semibold ${
+                      trend.isPositive ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {trend.isPositive ? '+' : ''}
+                    {trend.value}%
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate mb-0.5 sm:mb-1">{label}</p>
-          <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
-            <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 truncate">{value}</p>
-            {trend && (
-              <span
-                className={`text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap ${
-                  trend.isPositive ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {trend.isPositive ? '+' : ''}
-                {trend.value}%
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
-
