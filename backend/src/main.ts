@@ -20,7 +20,10 @@ async function bootstrap() {
 
   // Enable CORS with credentials for cookie support
   app.enableCors({
-    origin: 'http://localhost:3000', // Frontend URL
+    origin: [
+      'http://localhost:3000', // Frontend URL
+      'http://localhost:3001', // Frontend URL (alt)
+    ],
     credentials: true, // Allow cookies
   });
 

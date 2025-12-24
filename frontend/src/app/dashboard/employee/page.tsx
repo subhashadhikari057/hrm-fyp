@@ -1,17 +1,98 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { QuickActionsGrid } from '../../../components/QuickActionsGrid';
+import { attendanceApi, type AttendanceDay } from '../../../lib/api/attendance';
 
 export default function EmployeeDashboard() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastAttendance, setLastAttendance] = useState<AttendanceDay | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasCheckedIn = !!lastAttendance?.checkInTime;
+  const hasCheckedOut = !!lastAttendance?.checkOutTime;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const today = await attendanceApi.getMyToday();
+        if (today) {
+          setLastAttendance(today);
+        }
+      } catch {
+        // Ignore initial load errors for now
+      }
+    })();
+  }, []);
+
+  async function handleCheckIn() {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await attendanceApi.checkIn();
+      setLastAttendance(res.data);
+      setMessage(res.message || 'Check-in successful');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to check in');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleCheckOut() {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await attendanceApi.checkOut();
+      setLastAttendance(res.data);
+      setMessage(res.message || 'Check-out successful');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to check out');
+    } finally {
+      setIsLoading(false);
+    }
+  }
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">
-            Employee Dashboard
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Welcome to your personal workspace
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Employee Dashboard
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Welcome to your personal workspace
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {lastAttendance && (
+              <div className="text-right text-xs text-gray-600">
+                <div className="font-medium text-gray-900">
+                  Status: {lastAttendance.status}
+                </div>
+              </div>
+            )}
+            {!hasCheckedIn && (
+              <button
+                onClick={handleCheckIn}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Please wait...' : 'Clock in'}
+              </button>
+            )}
+            {hasCheckedIn && !hasCheckedOut && (
+              <button
+                onClick={handleCheckOut}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Please wait...' : 'Clock out'}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -61,7 +142,7 @@ export default function EmployeeDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <QuickActionsGrid
             title="Quick Actions"
-            columns={1}
+            columns={2}
             actions={[
               {
                 label: 'Request Leave',
@@ -96,32 +177,58 @@ export default function EmployeeDashboard() {
             ]}
           />
 
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Leave Request Approved</p>
-                  <p className="text-xs text-gray-500">2 days ago</p>
-                </div>
-                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Today&apos;s Attendance</h3>
+
+            {message && (
+              <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+                {message}
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Profile Updated</p>
-                  <p className="text-xs text-gray-500">1 week ago</p>
-                </div>
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+            )}
+            {error && (
+              <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {error}
               </div>
-            </div>
+            )}
+
+            {lastAttendance && (
+              <div className="text-sm text-gray-700 space-y-1">
+                <p>
+                  <span className="font-medium">Status:</span> {lastAttendance.status}
+                </p>
+                <p>
+                  <span className="font-medium">Check-in:</span>{' '}
+                  {lastAttendance.checkInTime
+                    ? new Date(lastAttendance.checkInTime).toLocaleTimeString()
+                    : '-'}
+                </p>
+                <p>
+                  <span className="font-medium">Check-out:</span>{' '}
+                  {lastAttendance.checkOutTime
+                    ? new Date(lastAttendance.checkOutTime).toLocaleTimeString()
+                    : '-'}
+                </p>
+                <p>
+                  <span className="font-medium">Worked:</span>{' '}
+                  {lastAttendance.totalWorkMinutes} min
+                </p>
+                {lastAttendance.lateMinutes > 0 && (
+                  <p>
+                    <span className="font-medium">Late by:</span>{' '}
+                    {lastAttendance.lateMinutes} min
+                  </p>
+                )}
+                {lastAttendance.overtimeMinutes > 0 && (
+                  <p>
+                    <span className="font-medium">Overtime:</span>{' '}
+                    {lastAttendance.overtimeMinutes} min
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
-

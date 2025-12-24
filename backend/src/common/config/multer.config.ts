@@ -1,5 +1,4 @@
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { FileUploadUtil } from '../utils/file-upload.util';
 
 export const companyLogoStorage = diskStorage({
@@ -61,4 +60,35 @@ export const employeeImageFileFilter = (req: any, file: Express.Multer.File, cb:
 export const employeeImageLimits = {
   fileSize: 5 * 1024 * 1024, // 5MB
 };
+
+export const attendanceCsvStorage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = './uploads/attendance-imports';
+    FileUploadUtil.ensureUploadDir(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const fileName = FileUploadUtil.generateFileName(file.originalname, 'attendance-');
+    cb(null, fileName);
+  },
+});
+
+export const attendanceCsvFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+  if (!file) {
+    return cb(null, true);
+  }
+
+  const allowedMimes = ['text/csv', 'application/vnd.ms-excel'];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Invalid file type. Allowed types: ${allowedMimes.join(', ')}`), false);
+  }
+};
+
+export const attendanceCsvLimits = {
+  fileSize: 5 * 1024 * 1024, // 5MB
+};
+
 

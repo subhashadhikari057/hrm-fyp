@@ -9,6 +9,7 @@ import { DepartmentModule } from './department/department.module';
 import { DesignationModule } from './designation/designation.module';
 import { EmployeeModule } from './employee/employee.module';
 import { WorkShiftModule } from './workshift/workshift.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WorkShiftModule } from './workshift/workshift.module';
     DesignationModule,
     WorkShiftModule,
     EmployeeModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

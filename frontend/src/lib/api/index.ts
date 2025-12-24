@@ -11,6 +11,12 @@ export * from './types';
 export * from './auth';
 export * from './superadmin';
 export * from './company';
+export { departmentApi } from './department';
+export { designationApi } from './designation';
+export { employeeApi } from './employee';
+export { workShiftApi } from './workshift';
+export { statsApi } from './stats';
+export { attendanceApi } from './attendance';
 
 // Backward compatibility aliases
 export { authApi as api } from './auth';

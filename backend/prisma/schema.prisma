@@ -63,6 +63,8 @@ model Company {
   designations  Designation[]
   workShifts    WorkShift[]
   employees     Employee[]
+  attendanceDays AttendanceDay[]
+  attendanceLogs AttendanceLog[]
 
   @@index([name])
   @@index([status])
@@ -88,12 +90,16 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  // Relations
+  employee              Employee?
+  attendanceDaysCreated AttendanceDay[] @relation("AttendanceDayCreatedBy")
+  attendanceDaysUpdated AttendanceDay[] @relation("AttendanceDayUpdatedBy")
+
   @@index([email])
   @@index([role])
   @@index([companyId])
   @@index([isActive])
   @@index([companyId, role])
-  employee      Employee?
   @@map("users")
 }
 
@@ -151,7 +157,8 @@ model WorkShift {
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
-  employees   Employee[]
+  employees      Employee[]
+  attendanceDays AttendanceDay[]
   @@map("work_shifts")
 }
 
@@ -202,6 +209,10 @@ model Employee {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  // Relations
+  attendanceDays AttendanceDay[]
+  attendanceLogs AttendanceLog[]
+
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
   @@index([companyId, departmentId])
@@ -210,4 +221,82 @@ model Employee {
   @@index([companyId, status])
   @@index([companyId, employmentType])
   @@map("employees")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  HALF_DAY
+  ABSENT
+  ON_LEAVE
+  WEEKEND
+  HOLIDAY
+}
+
+enum AttendanceSource {
+  SELF
+  ADMIN
+  IMPORT
+}
+
+enum AttendanceLogType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum AttendanceLogMethod {
+  WEB
+  ADMIN
+  IMPORT
+}
+
+model AttendanceDay {
+  id               String           @id @default(uuid())
+  companyId        String
+  company          Company          @relation(fields: [companyId], references: [id])
+  employeeId       String
+  employee         Employee         @relation(fields: [employeeId], references: [id])
+  workShiftId      String?
+  workShift        WorkShift?       @relation(fields: [workShiftId], references: [id])
+  date             DateTime         // stored as UTC start-of-day
+  checkInTime      DateTime?
+  checkOutTime     DateTime?
+  totalWorkMinutes Int              @default(0)
+  lateMinutes      Int              @default(0)
+  overtimeMinutes  Int              @default(0)
+  status           AttendanceStatus
+  source           AttendanceSource @default(SELF)
+  notes            String?
+  createdById      String?
+  createdBy        User?            @relation("AttendanceDayCreatedBy", fields: [createdById], references: [id])
+  updatedById      String?
+  updatedBy        User?            @relation("AttendanceDayUpdatedBy", fields: [updatedById], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  logs             AttendanceLog[]
+
+  @@unique([employeeId, date])
+  @@index([companyId, date])
+  @@index([companyId, employeeId, date])
+  @@map("attendance_days")
+}
+
+model AttendanceLog {
+  id          String              @id @default(uuid())
+  companyId   String
+  company     Company             @relation(fields: [companyId], references: [id])
+  employeeId  String
+  employee    Employee            @relation(fields: [employeeId], references: [id])
+  attendanceDayId String?
+  attendanceDay   AttendanceDay?  @relation(fields: [attendanceDayId], references: [id])
+  timestamp   DateTime
+  type        AttendanceLogType
+  method      AttendanceLogMethod
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime            @default(now())
+
+  @@index([companyId, employeeId, timestamp])
+  @@map("attendance_logs")
 }
