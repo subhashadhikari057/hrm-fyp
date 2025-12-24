@@ -80,7 +80,16 @@ export default function EmployeeDashboard() {
                 disabled={isLoading}
                 className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Please wait...' : 'Clock in'}
+                {isLoading ? (
+                  'Please wait...'
+                ) : (
+                  <>
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 17l5-5-5-5m5 5H3m12-7h4a2 2 0 012 2v8a2 2 0 01-2 2h-4" />
+                    </svg>
+                    Clock in
+                  </>
+                )}
               </button>
             )}
             {hasCheckedIn && !hasCheckedOut && (
@@ -89,7 +98,16 @@ export default function EmployeeDashboard() {
                 disabled={isLoading}
                 className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Please wait...' : 'Clock out'}
+                {isLoading ? (
+                  'Please wait...'
+                ) : (
+                  <>
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 7l-5 5 5 5m-5-5h12m-6-7h4a2 2 0 012 2v8a2 2 0 01-2 2h-4" />
+                    </svg>
+                    Clock out
+                  </>
+                )}
               </button>
             )}
           </div>
