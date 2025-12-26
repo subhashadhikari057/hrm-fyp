@@ -2,7 +2,7 @@
  * Statistics API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 import { companyApi } from './company';
 import { superadminApi } from './superadmin';
 
@@ -63,7 +63,7 @@ export const statsApi = {
    * Get employee statistics for company (Company Admin / HR Manager / Manager only)
    */
   async getEmployeeStats(): Promise<EmployeeStatsResponse> {
-    const response = await fetch(`${API_BASE_URL}/employees/stats`, {
+    const response = await apiFetch(`${API_BASE_URL}/employees/stats`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -89,7 +89,7 @@ export const statsApi = {
     if (params?.page) queryParams.append('page', String(params.page));
     if (params?.limit) queryParams.append('limit', String(params.limit));
 
-    const response = await fetch(`${API_BASE_URL}/company/departments?${queryParams.toString()}`, {
+    const response = await apiFetch(`${API_BASE_URL}/company/departments?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -188,7 +188,6 @@ export const statsApi = {
     }
   },
 };
-
 
 
 

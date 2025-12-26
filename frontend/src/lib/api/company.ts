@@ -2,7 +2,7 @@
  * Company API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError, type BackendUserRole } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError, type BackendUserRole } from './types';
 import { superadminApi, type User } from './superadmin';
 
 // Company types
@@ -83,7 +83,7 @@ export const companyApi = {
    * Get all companies
    */
   async getCompanies(): Promise<CompaniesResponse> {
-    const response = await fetch(`${API_BASE_URL}/companies`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -100,7 +100,7 @@ export const companyApi = {
    * Get company by ID
    */
   async getCompanyById(companyId: string): Promise<CompanyResponse> {
-    const response = await fetch(`${API_BASE_URL}/companies/${companyId}`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -134,7 +134,7 @@ export const companyApi = {
     if (companyData.maxEmployees) formData.append('maxEmployees', String(companyData.maxEmployees));
     if (companyData.logo) formData.append('logo', companyData.logo);
 
-    const response = await fetch(`${API_BASE_URL}/companies`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies`, {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -165,7 +165,7 @@ export const companyApi = {
     if (companyData.maxEmployees) formData.append('maxEmployees', String(companyData.maxEmployees));
     if (companyData.logo) formData.append('logo', companyData.logo);
 
-    const response = await fetch(`${API_BASE_URL}/companies/${companyId}`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}`, {
       method: 'PATCH',
       credentials: 'include',
       body: formData,
@@ -185,7 +185,7 @@ export const companyApi = {
     companyId: string,
     status: UpdateCompanyStatusRequest
   ): Promise<CompanyResponse> {
-    const response = await fetch(`${API_BASE_URL}/companies/${companyId}/status`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}/status`, {
       method: 'PATCH',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -203,7 +203,7 @@ export const companyApi = {
    * Delete a company
    */
   async deleteCompany(companyId: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/companies/${companyId}`, {
+    const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}`, {
       method: 'DELETE',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -250,4 +250,3 @@ export const companyApi = {
     return superadminApi.deleteUser(adminId);
   },
 };
-

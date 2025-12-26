@@ -2,7 +2,7 @@
  * Super Admin API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError, type BackendUserRole, type BackendUser } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError, type BackendUserRole, type BackendUser } from './types';
 
 // Re-export types for convenience
 export type { BackendUserRole, BackendUser } from './types';
@@ -93,7 +93,7 @@ export const superadminApi = {
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-    const response = await fetch(`${API_BASE_URL}/superadmin-users?${queryParams.toString()}`, {
+    const response = await apiFetch(`${API_BASE_URL}/superadmin-users?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -110,7 +110,7 @@ export const superadminApi = {
    * Create a new user
    */
   async createUser(userData: CreateUserRequest): Promise<CreateUserResponse> {
-    const response = await fetch(`${API_BASE_URL}/superadmin-users`, {
+    const response = await apiFetch(`${API_BASE_URL}/superadmin-users`, {
       method: 'POST',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -128,7 +128,7 @@ export const superadminApi = {
    * Update a user
    */
   async updateUser(userId: string, userData: UpdateUserRequest): Promise<UpdateUserResponse> {
-    const response = await fetch(`${API_BASE_URL}/superadmin-users/${userId}`, {
+    const response = await apiFetch(`${API_BASE_URL}/superadmin-users/${userId}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -146,7 +146,7 @@ export const superadminApi = {
    * Get user by ID
    */
   async getUserById(userId: string): Promise<{ message: string; data: User }> {
-    const response = await fetch(`${API_BASE_URL}/superadmin-users/${userId}`, {
+    const response = await apiFetch(`${API_BASE_URL}/superadmin-users/${userId}`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -167,4 +167,3 @@ export const superadminApi = {
     return this.updateUser(userId, { isActive: false });
   },
 };
-

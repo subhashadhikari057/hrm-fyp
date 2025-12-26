@@ -2,7 +2,7 @@
  * Authentication API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError, type ApiError, type BackendUser } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError, type ApiError, type BackendUser } from './types';
 
 export interface LoginRequest {
   email: string;
@@ -23,7 +23,7 @@ export const authApi = {
    * Login user - sets HttpOnly cookie automatically
    */
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export const authApi = {
    */
   async logout(): Promise<void> {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
+      await apiFetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include', // Important: include cookies
       });
@@ -58,7 +58,7 @@ export const authApi = {
    * Get current authenticated user
    */
   async getCurrentUser(): Promise<MeResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/me`, {
       method: 'GET',
       credentials: 'include', // Important: include cookies
       headers: getAuthHeaders(),
@@ -74,4 +74,3 @@ export const authApi = {
     return response.json();
   },
 };
-

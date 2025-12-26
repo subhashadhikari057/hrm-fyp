@@ -2,7 +2,7 @@
  * Department API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 // Department types
 export interface Department {
@@ -79,7 +79,7 @@ export const departmentApi = {
 
         const url = `${API_BASE_URL}/company/departments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -96,7 +96,7 @@ export const departmentApi = {
      * Get department by ID
      */
     async getDepartmentById(departmentId: string): Promise<DepartmentResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -113,7 +113,7 @@ export const departmentApi = {
      * Create a new department
      */
     async createDepartment(data: CreateDepartmentRequest): Promise<DepartmentResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/departments`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/departments`, {
             method: 'POST',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -134,7 +134,7 @@ export const departmentApi = {
         departmentId: string,
         data: UpdateDepartmentRequest
     ): Promise<DepartmentResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
             method: 'PATCH',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -152,7 +152,7 @@ export const departmentApi = {
      * Delete department
      */
     async deleteDepartment(departmentId: string): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/departments/${departmentId}`, {
             method: 'DELETE',
             credentials: 'include',
             headers: getAuthHeaders(),

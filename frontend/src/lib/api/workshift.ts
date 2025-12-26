@@ -2,7 +2,7 @@
  * Work shift API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 export interface WorkShift {
     id: string;
@@ -84,7 +84,7 @@ export const workShiftApi = {
 
         const url = `${API_BASE_URL}/company/workshifts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -101,7 +101,7 @@ export const workShiftApi = {
      * Get work shift by ID
      */
     async getWorkShiftById(workShiftId: string): Promise<WorkShiftResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -118,7 +118,7 @@ export const workShiftApi = {
      * Create a new work shift
      */
     async createWorkShift(data: CreateWorkShiftRequest): Promise<WorkShiftResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/workshifts`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/workshifts`, {
             method: 'POST',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -139,7 +139,7 @@ export const workShiftApi = {
         workShiftId: string,
         data: UpdateWorkShiftRequest
     ): Promise<WorkShiftResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
             method: 'PATCH',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -157,7 +157,7 @@ export const workShiftApi = {
      * Delete work shift
      */
     async deleteWorkShift(workShiftId: string): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/workshifts/${workShiftId}`, {
             method: 'DELETE',
             credentials: 'include',
             headers: getAuthHeaders(),

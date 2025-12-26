@@ -1,4 +1,4 @@
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 export interface AttendanceDay {
   id: string;
@@ -29,7 +29,7 @@ export interface AttendanceListResponse {
 const attendanceApi = {
   async checkIn(): Promise<AttendanceResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/check-in`, {
+      const response = await apiFetch(`${API_BASE_URL}/attendance/check-in`, {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'include',
@@ -51,7 +51,7 @@ const attendanceApi = {
 
   async checkOut(): Promise<AttendanceResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/check-out`, {
+      const response = await apiFetch(`${API_BASE_URL}/attendance/check-out`, {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'include',
@@ -79,7 +79,7 @@ const attendanceApi = {
       params.append('dateFrom', iso);
       params.append('dateTo', iso);
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/attendance/me?${params.toString()}`,
         {
           method: 'GET',
@@ -105,5 +105,4 @@ const attendanceApi = {
 };
 
 export { attendanceApi };
-
 

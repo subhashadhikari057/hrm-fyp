@@ -2,7 +2,7 @@
  * Designation API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 // Designation types
 export interface Designation {
@@ -79,7 +79,7 @@ export const designationApi = {
 
         const url = `${API_BASE_URL}/company/designations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -96,7 +96,7 @@ export const designationApi = {
      * Get designation by ID
      */
     async getDesignationById(designationId: string): Promise<DesignationResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/designations/${designationId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/designations/${designationId}`, {
             method: 'GET',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -113,7 +113,7 @@ export const designationApi = {
      * Create a new designation
      */
     async createDesignation(data: CreateDesignationRequest): Promise<DesignationResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/designations`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/designations`, {
             method: 'POST',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -134,7 +134,7 @@ export const designationApi = {
         designationId: string,
         data: UpdateDesignationRequest
     ): Promise<DesignationResponse> {
-        const response = await fetch(`${API_BASE_URL}/company/designations/${designationId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/designations/${designationId}`, {
             method: 'PATCH',
             credentials: 'include',
             headers: getAuthHeaders(),
@@ -152,7 +152,7 @@ export const designationApi = {
      * Delete designation
      */
     async deleteDesignation(designationId: string): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE_URL}/company/designations/${designationId}`, {
+        const response = await apiFetch(`${API_BASE_URL}/company/designations/${designationId}`, {
             method: 'DELETE',
             credentials: 'include',
             headers: getAuthHeaders(),

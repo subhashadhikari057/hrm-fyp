@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res, UseGuards, Request, Patch } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res, UseGuards, Request, Patch, Req, UnauthorizedException, Logger } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiCookieAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -7,9 +7,50 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || process.env.JWT_EXPIRES_IN || '30d';
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+const COOKIE_SECURE = process.env.AUTH_COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+const COOKIE_SAMESITE = (process.env.AUTH_COOKIE_SAMESITE || 'lax') as 'lax' | 'strict' | 'none';
+const COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN;
+
+function parseExpiryToMs(value: string) {
+  const normalized = value.trim();
+  const match = normalized.match(/^(\d+)(s|m|h|d)$/i);
+  if (!match) {
+    return 30 * 24 * 60 * 60 * 1000;
+  }
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  switch (unit) {
+    case 's':
+      return amount * 1000;
+    case 'm':
+      return amount * 60 * 1000;
+    case 'h':
+      return amount * 60 * 60 * 1000;
+    case 'd':
+      return amount * 24 * 60 * 60 * 1000;
+    default:
+      return 30 * 24 * 60 * 60 * 1000;
+  }
+}
+
+function buildCookieOptions(maxAge: number) {
+  return {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAMESITE,
+    maxAge,
+    path: '/',
+    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+  };
+}
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Get('super-admin')
@@ -309,14 +350,12 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(loginDto);
 
-    // Set HttpOnly cookie with JWT token
-    res.cookie('access_token', result.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-      path: '/',
-    });
+    const accessMaxAge = parseExpiryToMs(ACCESS_TOKEN_EXPIRES_IN);
+    const refreshMaxAge = parseExpiryToMs(REFRESH_TOKEN_EXPIRES_IN);
+
+    // Set HttpOnly cookies
+    res.cookie('access_token', result.access_token, buildCookieOptions(accessMaxAge));
+    res.cookie('refresh_token', result.refresh_token, buildCookieOptions(refreshMaxAge));
 
     // Return user data without token (token is in cookie)
     return {
@@ -329,6 +368,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout user and clear JWT token cookie' })
   @ApiCookieAuth('access_token')
+  @ApiCookieAuth('refresh_token')
   @ApiResponse({ 
     status: 200, 
     description: 'Logout successful',
@@ -338,17 +378,57 @@ export class AuthController {
       }
     }
   })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req?.cookies?.['refresh_token'];
+
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
+
     // Clear the cookie
-    res.clearCookie('access_token', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    });
+    res.clearCookie('access_token', buildCookieOptions(0));
+    res.clearCookie('refresh_token', buildCookieOptions(0));
 
     return {
       message: 'Logged out successfully',
+    };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
+  @ApiCookieAuth('refresh_token')
+  @ApiResponse({
+    status: 200,
+    description: 'Access token refreshed',
+    schema: {
+      example: {
+        message: 'Access token refreshed',
+        user: {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          email: 'admin@example.com',
+          fullName: 'John Doe',
+          role: 'super_admin',
+        },
+      },
+    },
+  })
+  async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req?.cookies?.['refresh_token'];
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token missing');
+    }
+
+    this.logger.log('Refresh token request received');
+
+    const result = await this.authService.refreshAccessToken(refreshToken);
+    const accessMaxAge = parseExpiryToMs(ACCESS_TOKEN_EXPIRES_IN);
+    res.cookie('access_token', result.access_token, buildCookieOptions(accessMaxAge));
+
+    return {
+      message: 'Access token refreshed',
+      user: result.user,
     };
   }
 
@@ -404,4 +484,3 @@ export class AuthController {
     return this.authService.changePassword(req.user.id, changePasswordDto);
   }
 }
-

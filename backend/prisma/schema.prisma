@@ -94,6 +94,7 @@ model User {
   employee              Employee?
   attendanceDaysCreated AttendanceDay[] @relation("AttendanceDayCreatedBy")
   attendanceDaysUpdated AttendanceDay[] @relation("AttendanceDayUpdatedBy")
+  refreshTokens         RefreshToken[]
 
   @@index([email])
   @@index([role])
@@ -101,6 +102,20 @@ model User {
   @@index([isActive])
   @@index([companyId, role])
   @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model Department {

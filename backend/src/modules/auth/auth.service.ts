@@ -6,6 +6,11 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
 
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || process.env.JWT_EXPIRES_IN || '30d';
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'supersecretkey';
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || ACCESS_TOKEN_SECRET;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -211,6 +216,59 @@ export class AuthService {
     };
   }
 
+  private async ensureUserCanAuthenticate(userId: string) {
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    if (user.companyId && user.company) {
+      if (user.company.status === 'suspended') {
+        throw new UnauthorizedException('Your company account has been suspended. Please contact support.');
+      }
+      if (user.company.status === 'archived') {
+        throw new UnauthorizedException('Your company account has been archived.');
+      }
+    }
+
+    return user;
+  }
+
+  private signAccessToken(payload: { sub: string; email: string; role: string; companyId?: string | null }) {
+    return this.jwtService.sign(payload, {
+      secret: ACCESS_TOKEN_SECRET,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN as any,
+    });
+  }
+
+  private signRefreshToken(payload: { sub: string; email: string; role: string; companyId?: string | null }) {
+    return this.jwtService.sign(payload, {
+      secret: REFRESH_TOKEN_SECRET,
+      expiresIn: REFRESH_TOKEN_EXPIRES_IN as any,
+    });
+  }
+
+  private async storeRefreshToken(userId: string, refreshToken: string, expiresAt: Date) {
+    const tokenHash = await bcrypt.hash(refreshToken, 10);
+
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+
+    await this.prisma.refreshToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  }
+
   /**
    * Login user and generate JWT token
    */
@@ -224,13 +282,110 @@ export class AuthService {
       companyId: user.companyId,
     };
 
-    const token = this.jwtService.sign(payload);
+    const accessToken = this.signAccessToken(payload);
+    const refreshToken = this.signRefreshToken(payload);
+    const refreshExpiresAt = new Date(Date.now() + this.getRefreshTokenMaxAgeMs());
+
+    await this.storeRefreshToken(user.id, refreshToken, refreshExpiresAt);
 
     return {
       message: 'Login successful',
       user,
-      access_token: token, // Also return in response for reference (cookie is set in controller)
+      access_token: accessToken, // Also return in response for reference (cookie is set in controller)
+      refresh_token: refreshToken,
     };
+  }
+
+  private getRefreshTokenMaxAgeMs() {
+    return this.parseExpiryToMs(REFRESH_TOKEN_EXPIRES_IN);
+  }
+
+  private parseExpiryToMs(value: string) {
+    const normalized = value.trim();
+    const match = normalized.match(/^(\d+)(s|m|h|d)$/i);
+    if (!match) {
+      return 30 * 24 * 60 * 60 * 1000;
+    }
+    const amount = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    switch (unit) {
+      case 's':
+        return amount * 1000;
+      case 'm':
+        return amount * 60 * 1000;
+      case 'h':
+        return amount * 60 * 60 * 1000;
+      case 'd':
+        return amount * 24 * 60 * 60 * 1000;
+      default:
+        return 30 * 24 * 60 * 60 * 1000;
+    }
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, { secret: REFRESH_TOKEN_SECRET });
+      const user = await this.ensureUserCanAuthenticate(payload.sub);
+
+      const storedTokens = await this.prisma.refreshToken.findMany({
+        where: {
+          userId: payload.sub,
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      const matches = await Promise.all(
+        storedTokens.map(async (token) => ({
+          token,
+          isMatch: await bcrypt.compare(refreshToken, token.tokenHash),
+        })),
+      );
+
+      if (!matches.some((entry) => entry.isMatch)) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const newAccessToken = this.signAccessToken({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId,
+      });
+
+      return { user, access_token: newAccessToken };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async revokeRefreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, { secret: REFRESH_TOKEN_SECRET });
+      const userId = payload.sub as string;
+
+      const tokens = await this.prisma.refreshToken.findMany({
+        where: {
+          userId,
+          revokedAt: null,
+        },
+      });
+
+      for (const token of tokens) {
+        const isMatch = await bcrypt.compare(refreshToken, token.tokenHash);
+        if (isMatch) {
+          await this.prisma.refreshToken.update({
+            where: { id: token.id },
+            data: { revokedAt: new Date() },
+          });
+          break;
+        }
+      }
+    } catch (error) {
+      return;
+    }
   }
 
   /**
@@ -337,4 +492,3 @@ export class AuthService {
     };
   }
 }
-

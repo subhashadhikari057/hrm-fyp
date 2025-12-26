@@ -2,7 +2,7 @@
  * Employee API functions
  */
 
-import { API_BASE_URL, getAuthHeaders, handleApiError } from './types';
+import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 export interface Employee {
     id: string;
@@ -157,7 +157,7 @@ const employeeApi = {
                 ? `${API_BASE_URL}/employees?${params.toString()}`
                 : `${API_BASE_URL}/employees`;
 
-            const response = await fetch(url, {
+            const response = await apiFetch(url, {
                 method: 'GET',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -178,7 +178,7 @@ const employeeApi = {
 
     async getEmployeeById(id: string): Promise<EmployeeResponse> {
         try {
-            const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${id}`, {
                 method: 'GET',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -199,7 +199,7 @@ const employeeApi = {
 
     async getMyProfile(): Promise<EmployeeResponse> {
         try {
-            const response = await fetch(`${API_BASE_URL}/employees/me`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees/me`, {
                 method: 'GET',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -256,7 +256,7 @@ const employeeApi = {
                 }
             });
 
-            const response = await fetch(`${API_BASE_URL}/employees`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees`, {
                 method: 'POST',
                 headers,
                 credentials: 'include',
@@ -311,7 +311,7 @@ const employeeApi = {
                 }
             });
 
-            const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${id}`, {
                 method: 'PATCH',
                 headers,
                 credentials: 'include',
@@ -333,7 +333,7 @@ const employeeApi = {
 
     async updateEmployeeStatus(id: string, status: 'active' | 'on_leave' | 'terminated'): Promise<EmployeeResponse> {
         try {
-            const response = await fetch(`${API_BASE_URL}/employees/${id}/status`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${id}/status`, {
                 method: 'PATCH',
                 headers: getAuthHeaders(),
                 credentials: 'include',
@@ -355,7 +355,7 @@ const employeeApi = {
 
     async deleteEmployee(id: string): Promise<{ message: string }> {
         try {
-            const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
                 credentials: 'include',

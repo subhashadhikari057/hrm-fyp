@@ -72,6 +72,67 @@ export function getAuthHeaders(): HeadersInit {
   };
 }
 
+let refreshPromise: Promise<boolean> | null = null;
+
+function shouldSkipRefresh(input: RequestInfo | URL) {
+  const url =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/logout') ||
+    url.includes('/auth/refresh')
+  );
+}
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    })();
+  }
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+export async function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  options: { retry?: boolean } = {},
+): Promise<Response> {
+  const requestInit = {
+    ...init,
+    credentials: init.credentials ?? 'include',
+  };
+
+  const response = await fetch(input, requestInit);
+  if (response.status !== 401 || options.retry === false || shouldSkipRefresh(input)) {
+    return response;
+  }
+
+  const refreshed = await refreshAccessToken();
+  if (!refreshed) {
+    return response;
+  }
+
+  return fetch(input, requestInit);
+}
+
 /**
  * Helper function to handle API errors
  */
@@ -84,4 +145,3 @@ export async function handleApiError(response: Response): Promise<never> {
     typeof error.message === 'string' ? error.message : error.message?.[0] || 'An error occurred'
   );
 }
-
