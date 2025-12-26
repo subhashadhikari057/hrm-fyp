@@ -15,9 +15,10 @@ import {
 } from './dto/manual-attendance.dto';
 import { ImportAttendanceSummaryDto } from './dto/import-attendance.dto';
 
-const DEFAULT_GRACE_MINUTES = 0;
+const DEFAULT_GRACE_MINUTES = 30;
 const DEFAULT_BREAK_MINUTES = 0;
 const DEFAULT_HALF_DAY_MINUTES = 240;
+const DEFAULT_EARLY_CHECK_IN_MINUTES = 30;
 
 function getUtcStartOfDay(date: Date): Date {
   const year = date.getUTCFullYear();
@@ -32,16 +33,38 @@ function diffMinutes(a: Date, b: Date): number {
 
 function alignShiftTimeToDate(baseDate: Date, shiftTime: Date): Date {
   return new Date(
-    Date.UTC(
-      baseDate.getUTCFullYear(),
-      baseDate.getUTCMonth(),
-      baseDate.getUTCDate(),
-      shiftTime.getUTCHours(),
-      shiftTime.getUTCMinutes(),
-      shiftTime.getUTCSeconds(),
-      shiftTime.getUTCMilliseconds(),
-    ),
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate(),
+    shiftTime.getHours(),
+    shiftTime.getMinutes(),
+    shiftTime.getSeconds(),
+    shiftTime.getMilliseconds(),
   );
+}
+
+function resolveShiftWindow(baseDate: Date, shiftStart: Date, shiftEnd: Date) {
+  const shiftStartToday = alignShiftTimeToDate(baseDate, shiftStart);
+  let shiftEndToday = alignShiftTimeToDate(baseDate, shiftEnd);
+
+  const isOvernight = shiftEndToday <= shiftStartToday;
+  if (isOvernight) {
+    shiftEndToday = new Date(shiftEndToday.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  let shiftStartForNow = shiftStartToday;
+  let shiftEndForNow = shiftEndToday;
+
+  if (isOvernight && baseDate < shiftStartToday) {
+    const shiftStartYesterday = new Date(shiftStartToday.getTime() - 24 * 60 * 60 * 1000);
+    const shiftEndYesterday = new Date(shiftEndToday.getTime() - 24 * 60 * 60 * 1000);
+    if (baseDate >= shiftStartYesterday && baseDate <= shiftEndYesterday) {
+      shiftStartForNow = shiftStartYesterday;
+      shiftEndForNow = shiftEndYesterday;
+    }
+  }
+
+  return { shiftStartToday, shiftEndToday, shiftStartForNow, shiftEndForNow };
 }
 
 function computeAttendanceMetrics(params: {
@@ -64,18 +87,10 @@ function computeAttendanceMetrics(params: {
   } = params;
 
   const baseDate = checkIn ?? checkOut ?? new Date();
-  const shiftStartToday = shiftStart
-    ? alignShiftTimeToDate(baseDate, shiftStart)
-    : null;
-  let shiftEndToday = shiftEnd
-    ? alignShiftTimeToDate(baseDate, shiftEnd)
-    : null;
+  const shiftWindow =
+    shiftStart && shiftEnd ? resolveShiftWindow(baseDate, shiftStart, shiftEnd) : null;
 
-  if (shiftStartToday && shiftEndToday && shiftEndToday <= shiftStartToday) {
-    shiftEndToday = new Date(shiftEndToday.getTime() + 24 * 60 * 60 * 1000);
-  }
-
-  if (!checkIn || !shiftStartToday || !shiftEndToday) {
+  if (!checkIn || !shiftWindow) {
     return {
       totalWorkMinutes: 0,
       lateMinutes: 0,
@@ -86,10 +101,12 @@ function computeAttendanceMetrics(params: {
 
   if (!checkOut) {
     // Checked-in but not checked-out yet
-    const lateStart = new Date(shiftStartToday.getTime() + graceMinutes * 60000);
+    const lateStart = new Date(
+      shiftWindow.shiftStartForNow.getTime() + graceMinutes * 60000,
+    );
     const lateMinutes =
       checkIn.getTime() > lateStart.getTime()
-        ? diffMinutes(checkIn, shiftStartToday)
+        ? diffMinutes(checkIn, shiftWindow.shiftStartForNow)
         : 0;
     return {
       totalWorkMinutes: 0,
@@ -103,12 +120,14 @@ function computeAttendanceMetrics(params: {
   const totalWorkMinutes = Math.max(0, rawMinutes - breakMinutes);
 
   const plannedMinutes =
-    diffMinutes(shiftEndToday, shiftStartToday) - breakMinutes;
+    diffMinutes(shiftWindow.shiftEndForNow, shiftWindow.shiftStartForNow) - breakMinutes;
 
-  const lateStart = new Date(shiftStartToday.getTime() + graceMinutes * 60000);
+  const lateStart = new Date(
+    shiftWindow.shiftStartForNow.getTime() + graceMinutes * 60000,
+  );
   const lateMinutes =
     checkIn.getTime() > lateStart.getTime()
-      ? diffMinutes(checkIn, shiftStartToday)
+      ? diffMinutes(checkIn, shiftWindow.shiftStartForNow)
       : 0;
 
   let status: 'PRESENT' | 'LATE' | 'HALF_DAY' =
@@ -224,6 +243,16 @@ export class AttendanceService {
     );
 
     const shift = await this.getEmployeeShift(employee.id);
+    const shiftWindow = resolveShiftWindow(now, shift.startTime, shift.endTime);
+    const earliestCheckIn = new Date(
+      shiftWindow.shiftStartForNow.getTime() - DEFAULT_EARLY_CHECK_IN_MINUTES * 60000,
+    );
+
+    if (now < earliestCheckIn) {
+      throw new BadRequestException(
+        `Check-in is allowed only within ${DEFAULT_EARLY_CHECK_IN_MINUTES} minutes before shift start`,
+      );
+    }
 
     // Ensure no multiple check-ins for the same day
     const existing = await (this.prisma as any).attendanceDay.findUnique({
@@ -1082,4 +1111,3 @@ export class AttendanceService {
     };
   }
 }
-

@@ -18,9 +18,9 @@ interface AttendanceCardProps {
 }
 
 const statusStyles: Record<string, string> = {
-  present: 'bg-blue-50 text-blue-700 border-blue-200',
-  late: 'bg-blue-50 text-blue-700 border-blue-200',
-  absent: 'bg-blue-50 text-blue-700 border-blue-200',
+  present: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  late: 'bg-rose-50 text-rose-700 border-rose-200',
+  absent: 'bg-slate-50 text-slate-700 border-slate-200',
   on_leave: 'bg-blue-50 text-blue-700 border-blue-200',
 };
 
@@ -50,14 +50,17 @@ export function AttendanceCard({ attendance, title = "Today's Attendance" }: Att
   const rawStatus = attendance?.status ?? 'unknown';
   const statusKey = rawStatus.toLowerCase();
   const statusClass = statusStyles[statusKey] || 'bg-blue-50 text-blue-700 border-blue-200';
+  const showStatus = Boolean(attendance?.status);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold text-gray-900">{title}</CardTitle>
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass}`}>
-          {formatStatus(rawStatus)}
-        </span>
+        {showStatus && (
+          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass}`}>
+            {formatStatus(rawStatus)}
+          </span>
+        )}
       </CardHeader>
       <CardContent>
         {attendance ? (
