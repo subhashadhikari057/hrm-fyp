@@ -35,7 +35,7 @@ export default function LoginPage() {
       <div className="relative isolate overflow-hidden">
         <div className="absolute -top-32 right-0 h-96 w-96 rounded-full bg-blue-200/60 blur-[120px]" />
         <div className="absolute -bottom-32 left-0 h-96 w-96 rounded-full bg-sky-200/60 blur-[120px]" />
-        <div className="absolute inset-0 opacity-[0.25] [background-image:radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:20px_20px]" />
+        <div className="absolute inset-0 opacity-[0.12] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.08),_transparent_55%)]" />
 
         <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr]">
@@ -48,7 +48,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white p-8 text-gray-900 shadow-2xl sm:p-10">
+              <div className="w-full max-w-[520px] rounded-3xl border border-gray-200/80 bg-white p-8 text-gray-900 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
                 <LoginForm />
               </div>
             </div>

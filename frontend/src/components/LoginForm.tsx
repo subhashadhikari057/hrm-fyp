@@ -63,17 +63,22 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full space-y-8">
-      <div className="text-center space-y-3">
-        <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
-          Secure Login
-        </span>
+    <div className="w-full space-y-6">
+      <div className="space-y-4 text-left">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+            K
+          </span>
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-600">
+            Karyasetu
+          </span>
+        </div>
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-[34px]">
             Welcome back
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to manage your company workspace
+          <p className="mt-2 text-sm text-gray-600 sm:text-base">
+            Sign in to continue to your workspace
           </p>
         </div>
       </div>
@@ -96,7 +101,9 @@ export default function LoginForm() {
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email" className="text-xs font-medium text-gray-600">
+              Email address
+            </Label>
             <Input
               id="email"
               name="email"
@@ -109,12 +116,15 @@ export default function LoginForm() {
                 setError(null); // Clear error when user types
               }}
               placeholder="Enter your email"
+              className="h-11"
               disabled={isLoading}
             />
           </div>
 
           <div>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-xs font-medium text-gray-600">
+              Password
+            </Label>
             <div className="relative mt-1">
               <Input
                 id="password"
@@ -127,7 +137,7 @@ export default function LoginForm() {
                   setPassword(e.target.value);
                   setError(null); // Clear error when user types
                 }}
-                className="pr-12"
+                className="h-11 pr-12"
                 placeholder="Enter your password"
                 disabled={isLoading}
               />
@@ -168,13 +178,26 @@ export default function LoginForm() {
           </div>
         </div>
 
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex items-center gap-2 text-gray-600">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Remember me
+          </label>
+          <a href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-700">
+            Forgot password?
+          </a>
+        </div>
+
         <div>
           <Button
             type="submit"
             disabled={isLoading}
             variant="blue"
             size="lg"
-            className="w-full"
+            className="w-full h-12"
           >
             {isLoading ? (
               <span className="flex items-center">

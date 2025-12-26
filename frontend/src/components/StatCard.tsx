@@ -61,7 +61,7 @@ export function StatCard({
               <p className="text-sm text-slate-500 truncate">{label}</p>
 
               <div className="mt-1 flex items-center gap-1">
-                <p className="text-xl font-semibold text-slate-900">{value}</p>
+                <p className="text-2xl font-bold text-slate-900">{value}</p>
 
                 {trend && (
                   <span
