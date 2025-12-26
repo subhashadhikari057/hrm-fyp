@@ -16,6 +16,7 @@ const buttonVariants = cva(
           "border border-slate-300 bg-white text-slate-900 hover:bg-slate-800 hover:text-white",
         ghost: "text-slate-900 hover:bg-slate-800 hover:text-white",
         link: "text-slate-900 underline-offset-4 hover:underline",
+        cancel: "bg-slate-100 text-slate-900 hover:bg-red-200 hover:text-red-700",
         blue: "bg-blue-100 text-blue-900 hover:bg-blue-700 hover:text-white",
         green: "bg-green-100 text-green-900 hover:bg-green-700 hover:text-white",
         purple: "bg-purple-100 text-purple-900 hover:bg-purple-700 hover:text-white",

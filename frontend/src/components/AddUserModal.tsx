@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react';
 import { superadminApi, type CreateUserRequest, type BackendUserRole } from '../lib/api/superadmin';
 import { companyApi, type Company } from '../lib/api/company';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 export interface AddUserModalProps {
   isOpen: boolean;
@@ -115,37 +125,13 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop with blur */}
-      <div className="fixed inset-0 bg-white/30 backdrop-blur-sm transition-opacity" onClick={handleClose} />
-
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">Add New User</h3>
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New User</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -155,71 +141,69 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Email */}
               <div className="md:col-span-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <Label htmlFor="email">
                   Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="user@example.com"
-                />
+                </Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                autoComplete="off"
+                placeholder="user@example.com"
+              />
               </div>
 
               {/* Password */}
               <div className="md:col-span-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <Label htmlFor="password">
                   Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Minimum 8 characters"
-                />
-                <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>
+                </Label>
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                placeholder="Minimum 8 characters"
+              />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Password must be at least 8 characters long
+                </p>
               </div>
 
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="fullName"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="John Doe"
-                />
+                <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                autoComplete="off"
+                placeholder="John Doe"
+              />
               </div>
 
               {/* Phone */}
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  maxLength={20}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="+1234567890"
-                />
+                <Label htmlFor="phone">Phone</Label>
+              <Input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                maxLength={20}
+                autoComplete="off"
+                placeholder="+1234567890"
+              />
               </div>
 
               {/* Role */}
@@ -288,27 +272,18 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? 'Creating...' : 'Create User'}
-              </button>
+            <div className="pt-6">
+              <DialogFooter>
+                <Button type="button" variant="cancel" onClick={handleClose} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="blue" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create User'}
+                </Button>
+              </DialogFooter>
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
-

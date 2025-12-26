@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import { Button } from './ui/button';
 
 export interface AddButtonProps {
   label: string;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'blue' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   disabled?: boolean;
@@ -14,25 +15,11 @@ export interface AddButtonProps {
 export function AddButton({
   label,
   onClick,
-  variant = 'primary',
+  variant = 'blue',
   size = 'md',
   icon,
   disabled = false,
 }: AddButtonProps) {
-  const baseStyles = 'inline-flex items-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
-  
-  const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
-    secondary: 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500',
-    outline: 'bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500',
-  };
-
-  const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
-  };
-
   const iconSize = {
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
@@ -51,16 +38,14 @@ export function AddButton({
   );
 
   return (
-    <button
+    <Button
       onClick={onClick}
       disabled={disabled}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}
+      variant={variant}
+      size={size === 'md' ? 'default' : size}
     >
       {icon || defaultIcon}
       {label}
-    </button>
+    </Button>
   );
 }
-

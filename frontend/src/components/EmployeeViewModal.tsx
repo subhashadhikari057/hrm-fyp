@@ -2,8 +2,16 @@
 
 import { Employee } from '@/lib/api/employee';
 import { API_BASE_URL } from '@/lib/api/types';
-import { X, User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, AlertCircle, Users } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, AlertCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
 
 interface EmployeeViewModalProps {
     isOpen: boolean;
@@ -12,7 +20,7 @@ interface EmployeeViewModalProps {
 }
 
 export default function EmployeeViewModal({ isOpen, onClose, employee }: EmployeeViewModalProps) {
-    if (!isOpen || !employee) return null;
+    if (!employee) return null;
 
     const formatDate = (dateString: string | null) => {
         if (!dateString) return 'N/A';
@@ -51,21 +59,12 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
     const imageUrl = employee.imageUrl ? `${API_BASE_URL}/uploads/${employee.imageUrl}` : null;
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">Employee Details</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Employee Details</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[70vh] overflow-y-auto p-6">
                     {/* Profile Section */}
                     <div className="flex items-start gap-6 mb-8 pb-8 border-b border-gray-200">
                         <div className="flex-shrink-0">
@@ -244,17 +243,15 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                        Close
-                    </button>
+                <div className="pt-6">
+                    <DialogFooter>
+                        <Button onClick={onClose} type="button" variant="cancel">
+                            Close
+                        </Button>
+                    </DialogFooter>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 

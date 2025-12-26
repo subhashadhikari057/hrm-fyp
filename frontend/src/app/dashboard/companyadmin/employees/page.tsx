@@ -244,12 +244,6 @@ export default function EmployeesPage() {
             ),
         },
         {
-            key: 'employmentType',
-            header: 'Type',
-            sortable: true,
-            render: (employee) => getEmploymentTypeBadge(employee.employmentType),
-        },
-        {
             key: 'status',
             header: 'Status',
             sortable: true,

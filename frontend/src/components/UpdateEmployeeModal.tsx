@@ -6,6 +6,16 @@ import { employeeApi, type Employee, type UpdateEmployeeData } from '../lib/api/
 import { departmentApi, type Department } from '../lib/api/department';
 import { designationApi, type Designation } from '../lib/api/designation';
 import { workShiftApi, type WorkShift } from '../lib/api/workshift';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface UpdateEmployeeModalProps {
     isOpen: boolean;
@@ -218,81 +228,52 @@ export function UpdateEmployeeModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="w-full max-w-3xl bg-white rounded-lg shadow-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Update Employee</h3>
-                    <button
-                        onClick={handleClose}
-                        disabled={loading || fetchingData}
-                        className="text-gray-400 hover:text-gray-500 disabled:opacity-50"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Update Employee</DialogTitle>
+                </DialogHeader>
                 {fetchingData ? (
                     <div className="py-8 text-center text-gray-500">Loading employee data...</div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Label>
                                     First Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
+                                </Label>
+                                <Input
                                     type="text"
                                     name="firstName"
                                     value={formData.firstName}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 ${errors.firstName ? 'border-red-500' : 'border-gray-300'
-                                        }`}
                                 />
                                 {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Middle Name
-                                </label>
-                                <input
+                                <Label>Middle Name</Label>
+                                <Input
                                     type="text"
                                     name="middleName"
                                     value={formData.middleName}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Label>
                                     Last Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
+                                </Label>
+                                <Input
                                     type="text"
                                     name="lastName"
                                     value={formData.lastName}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 ${errors.lastName ? 'border-red-500' : 'border-gray-300'
-                                        }`}
                                 />
                                 {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
                             </div>
@@ -399,58 +380,46 @@ export function UpdateEmployeeModal({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Date of Birth
-                                </label>
-                                <input
+                                <Label>Date of Birth</Label>
+                                <Input
                                     type="date"
                                     name="dateOfBirth"
                                     value={formData.dateOfBirth}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Join Date
-                                </label>
-                                <input
+                                <Label>Join Date</Label>
+                                <Input
                                     type="date"
                                     name="joinDate"
                                     value={formData.joinDate}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Probation End
-                                </label>
-                                <input
+                                <Label>Probation End</Label>
+                                <Input
                                     type="date"
                                     name="probationEnd"
                                     value={formData.probationEnd}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Location ID
-                                </label>
-                                <input
+                                <Label>Location ID</Label>
+                                <Input
                                     type="text"
                                     name="locationId"
                                     value={formData.locationId}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                     placeholder="Location UUID"
                                 />
                             </div>
@@ -458,143 +427,112 @@ export function UpdateEmployeeModal({
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Work Email
-                                </label>
-                                <input
+                                <Label>Work Email</Label>
+                                <Input
                                     type="email"
                                     name="workEmail"
                                     value={formData.workEmail}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Personal Email
-                                </label>
-                                <input
+                                <Label>Personal Email</Label>
+                                <Input
                                     type="email"
                                     name="personalEmail"
                                     value={formData.personalEmail}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Phone
-                                </label>
-                                <input
+                                <Label>Phone</Label>
+                                <Input
                                     type="text"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Address
-                                </label>
-                                <input
+                                <Label>Address</Label>
+                                <Input
                                     type="text"
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Emergency Contact Name
-                                </label>
-                                <input
+                                <Label>Emergency Contact Name</Label>
+                                <Input
                                     type="text"
                                     name="emergencyContactName"
                                     value={formData.emergencyContactName}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Emergency Contact Phone
-                                </label>
-                                <input
+                                <Label>Emergency Contact Phone</Label>
+                                <Input
                                     type="text"
                                     name="emergencyContactPhone"
                                     value={formData.emergencyContactPhone}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Base Salary
-                                </label>
-                                <input
+                                <Label>Base Salary</Label>
+                                <Input
                                     type="number"
                                     name="baseSalary"
                                     value={formData.baseSalary}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Profile Image
-                                </label>
-                                <input
+                                <Label>Profile Image</Label>
+                                <Input
                                     type="file"
                                     accept="image/*"
                                     onChange={handleFileChange}
                                     disabled={loading}
-                                    className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex justify-end space-x-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                disabled={loading}
-                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {loading ? 'Updating...' : 'Update Employee'}
-                            </button>
+                        <div className="pt-6">
+                            <DialogFooter>
+                                <Button type="button" variant="cancel" onClick={handleClose} disabled={loading}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" variant="blue" disabled={loading}>
+                                    {loading ? 'Updating...' : 'Update Employee'}
+                                </Button>
+                            </DialogFooter>
                         </div>
                     </form>
                 )}
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

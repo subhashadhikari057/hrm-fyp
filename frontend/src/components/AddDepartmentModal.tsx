@@ -3,6 +3,16 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { departmentApi } from '../lib/api/department';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface AddDepartmentModalProps {
     isOpen: boolean;
@@ -135,52 +145,25 @@ export function AddDepartmentModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Add Department</h3>
-                    <button
-                        onClick={handleClose}
-                        disabled={loading}
-                        className="text-gray-400 hover:text-gray-500 disabled:opacity-50"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Add Department</DialogTitle>
+                </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Department Name */}
                     <div>
-                        <label
-                            htmlFor="name"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
+                        <Label htmlFor="name">
                             Department Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             type="text"
                             id="name"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
                             disabled={loading}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.name ? 'border-red-500' : 'border-gray-300'
-                                }`}
                             placeholder="e.g., Human Resources"
                             maxLength={100}
                         />
@@ -191,21 +174,16 @@ export function AddDepartmentModal({
 
                     {/* Department Code */}
                     <div>
-                        <label
-                            htmlFor="code"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
+                        <Label htmlFor="code">
                             Department Code
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             type="text"
                             id="code"
                             name="code"
                             value={formData.code}
                             onChange={handleInputChange}
                             disabled={loading}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed font-mono ${errors.code ? 'border-red-500' : 'border-gray-300'
-                                }`}
                             placeholder="e.g., HR, IT, FIN"
                             maxLength={20}
                         />
@@ -219,12 +197,9 @@ export function AddDepartmentModal({
 
                     {/* Description */}
                     <div>
-                        <label
-                            htmlFor="description"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
+                        <Label htmlFor="description">
                             Description
-                        </label>
+                        </Label>
                         <textarea
                             id="description"
                             name="description"
@@ -248,31 +223,24 @@ export function AddDepartmentModal({
                             disabled={loading}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         />
-                        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                        <Label htmlFor="isActive" className="ml-2">
                             Active
-                        </label>
+                        </Label>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            disabled={loading}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {loading ? 'Creating...' : 'Create Department'}
-                        </button>
+                    <div className="pt-6">
+                        <DialogFooter>
+                            <Button type="button" variant="cancel" onClick={handleClose} disabled={loading}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="blue" disabled={loading}>
+                                {loading ? 'Creating...' : 'Create Department'}
+                            </Button>
+                        </DialogFooter>
                     </div>
                 </form>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

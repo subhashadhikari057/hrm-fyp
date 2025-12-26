@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { workShiftApi, type WorkShift } from '../lib/api/workshift';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface UpdateWorkShiftModalProps {
     isOpen: boolean;
@@ -214,54 +224,27 @@ export function UpdateWorkShiftModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full z-50 p-4 flex items-center justify-center">
-            <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Update Work Shift</h3>
-                    <button
-                        onClick={handleClose}
-                        disabled={loading || fetchingData}
-                        className="text-gray-400 hover:text-gray-500 disabled:opacity-50"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Update Work Shift</DialogTitle>
+                </DialogHeader>
                 {fetchingData ? (
                     <div className="py-8 text-center text-gray-500">Loading work shift data...</div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label
-                                htmlFor="name"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
+                            <Label htmlFor="name">
                                 Work Shift Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
+                            </Label>
+                            <Input
                                 type="text"
                                 id="name"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 disabled={loading}
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.name ? 'border-red-500' : 'border-gray-300'
-                                    }`}
                                 placeholder="e.g., Morning Shift"
                                 maxLength={100}
                             />
@@ -271,21 +254,16 @@ export function UpdateWorkShiftModal({
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="code"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
+                            <Label htmlFor="code">
                                 Work Shift Code
-                            </label>
-                            <input
+                            </Label>
+                            <Input
                                 type="text"
                                 id="code"
                                 name="code"
                                 value={formData.code}
                                 onChange={handleInputChange}
                                 disabled={loading}
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed font-mono ${errors.code ? 'border-red-500' : 'border-gray-300'
-                                    }`}
                                 placeholder="e.g., MS01, ES02"
                                 maxLength={20}
                             />
@@ -299,13 +277,10 @@ export function UpdateWorkShiftModal({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label
-                                    htmlFor="startTime"
-                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                >
+                                <Label htmlFor="startTime">
                                     Start Time
-                                </label>
-                                <input
+                                </Label>
+                                <Input
                                     type="time"
                                     step="1"
                                     id="startTime"
@@ -313,8 +288,6 @@ export function UpdateWorkShiftModal({
                                     value={formData.startTime}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.startTime ? 'border-red-500' : 'border-gray-300'
-                                        }`}
                                 />
                                 {errors.startTime && (
                                     <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
@@ -322,13 +295,10 @@ export function UpdateWorkShiftModal({
                             </div>
 
                             <div>
-                                <label
-                                    htmlFor="endTime"
-                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                >
+                                <Label htmlFor="endTime">
                                     End Time
-                                </label>
-                                <input
+                                </Label>
+                                <Input
                                     type="time"
                                     step="1"
                                     id="endTime"
@@ -336,8 +306,6 @@ export function UpdateWorkShiftModal({
                                     value={formData.endTime}
                                     onChange={handleInputChange}
                                     disabled={loading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.endTime ? 'border-red-500' : 'border-gray-300'
-                                        }`}
                                 />
                                 {errors.endTime && (
                                     <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>
@@ -346,12 +314,9 @@ export function UpdateWorkShiftModal({
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="description"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                            >
+                            <Label htmlFor="description">
                                 Description
-                            </label>
+                            </Label>
                             <textarea
                                 id="description"
                                 name="description"
@@ -374,31 +339,24 @@ export function UpdateWorkShiftModal({
                                 disabled={loading}
                                 className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             />
-                            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                            <Label htmlFor="isActive" className="ml-2">
                                 Active
-                            </label>
+                            </Label>
                         </div>
 
-                        <div className="flex justify-end space-x-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                disabled={loading}
-                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {loading ? 'Updating...' : 'Update Work Shift'}
-                            </button>
+                        <div className="pt-6">
+                            <DialogFooter>
+                                <Button type="button" variant="cancel" onClick={handleClose} disabled={loading}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" variant="blue" disabled={loading}>
+                                    {loading ? 'Updating...' : 'Update Work Shift'}
+                                </Button>
+                            </DialogFooter>
                         </div>
                     </form>
                 )}
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

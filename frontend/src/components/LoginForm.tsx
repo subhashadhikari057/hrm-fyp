@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -62,7 +65,7 @@ export default function LoginForm() {
   return (
     <div className="w-full space-y-8">
       <div className="text-center space-y-3">
-        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+        <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
           Secure Login
         </span>
         <div>
@@ -93,10 +96,8 @@ export default function LoginForm() {
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
+            <Label htmlFor="email">Email address</Label>
+            <Input
               id="email"
               name="email"
               type="email"
@@ -107,18 +108,15 @@ export default function LoginForm() {
                 setEmail(e.target.value);
                 setError(null); // Clear error when user types
               }}
-              className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="Enter your email"
               disabled={isLoading}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative mt-1">
-              <input
+              <Input
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -129,7 +127,7 @@ export default function LoginForm() {
                   setPassword(e.target.value);
                   setError(null); // Clear error when user types
                 }}
-                className="block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-50 disabled:text-gray-500"
+                className="pr-12"
                 placeholder="Enter your password"
                 disabled={isLoading}
               />
@@ -171,10 +169,12 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <button
+          <Button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="blue"
+            size="lg"
+            className="w-full"
           >
             {isLoading ? (
               <span className="flex items-center">
@@ -187,7 +187,7 @@ export default function LoginForm() {
             ) : (
               'Sign in'
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

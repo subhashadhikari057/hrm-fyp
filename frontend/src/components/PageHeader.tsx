@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Card, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 export interface PageHeaderProps {
   title: string;
@@ -10,19 +11,20 @@ export interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-900">{title}</h2>
-        {description && (
-          <p className="mt-2 text-gray-600">{description}</p>
-        )}
-      </div>
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="text-2xl font-bold">{title}</CardTitle>
+          {description && (
+            <CardDescription className="text-base">{description}</CardDescription>
+          )}
         </div>
-      )}
-    </div>
+        {actions && (
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
+        )}
+      </CardHeader>
+    </Card>
   );
 }
-
