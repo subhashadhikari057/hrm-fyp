@@ -45,16 +45,10 @@ export function StatCard({
   onClick,
 }: StatCardProps) {
   const bgColorClass = iconBgColors[iconBgColor];
-  const isClickable = !!onClick;
 
   return (
-    <Card
-      onClick={onClick}
-      className={`h-full border border-slate-200 bg-white shadow-none ${
-        isClickable ? 'cursor-pointer hover:border-slate-300 transition-colors' : ''
-      }`}
-    >
-      <CardContent className="px-4 py-2 sm:px-5 sm:py-2.5">
+    <Card onClick={onClick}>
+      <CardContent>
         <div className="flex items-center gap-2">
           <div className={`rounded-md p-1.5 ${bgColorClass}`}>
             <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
