@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { UserCheck, UserCog, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column, FilterOption } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -90,61 +91,25 @@ export default function CompanyAdminsPage() {
         label: 'Total Company Admins',
         value: total,
         iconBgColor: 'blue' as const,
-        icon: (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-        ),
+        icon: <UserCog className="h-4 w-4" />,
       },
       {
         label: 'Active Admins',
         value: active,
         iconBgColor: 'green' as const,
-        icon: (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        ),
+        icon: <UserCheck className="h-4 w-4" />,
       },
       {
         label: 'Inactive Admins',
         value: inactive,
         iconBgColor: 'gray' as const,
-        icon: (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        ),
+        icon: <UserX className="h-4 w-4" />,
       },
       {
         label: 'Total Employees',
         value: totalEmployees.toLocaleString(),
         iconBgColor: 'purple' as const,
-        icon: (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 20h5v-2a3 3 0 00-5.196-2.137M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.137M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-        ),
+        icon: <Users className="h-4 w-4" />,
       },
     ];
   }, [companyAdmins]);
@@ -336,9 +301,9 @@ export default function CompanyAdminsPage() {
           isOpen={isDeleteConfirmOpen}
           onClose={() => setIsDeleteConfirmOpen(false)}
           onConfirm={handleDeleteConfirm}
-          itemType="Company Admin"
+          title="Delete Company Admin"
           itemName={adminToDelete.name}
-          description="This action will deactivate the company admin. They will no longer be able to log in. This can be reversed later."
+          message="This action will deactivate the company admin. They will no longer be able to log in. This can be reversed later."
         />
       )}
     </DashboardLayout>

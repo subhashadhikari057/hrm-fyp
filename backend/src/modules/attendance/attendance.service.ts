@@ -30,6 +30,20 @@ function diffMinutes(a: Date, b: Date): number {
   return Math.max(0, Math.round((a.getTime() - b.getTime()) / 60000));
 }
 
+function alignShiftTimeToDate(baseDate: Date, shiftTime: Date): Date {
+  return new Date(
+    Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth(),
+      baseDate.getUTCDate(),
+      shiftTime.getUTCHours(),
+      shiftTime.getUTCMinutes(),
+      shiftTime.getUTCSeconds(),
+      shiftTime.getUTCMilliseconds(),
+    ),
+  );
+}
+
 function computeAttendanceMetrics(params: {
   checkIn?: Date | null;
   checkOut?: Date | null;
@@ -49,7 +63,19 @@ function computeAttendanceMetrics(params: {
     halfDayMinutes = DEFAULT_HALF_DAY_MINUTES,
   } = params;
 
-  if (!checkIn || !shiftStart || !shiftEnd) {
+  const baseDate = checkIn ?? checkOut ?? new Date();
+  const shiftStartToday = shiftStart
+    ? alignShiftTimeToDate(baseDate, shiftStart)
+    : null;
+  let shiftEndToday = shiftEnd
+    ? alignShiftTimeToDate(baseDate, shiftEnd)
+    : null;
+
+  if (shiftStartToday && shiftEndToday && shiftEndToday <= shiftStartToday) {
+    shiftEndToday = new Date(shiftEndToday.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  if (!checkIn || !shiftStartToday || !shiftEndToday) {
     return {
       totalWorkMinutes: 0,
       lateMinutes: 0,
@@ -60,10 +86,10 @@ function computeAttendanceMetrics(params: {
 
   if (!checkOut) {
     // Checked-in but not checked-out yet
-    const lateStart = new Date(shiftStart.getTime() + graceMinutes * 60000);
+    const lateStart = new Date(shiftStartToday.getTime() + graceMinutes * 60000);
     const lateMinutes =
       checkIn.getTime() > lateStart.getTime()
-        ? diffMinutes(checkIn, shiftStart)
+        ? diffMinutes(checkIn, shiftStartToday)
         : 0;
     return {
       totalWorkMinutes: 0,
@@ -77,12 +103,12 @@ function computeAttendanceMetrics(params: {
   const totalWorkMinutes = Math.max(0, rawMinutes - breakMinutes);
 
   const plannedMinutes =
-    shiftEnd && shiftStart ? diffMinutes(shiftEnd, shiftStart) - breakMinutes : 0;
+    diffMinutes(shiftEndToday, shiftStartToday) - breakMinutes;
 
-  const lateStart = new Date(shiftStart.getTime() + graceMinutes * 60000);
+  const lateStart = new Date(shiftStartToday.getTime() + graceMinutes * 60000);
   const lateMinutes =
     checkIn.getTime() > lateStart.getTime()
-      ? diffMinutes(checkIn, shiftStart)
+      ? diffMinutes(checkIn, shiftStartToday)
       : 0;
 
   let status: 'PRESENT' | 'LATE' | 'HALF_DAY' =
@@ -1056,5 +1082,4 @@ export class AttendanceService {
     };
   }
 }
-
 

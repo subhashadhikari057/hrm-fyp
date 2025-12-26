@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -65,46 +66,19 @@ export default function WorkShiftsPage() {
                 label: 'Total Shifts',
                 value: total,
                 iconBgColor: 'purple' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <Clock className="h-4 w-4" />,
             },
             {
                 label: 'Active Shifts',
                 value: active,
                 iconBgColor: 'green' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <CheckCircle2 className="h-4 w-4" />,
             },
             {
                 label: 'Inactive Shifts',
                 value: inactive,
                 iconBgColor: 'gray' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <XCircle className="h-4 w-4" />,
             },
         ];
     }, [workShifts]);

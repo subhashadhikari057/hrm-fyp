@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { Clock, UserCheck, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -66,61 +67,25 @@ export default function EmployeesPage() {
                 label: 'Total Employees',
                 value: total,
                 iconBgColor: 'indigo' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                        />
-                    </svg>
-                ),
+                icon: <Users className="h-4 w-4" />,
             },
             {
                 label: 'Active',
                 value: active,
                 iconBgColor: 'green' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <UserCheck className="h-4 w-4" />,
             },
             {
                 label: 'On Leave',
                 value: onLeave,
                 iconBgColor: 'yellow' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <Clock className="h-4 w-4" />,
             },
             {
                 label: 'Terminated',
                 value: terminated,
                 iconBgColor: 'red' as const,
-                icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
-                ),
+                icon: <UserX className="h-4 w-4" />,
             },
         ];
     }, [employees]);

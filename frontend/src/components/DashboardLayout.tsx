@@ -12,7 +12,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [todayLabel, setTodayLabel] = useState('');
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    const formatted = now.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    setTodayLabel(`Today, ${formatted}`);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -49,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -80,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Sidebar />
       
       {/* Main content area */}
@@ -195,7 +207,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0" />
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                {todayLabel && (
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                    {todayLabel}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </nav>
