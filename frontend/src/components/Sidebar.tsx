@@ -334,7 +334,7 @@ export default function Sidebar() {
                 </div>
                 <button
                   onClick={toggleSidebar}
-                  className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 lg:block hidden"
+                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
                   aria-label="Collapse sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +347,7 @@ export default function Sidebar() {
                 <div className="flex items-center justify-center flex-1" />
                 <button
                   onClick={toggleSidebar}
-                  className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 lg:block hidden"
+                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
                   aria-label="Expand sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,7 +359,7 @@ export default function Sidebar() {
             {/* Close button for mobile */}
             <button
               onClick={closeMobileMenu}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors ml-auto lg:hidden flex-shrink-0"
+              className="ml-auto lg:hidden p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
               aria-label="Close menu"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,7 +374,7 @@ export default function Sidebar() {
               <button
                 key={item.name}
                 onClick={() => handleNavigation(item.href)}
-                className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                   isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5'
                 } ${
                   isActive(item.href)

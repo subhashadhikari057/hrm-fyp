@@ -1,6 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
 
 export interface Column<T> {
   key: string;
@@ -426,85 +434,72 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Table - Desktop View */}
       <div className="hidden md:block bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {columns.map((column) => (
-                  <th
-                    key={column.key}
-                    scope="col"
-                    className={`px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                      column.className || ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>{column.header}</span>
-                      {column.sortable && (
-                        <button
-                          onClick={() => handleSort(column.key)}
-                          className="hover:text-gray-700 transition-colors"
-                          aria-label={`Sort by ${column.header}`}
-                        >
-                          {getSortIcon(column.key)}
-                        </button>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                {actions && <th scope="col" className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 lg:px-6 py-12 text-center">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={column.key}>
+                  <div className="flex items-center space-x-1">
+                    <span>{column.header}</span>
+                    {column.sortable && (
+                      <button
+                        onClick={() => handleSort(column.key)}
+                        className="hover:text-gray-700 transition-colors"
+                        aria-label={`Sort by ${column.header}`}
+                      >
+                        {getSortIcon(column.key)}
+                      </button>
+                    )}
+                  </div>
+                </TableHead>
+              ))}
+              {actions && (
+                <TableHead>
+                  <div className="text-right">Actions</div>
+                </TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + (actions ? 1 : 0)}>
+                  <div className="flex flex-col items-center py-12">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                     <p className="mt-2 text-sm text-gray-500">Loading...</p>
-                  </td>
-                </tr>
-              ) : sortedData.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 lg:px-6 py-12 text-center">
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : sortedData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + (actions ? 1 : 0)}>
+                  <div className="py-12 text-center">
                     <p className="text-sm text-gray-500">{emptyMessage}</p>
-                  </td>
-                </tr>
-              ) : (
-                sortedData.map((item, index) => (
-                  <tr
-                    key={index}
-                    onClick={() => onRowClick?.(item)}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      onRowClick ? 'cursor-pointer' : ''
-                    }`}
-                  >
-                    {columns.map((column) => (
-                      <td
-                        key={column.key}
-                        className={`px-4 lg:px-6 py-3 lg:py-4 text-sm text-gray-900 ${
-                          column.className || ''
-                        }`}
-                      >
-                        {column.render
-                          ? column.render(item)
-                          : item[column.key]?.toString() || '-'}
-                      </td>
-                    ))}
-                    {actions && (
-                      <td className="px-4 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
-                          {actions(item)}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              sortedData.map((item, index) => (
+                <TableRow key={index} onClick={() => onRowClick?.(item)}>
+                  {columns.map((column) => (
+                    <TableCell key={column.key}>
+                      {column.render ? column.render(item) : item[column.key]?.toString() || '-'}
+                    </TableCell>
+                  ))}
+                  {actions && (
+                    <TableCell>
+                      <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
+                        {actions(item)}
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Mobile Views */}
@@ -562,70 +557,57 @@ export function DataTable<T extends Record<string, any>>({
         ) : (
           /* Compact Table View - Mobile with Horizontal Scroll */
           <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableHead key={column.key}>
+                      <div className="flex items-center space-x-1">
+                        <span>{column.header}</span>
+                        {column.sortable && (
+                          <button
+                            onClick={() => handleSort(column.key)}
+                            className="hover:text-gray-700 transition-colors flex-shrink-0"
+                            aria-label={`Sort by ${column.header}`}
+                          >
+                            {getSortIcon(column.key)}
+                          </button>
+                        )}
+                      </div>
+                    </TableHead>
+                  ))}
+                  {actions && (
+                    <TableHead>
+                      <div className="sticky right-0 bg-white z-10 text-right">Actions</div>
+                    </TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedData.map((item, index) => (
+                  <TableRow key={index} onClick={() => onRowClick?.(item)}>
                     {columns.map((column) => (
-                      <th
-                        key={column.key}
-                        scope="col"
-                        className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>{column.header}</span>
-                          {column.sortable && (
-                            <button
-                              onClick={() => handleSort(column.key)}
-                              className="hover:text-gray-700 transition-colors flex-shrink-0"
-                              aria-label={`Sort by ${column.header}`}
-                            >
-                              {getSortIcon(column.key)}
-                            </button>
-                          )}
+                      <TableCell key={column.key}>
+                        <div className="max-w-[150px] truncate" title={item[column.key]?.toString() || '-'}>
+                          {column.render
+                            ? column.render(item)
+                            : item[column.key]?.toString() || '-'}
                         </div>
-                      </th>
+                      </TableCell>
                     ))}
                     {actions && (
-                      <th scope="col" className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50 z-10">
-                        Actions
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedData.map((item, index) => (
-                    <tr
-                      key={index}
-                      onClick={() => onRowClick?.(item)}
-                      className={`hover:bg-gray-50 transition-colors ${
-                        onRowClick ? 'cursor-pointer' : ''
-                      }`}
-                    >
-                      {columns.map((column) => (
-                        <td
-                          key={column.key}
-                          className="px-3 py-2.5 text-sm text-gray-900 whitespace-nowrap"
-                        >
-                          <div className="max-w-[150px] truncate" title={item[column.key]?.toString() || '-'}>
-                            {column.render
-                              ? column.render(item)
-                              : item[column.key]?.toString() || '-'}
-                          </div>
-                        </td>
-                      ))}
-                      {actions && (
-                        <td className="px-3 py-2.5 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white z-10">
+                      <TableCell>
+                        <div className="sticky right-0 bg-white z-10">
                           <div className="flex justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
                             {actions(item)}
                           </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
               <span className="inline-flex items-center gap-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,4 +629,3 @@ export function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
-
