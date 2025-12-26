@@ -1,9 +1,9 @@
 import { Injectable, ConflictException, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCompanyWithAdminDto } from './dto/create-company-with-admin.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
-import { FileUploadUtil } from '../common/utils/file-upload.util';
+import { FileUploadUtil } from '../../common/utils/file-upload.util';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
 import * as bcrypt from 'bcrypt';

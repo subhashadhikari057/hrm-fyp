@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
@@ -8,7 +8,7 @@ import { EmployeeStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
-import { EmployeeCodeGeneratorUtil } from '../common/utils/employee-code-generator.util';
+import { EmployeeCodeGeneratorUtil } from '../../common/utils/employee-code-generator.util';
 
 @Injectable()
 export class EmployeeService {

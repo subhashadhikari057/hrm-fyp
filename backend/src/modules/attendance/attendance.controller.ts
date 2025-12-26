@@ -44,7 +44,7 @@ import {
   attendanceCsvFileFilter,
   attendanceCsvLimits,
   attendanceCsvStorage,
-} from '../common/config/multer.config';
+} from '../../common/config/multer.config';
 
 @ApiTags('Company Admin - Attendance')
 @Controller('attendance')

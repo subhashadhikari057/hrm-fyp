@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FilterUsersDto } from './dto/filter-users.dto';
@@ -7,7 +7,7 @@ import { CreateCompanyUserDto } from './dto/create-company-user.dto';
 import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
 import { FilterCompanyUsersDto } from './dto/filter-company-users.dto';
 import { AuthService } from '../auth/auth.service';
-import { PasswordGeneratorUtil } from '../common/utils/password-generator.util';
+import { PasswordGeneratorUtil } from '../../common/utils/password-generator.util';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()

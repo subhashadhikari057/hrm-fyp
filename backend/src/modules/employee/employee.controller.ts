@@ -36,8 +36,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { employeeImageStorage, employeeImageFileFilter, employeeImageLimits } from '../common/config/multer.config';
-import { FileUploadUtil } from '../common/utils/file-upload.util';
+import { employeeImageStorage, employeeImageFileFilter, employeeImageLimits } from '../../common/config/multer.config';
+import { FileUploadUtil } from '../../common/utils/file-upload.util';
 import { unlinkSync } from 'fs';
 
 @ApiTags('Company Admin - Employees')

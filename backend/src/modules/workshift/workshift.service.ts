@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkShiftDto } from './dto/create-workshift.dto';
 import { UpdateWorkShiftDto } from './dto/update-workshift.dto';
 import { FilterWorkShiftsDto } from './dto/filter-workshifts.dto';

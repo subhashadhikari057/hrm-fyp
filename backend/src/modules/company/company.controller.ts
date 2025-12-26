@@ -9,8 +9,8 @@ import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { FileUploadUtil } from '../common/utils/file-upload.util';
-import { companyLogoStorage, companyLogoFileFilter, companyLogoLimits } from '../common/config/multer.config';
+import { FileUploadUtil } from '../../common/utils/file-upload.util';
+import { companyLogoStorage, companyLogoFileFilter, companyLogoLimits } from '../../common/config/multer.config';
 
 @ApiTags('Companies')
 @Controller('companies')
