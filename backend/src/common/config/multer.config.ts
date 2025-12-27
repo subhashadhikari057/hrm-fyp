@@ -61,6 +61,36 @@ export const employeeImageLimits = {
   fileSize: 5 * 1024 * 1024, // 5MB
 };
 
+export const userAvatarStorage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = './uploads/users';
+    FileUploadUtil.ensureUploadDir(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const fileName = FileUploadUtil.generateFileName(file.originalname, 'user-');
+    cb(null, fileName);
+  },
+});
+
+export const userAvatarFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+  if (!file) {
+    return cb(null, true); // File is optional
+  }
+
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Invalid file type. Allowed types: ${allowedMimes.join(', ')}`), false);
+  }
+};
+
+export const userAvatarLimits = {
+  fileSize: 5 * 1024 * 1024, // 5MB
+};
+
 export const attendanceCsvStorage = diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = './uploads/attendance-imports';
@@ -90,5 +120,4 @@ export const attendanceCsvFileFilter = (req: any, file: Express.Multer.File, cb:
 export const attendanceCsvLimits = {
   fileSize: 5 * 1024 * 1024, // 5MB
 };
-
 

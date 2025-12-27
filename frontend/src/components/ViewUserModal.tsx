@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { superadminApi, type User } from '../lib/api/superadmin';
+import { API_BASE_URL } from '../lib/api/types';
 import {
   Dialog,
   DialogContent,
@@ -115,6 +116,11 @@ export function ViewUserModal({ isOpen, onClose, userId }: ViewUserModalProps) {
     );
   };
 
+  const resolveAvatarUrl = (avatarUrl: string | null | undefined) => {
+    if (!avatarUrl) return null;
+    return avatarUrl.startsWith('http') ? avatarUrl : `${API_BASE_URL}/uploads/${avatarUrl}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
@@ -138,9 +144,9 @@ export function ViewUserModal({ isOpen, onClose, userId }: ViewUserModalProps) {
             ) : user ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
-                  {user.avatarUrl ? (
+                  {resolveAvatarUrl(user.avatarUrl) ? (
                     <img
-                      src={user.avatarUrl}
+                      src={resolveAvatarUrl(user.avatarUrl) || ''}
                       alt={user.fullName || user.email}
                       className="w-12 h-12 rounded-full object-cover border border-gray-200"
                     />

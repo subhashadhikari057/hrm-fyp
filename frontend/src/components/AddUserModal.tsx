@@ -38,6 +38,8 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
     companyId: '',
     isActive: true,
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,19 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    if (type === 'file') {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setAvatarFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAvatarPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
@@ -77,28 +92,30 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
 
     try {
       // Validate required fields
-      if (!formData.email || !formData.password) {
-        throw new Error('Email and password are required');
+      if (
+        !formData.email ||
+        !formData.password ||
+        !formData.fullName ||
+        !formData.phone ||
+        !formData.role ||
+        !formData.companyId
+      ) {
+        throw new Error('Email, password, full name, phone, role, and company are required');
       }
 
       // Prepare data - remove empty optional fields
       const submitData: CreateUserRequest = {
         email: formData.email.trim(),
         password: formData.password,
-        role: formData.role || 'employee',
+        fullName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        role: formData.role,
+        companyId: formData.companyId,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       };
 
-      if (formData.fullName?.trim()) {
-        submitData.fullName = formData.fullName.trim();
-      }
-
-      if (formData.phone?.trim()) {
-        submitData.phone = formData.phone.trim();
-      }
-
-      if (formData.companyId && formData.companyId !== '') {
-        submitData.companyId = formData.companyId;
+      if (avatarFile) {
+        submitData.avatar = avatarFile;
       }
 
       await superadminApi.createUser(submitData);
@@ -121,6 +138,8 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
       companyId: '',
       isActive: true,
     });
+    setAvatarFile(null);
+    setAvatarPreview(null);
     setError(null);
     onClose();
   };
@@ -179,13 +198,16 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
 
               {/* Full Name */}
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">
+                  Full Name <span className="text-red-500">*</span>
+                </Label>
               <Input
                 type="text"
                 id="fullName"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
+                required
                 autoComplete="off"
                 placeholder="John Doe"
               />
@@ -193,13 +215,16 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
 
               {/* Phone */}
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">
+                  Phone <span className="text-red-500">*</span>
+                </Label>
               <Input
                 type="tel"
                 id="phone"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
+                required
                 maxLength={20}
                 autoComplete="off"
                 placeholder="+1234567890"
@@ -209,13 +234,14 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
               {/* Role */}
               <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
+                  Role <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="role"
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {USER_ROLES.map((role) => (
@@ -229,17 +255,18 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
               {/* Company */}
               <div>
                 <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Company
+                  Company <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="companyId"
                   name="companyId"
                   value={formData.companyId}
                   onChange={handleChange}
-                  disabled={loadingCompanies || formData.role === 'super_admin'}
+                  required
+                  disabled={loadingCompanies}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">No Company</option>
+                  <option value="">Select company</option>
                   {loadingCompanies ? (
                     <option>Loading companies...</option>
                   ) : (
@@ -250,9 +277,39 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
                     ))
                   )}
                 </select>
-                {formData.role === 'super_admin' && (
-                  <p className="mt-1 text-xs text-gray-500">Super Admin users don't belong to a company</p>
-                )}
+              </div>
+
+              <div className="md:col-span-2 space-y-1.5">
+                <Label htmlFor="avatar">Avatar</Label>
+                <div className="flex items-center gap-4">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar preview"
+                      className="w-20 h-20 rounded-lg object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      id="avatar"
+                      name="avatar"
+                      accept="image/*"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Active Status */}

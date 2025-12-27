@@ -9,6 +9,8 @@ import { FilterCompanyUsersDto } from './dto/filter-company-users.dto';
 import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { AuthService } from '../auth/auth.service';
 import { PasswordGeneratorUtil } from '../../common/utils/password-generator.util';
+import { unlinkSync } from 'fs';
+import { join } from 'path';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -24,7 +26,7 @@ export class UserService {
   /**
    * Create a new user (Super Admin only)
    */
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, avatarPath?: string) {
     // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
@@ -35,14 +37,12 @@ export class UserService {
     }
 
     // Validate company exists if companyId is provided
-    if (createUserDto.companyId) {
-      const company = await this.prisma.company.findUnique({
-        where: { id: createUserDto.companyId },
-      });
+    const company = await this.prisma.company.findUnique({
+      where: { id: createUserDto.companyId },
+    });
 
-      if (!company) {
-        throw new NotFoundException(`Company with ID "${createUserDto.companyId}" not found`);
-      }
+    if (!company) {
+      throw new NotFoundException(`Company with ID "${createUserDto.companyId}" not found`);
     }
 
     // Hash password
@@ -56,9 +56,9 @@ export class UserService {
         password: hashedPassword,
         fullName: createUserDto.fullName,
         phone: createUserDto.phone,
-        role: createUserDto.role || 'employee',
-        companyId: createUserDto.companyId || null,
-        avatarUrl: createUserDto.avatarUrl,
+        role: createUserDto.role,
+        companyId: createUserDto.companyId,
+        avatarUrl: avatarPath || createUserDto.avatarUrl,
         isActive: createUserDto.isActive !== undefined ? createUserDto.isActive : true,
       },
       select: {
@@ -200,7 +200,7 @@ export class UserService {
    * Update user (Super Admin only)
    * Cannot update companyId
    */
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto, avatarPath?: string) {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -238,8 +238,23 @@ export class UserService {
     if (updateUserDto.fullName !== undefined) updateData.fullName = updateUserDto.fullName;
     if (updateUserDto.phone !== undefined) updateData.phone = updateUserDto.phone;
     if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
-    if (updateUserDto.avatarUrl !== undefined) updateData.avatarUrl = updateUserDto.avatarUrl;
+    if (avatarPath !== undefined) {
+      updateData.avatarUrl = avatarPath;
+    } else if (updateUserDto.avatarUrl !== undefined) {
+      updateData.avatarUrl = updateUserDto.avatarUrl;
+    }
     if (updateUserDto.isActive !== undefined) updateData.isActive = updateUserDto.isActive;
+
+    // Delete old avatar if new one is uploaded
+    if (avatarPath && existingUser.avatarUrl?.startsWith('users/')) {
+      try {
+        const fileName = existingUser.avatarUrl.split('/').pop() || '';
+        const oldAvatarPath = join(process.cwd(), 'uploads', 'users', fileName);
+        unlinkSync(oldAvatarPath);
+      } catch (error) {
+        this.logger.warn(`Failed to delete old avatar for user ${id}: ${String(error)}`);
+      }
+    }
 
     // Update user
     const updatedUser = await this.prisma.user.update({

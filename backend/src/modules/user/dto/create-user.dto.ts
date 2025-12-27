@@ -23,41 +23,40 @@ export class CreateUserDto {
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Full name of the user',
     example: 'John Doe',
   })
   @IsString()
-  @IsOptional()
-  fullName?: string;
+  @IsNotEmpty()
+  fullName: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Phone number',
     example: '+1234567890',
     maxLength: 20,
   })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MaxLength(20, { message: 'Phone number must not exceed 20 characters' })
-  phone?: string;
+  phone: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'User role',
     enum: UserRole,
     example: 'employee',
-    default: 'employee',
   })
   @IsEnum(UserRole)
-  @IsOptional()
-  role?: UserRole;
+  @IsNotEmpty()
+  role: UserRole;
 
-  @ApiPropertyOptional({
-    description: 'Company ID (null for super_admin)',
+  @ApiProperty({
+    description: 'Company ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsString()
-  @IsOptional()
-  companyId?: string;
+  @IsNotEmpty()
+  companyId: string;
 
   @ApiPropertyOptional({
     description: 'Avatar URL',

@@ -44,11 +44,12 @@ export interface UsersResponse {
 export interface CreateUserRequest {
   email: string;
   password: string;
-  fullName?: string;
-  phone?: string;
-  role?: BackendUserRole;
-  companyId?: string;
+  fullName: string;
+  phone: string;
+  role: BackendUserRole;
+  companyId: string;
   avatarUrl?: string;
+  avatar?: File;
   isActive?: boolean;
 }
 
@@ -62,6 +63,7 @@ export interface UpdateUserRequest {
   fullName?: string;
   phone?: string;
   role?: BackendUserRole;
+  avatar?: File;
   avatarUrl?: string;
   isActive?: boolean;
 }
@@ -110,11 +112,21 @@ export const superadminApi = {
    * Create a new user
    */
   async createUser(userData: CreateUserRequest): Promise<CreateUserResponse> {
+    const formData = new FormData();
+    formData.append('email', userData.email);
+    formData.append('password', userData.password);
+    formData.append('fullName', userData.fullName);
+    formData.append('phone', userData.phone);
+    formData.append('role', userData.role);
+    formData.append('companyId', userData.companyId);
+    if (userData.avatarUrl) formData.append('avatarUrl', userData.avatarUrl);
+    if (userData.avatar) formData.append('avatar', userData.avatar);
+    if (userData.isActive !== undefined) formData.append('isActive', String(userData.isActive));
+
     const response = await apiFetch(`${API_BASE_URL}/superadmin-users`, {
       method: 'POST',
       credentials: 'include',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(userData),
+      body: formData,
     });
 
     if (!response.ok) {
@@ -128,11 +140,19 @@ export const superadminApi = {
    * Update a user
    */
   async updateUser(userId: string, userData: UpdateUserRequest): Promise<UpdateUserResponse> {
+    const formData = new FormData();
+    if (userData.email) formData.append('email', userData.email);
+    if (userData.fullName) formData.append('fullName', userData.fullName);
+    if (userData.phone) formData.append('phone', userData.phone);
+    if (userData.role) formData.append('role', userData.role);
+    if (userData.avatarUrl) formData.append('avatarUrl', userData.avatarUrl);
+    if (userData.avatar) formData.append('avatar', userData.avatar);
+    if (userData.isActive !== undefined) formData.append('isActive', String(userData.isActive));
+
     const response = await apiFetch(`${API_BASE_URL}/superadmin-users/${userId}`, {
       method: 'PATCH',
       credentials: 'include',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(userData),
+      body: formData,
     });
 
     if (!response.ok) {

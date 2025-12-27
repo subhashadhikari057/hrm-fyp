@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { superadminApi, type UpdateUserRequest, type BackendUserRole, type User } from '../lib/api/superadmin';
 import { companyApi, type Company } from '../lib/api/company';
+import { API_BASE_URL } from '../lib/api/types';
 import {
   Dialog,
   DialogContent,
@@ -35,9 +36,10 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
     fullName: '',
     phone: '',
     role: 'employee',
-    avatarUrl: '',
     isActive: true,
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
@@ -66,9 +68,14 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
         fullName: user.fullName || '',
         phone: user.phone || '',
         role: user.role || 'employee',
-        avatarUrl: user.avatarUrl || '',
         isActive: user.isActive !== undefined ? user.isActive : true,
       });
+      setAvatarFile(null);
+      if (user.avatarUrl) {
+        setAvatarPreview(user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}/uploads/${user.avatarUrl}`);
+      } else {
+        setAvatarPreview(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load user data');
       console.error('Error fetching user:', err);
@@ -91,6 +98,18 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    if (type === 'file') {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setAvatarFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAvatarPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
@@ -124,8 +143,8 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
         submitData.role = formData.role;
       }
 
-      if (formData.avatarUrl?.trim()) {
-        submitData.avatarUrl = formData.avatarUrl.trim();
+      if (avatarFile) {
+        submitData.avatar = avatarFile;
       }
 
       if (formData.isActive !== undefined) {
@@ -148,9 +167,10 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
       fullName: '',
       phone: '',
       role: 'employee',
-      avatarUrl: '',
       isActive: true,
     });
+    setAvatarFile(null);
+    setAvatarPreview(null);
     setError(null);
     onClose();
   };
@@ -235,17 +255,37 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
                   </select>
                 </div>
 
-                {/* Avatar URL */}
-                <div>
-                  <Label htmlFor="avatarUrl">Avatar URL</Label>
-                  <Input
-                    type="url"
-                    id="avatarUrl"
-                    name="avatarUrl"
-                    value={formData.avatarUrl}
-                    onChange={handleChange}
-                    placeholder="https://example.com/avatar.jpg"
-                  />
+                <div className="md:col-span-2 space-y-1.5">
+                  <Label htmlFor="avatar">Avatar</Label>
+                  <div className="flex items-center gap-4">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar preview"
+                        className="w-20 h-20 rounded-lg object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        id="avatar"
+                        name="avatar"
+                        accept="image/*"
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Active Status */}
