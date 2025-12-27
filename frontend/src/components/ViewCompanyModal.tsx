@@ -8,6 +8,7 @@ import {
   Clock,
   Hash,
   MapPin,
+  UserCog,
   Users,
 } from 'lucide-react';
 import {
@@ -166,6 +167,15 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
                 </div>
                 <div className="grid grid-cols-[160px_1fr] items-center gap-4 py-3">
                   <div className="flex items-center gap-2 text-gray-500">
+                    <UserCog className="h-4 w-4" />
+                    <span>Admin</span>
+                  </div>
+                  <div className="text-gray-900 text-right truncate">
+                    {company.adminName || 'N/A'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-center gap-4 py-3">
+                  <div className="flex items-center gap-2 text-gray-500">
                     <Users className="h-4 w-4" />
                     <span>Total Users</span>
                   </div>
@@ -224,33 +234,24 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
                 </div>
               </div>
 
-              <div className="pt-6">
-                <DialogFooter>
-                  <Button type="button" variant="cancel" onClick={onClose}>
-                    Close
-                  </Button>
-                </DialogFooter>
-              </div>
             </div>
           ) : (
             <div className="text-center py-10">
               <p className="text-sm text-gray-500">No company data available</p>
-              <div className="pt-6">
-                <DialogFooter>
-                  <Button type="button" variant="cancel" onClick={onClose}>
-                    Close
-                  </Button>
-                </DialogFooter>
-              </div>
             </div>
           )}
+        </div>
+        <div className="pt-6">
+          <DialogFooter>
+            <Button type="button" variant="cancel" onClick={onClose}>
+              Close
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-
 
 
 

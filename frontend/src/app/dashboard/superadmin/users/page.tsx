@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { UserCheck, UserX, Users } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, Pencil, UserCheck, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column, FilterOption } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -13,6 +13,7 @@ import { ViewUserModal } from '../../../../components/ViewUserModal';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
 import toast from 'react-hot-toast';
 import { superadminApi, type User, type BackendUserRole } from '../../../../lib/api/superadmin';
+import { API_BASE_URL } from '../../../../lib/api/types';
 
 // Frontend user type (mapped from backend)
 interface FrontendUser {
@@ -23,6 +24,7 @@ interface FrontendUser {
   status: 'active' | 'inactive';
   company?: string;
   createdAt: string;
+  avatarUrl?: string | null;
 }
 
 // Map backend role to display role
@@ -46,11 +48,12 @@ export default function UsersPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [deleteDialog, setDeleteDialog] = useState<{
+  const [statusDialog, setStatusDialog] = useState<{
     isOpen: boolean;
     user: FrontendUser | null;
   }>({ isOpen: false, user: null });
-  const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [nextStatus, setNextStatus] = useState<'active' | 'inactive'>('inactive');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -100,6 +103,7 @@ export default function UsersPage() {
           status: user.isActive ? 'active' : 'inactive',
           company: user.company?.name || undefined,
           createdAt: user.createdAt,
+          avatarUrl: user.avatarUrl || null,
         }));
 
         setUsers(mappedUsers);
@@ -190,30 +194,34 @@ export default function UsersPage() {
     toast.success('User updated successfully');
   };
 
-  const handleDeleteClick = (user: FrontendUser) => {
-    setDeleteDialog({ isOpen: true, user });
+  const handleStatusClick = (user: FrontendUser) => {
+    setNextStatus(user.status === 'active' ? 'inactive' : 'active');
+    setStatusDialog({ isOpen: true, user });
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteDialog.user) return;
+  const handleStatusConfirm = async () => {
+    if (!statusDialog.user) return;
 
-    setDeleting(true);
+    setUpdatingStatus(true);
     try {
-      await superadminApi.deleteUser(deleteDialog.user.id);
-      toast.success(`User "${deleteDialog.user.name}" deleted successfully`);
-      setDeleteDialog({ isOpen: false, user: null });
+      await superadminApi.updateUser(statusDialog.user.id, {
+        isActive: nextStatus === 'active',
+      });
+      const actionLabel = nextStatus === 'active' ? 'activated' : 'deactivated';
+      toast.success(`User "${statusDialog.user.name}" ${actionLabel} successfully`);
+      setStatusDialog({ isOpen: false, user: null });
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to delete user'
+        err instanceof Error ? err.message : 'Failed to update user'
       );
     } finally {
-      setDeleting(false);
+      setUpdatingStatus(false);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialog({ isOpen: false, user: null });
+  const handleStatusCancel = () => {
+    setStatusDialog({ isOpen: false, user: null });
   };
 
   const columns: Column<FrontendUser>[] = [
@@ -223,11 +231,19 @@ export default function UsersPage() {
       sortable: true,
       render: (user) => (
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-            <span className="text-blue-600 font-semibold text-sm">
-              {user.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_BASE_URL}/uploads/${user.avatarUrl}`}
+              alt={user.name}
+              className="w-10 h-10 rounded-full object-cover border border-gray-200 mr-3"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+              <span className="text-blue-600 font-semibold text-sm">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
           <div>
             <div className="font-medium text-gray-900">{user.name}</div>
             <div className="text-xs text-gray-500">{user.email}</div>
@@ -267,7 +283,7 @@ export default function UsersPage() {
     },
   ];
 
-  const handleRowClick = (user: FrontendUser) => {
+  const handleView = (user: FrontendUser) => {
     setSelectedUserId(user.id);
     setIsViewModalOpen(true);
   };
@@ -281,32 +297,29 @@ export default function UsersPage() {
   const actions = (user: FrontendUser) => (
     <>
       <button
+        onClick={() => handleView(user)}
+        className="text-green-600 hover:text-green-900 transition-colors"
+        title="View"
+      >
+        <Eye className="w-4 h-4" />
+      </button>
+      <button
         onClick={() => handleEdit(user)}
         className="text-blue-600 hover:text-blue-900 transition-colors"
         title="Edit"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
+        <Pencil className="w-4 h-4" />
       </button>
       <button
-        onClick={() => handleDeleteClick(user)}
-        className="text-red-600 hover:text-red-900 transition-colors"
-        title="Delete"
+        onClick={() => handleStatusClick(user)}
+        className={
+          user.status === 'active'
+            ? 'text-yellow-600 hover:text-yellow-900 transition-colors'
+            : 'text-green-600 hover:text-green-900 transition-colors'
+        }
+        title={user.status === 'active' ? 'Deactivate' : 'Activate'}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        {user.status === 'active' ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
       </button>
     </>
   );
@@ -339,7 +352,6 @@ export default function UsersPage() {
         <DataTable
           data={users}
           columns={columns}
-          onRowClick={handleRowClick}
           actions={actions}
           searchable={true}
           searchPlaceholder="Search users by name, email, or company..."
@@ -430,13 +442,20 @@ export default function UsersPage() {
 
         {/* Delete Confirmation Dialog */}
         <DeleteConfirmDialog
-          isOpen={deleteDialog.isOpen}
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-          title="Delete User"
-          message="Are you sure you want to delete this user? This action cannot be undone."
-          itemName={deleteDialog.user ? `${deleteDialog.user.name} (${deleteDialog.user.email})` : undefined}
-          loading={deleting}
+          isOpen={statusDialog.isOpen}
+          onClose={handleStatusCancel}
+          onConfirm={handleStatusConfirm}
+          title={nextStatus === 'active' ? 'Activate User' : 'Deactivate User'}
+          message={
+            nextStatus === 'active'
+              ? 'This will restore access for this user.'
+              : 'This will disable login access for this user. You can reactivate later.'
+          }
+          warningText={nextStatus === 'active' ? '' : 'You can reactivate the user later.'}
+          itemName={statusDialog.user ? `${statusDialog.user.name} (${statusDialog.user.email})` : undefined}
+          confirmLabel={nextStatus === 'active' ? 'Activate' : 'Deactivate'}
+          confirmVariant={nextStatus === 'active' ? 'blue' : 'red'}
+          loading={updatingStatus}
         />
       </div>
     </DashboardLayout>

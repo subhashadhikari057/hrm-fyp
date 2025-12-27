@@ -20,6 +20,8 @@ export interface UpdateUserModalProps {
   onClose: () => void;
   onSuccess: () => void;
   userId: string | null;
+  title?: string;
+  submitLabel?: string;
 }
 
 const USER_ROLES: { value: BackendUserRole; label: string }[] = [
@@ -30,7 +32,14 @@ const USER_ROLES: { value: BackendUserRole; label: string }[] = [
   { value: 'employee', label: 'Employee' },
 ];
 
-export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUserModalProps) {
+export function UpdateUserModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  userId,
+  title = 'Update User',
+  submitLabel = 'Update User',
+}: UpdateUserModalProps) {
   const [formData, setFormData] = useState<UpdateUserRequest>({
     email: '',
     fullName: '',
@@ -179,7 +188,7 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Update User</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -312,7 +321,7 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userId }: UpdateUs
                   Cancel
                 </Button>
                 <Button type="submit" variant="blue" disabled={loading || loadingUser}>
-                  {loading ? 'Updating...' : 'Update User'}
+                  {loading ? 'Updating...' : submitLabel}
                 </Button>
               </DialogFooter>
             </div>

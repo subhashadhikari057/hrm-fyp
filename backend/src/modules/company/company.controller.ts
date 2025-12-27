@@ -159,7 +159,14 @@ export class CompanyController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin role required' })
   async findAll(@Query() filter: FilterCompaniesDto) {
-    return this.companyService.findAll(filter.page, filter.limit);
+    return this.companyService.findAll(
+      filter.page,
+      filter.limit,
+      filter.search,
+      filter.status,
+      filter.sortBy,
+      filter.sortOrder,
+    );
   }
 
   @Get(':id')

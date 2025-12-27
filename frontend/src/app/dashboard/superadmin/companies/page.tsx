@@ -36,6 +36,24 @@ export default function CompaniesPage() {
   }>({ isOpen: false, company: null });
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [nextStatus, setNextStatus] = useState<'active' | 'suspended'>('suspended');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'code' | 'status' | 'updatedAt' | undefined>(undefined);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(undefined);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(handle);
+  }, [search]);
 
   // Fetch companies from backend
   useEffect(() => {
@@ -43,14 +61,24 @@ export default function CompaniesPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await companyApi.getCompanies();
-        console.log('Fetched companies:', response.data);
-        // Log the first company's logoUrl to debug
-        if (response.data.length > 0) {
-          console.log('First company logoUrl:', response.data[0].logoUrl);
-          console.log('Constructed URL:', response.data[0].logoUrl ? `${API_BASE_URL}/uploads/${response.data[0].logoUrl}` : 'No logo');
-        }
+        const statusValues = filters.status || [];
+        const status = statusValues.length === 1 ? statusValues[0] : undefined;
+        const response = await companyApi.getCompanies({
+          search: debouncedSearch.trim() || undefined,
+          status,
+          page,
+          limit,
+          sortBy: sortBy || undefined,
+          sortOrder: sortOrder || undefined,
+        });
         setCompanies(response.data);
+        if (response.meta) {
+          setTotal(response.meta.total);
+          setTotalPages(response.meta.totalPages);
+        } else {
+          setTotal(response.data.length);
+          setTotalPages(1);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch companies');
         console.error('Error fetching companies:', err);
@@ -60,11 +88,11 @@ export default function CompaniesPage() {
     };
 
     fetchCompanies();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, page, limit, debouncedSearch, filters, sortBy, sortOrder]);
 
   // Calculate stats
   const stats = useMemo(() => {
-    const total = companies.length;
+    const totalCount = total || companies.length;
     const active = companies.filter((c) => c.status === 'active').length;
     const suspended = companies.filter((c) => c.status === 'suspended').length;
     const totalUsers = companies.reduce((sum, c) => sum + c.userCount, 0);
@@ -72,7 +100,7 @@ export default function CompaniesPage() {
     return [
       {
         label: 'Total Companies',
-        value: total,
+        value: totalCount,
         iconBgColor: 'blue' as const,
         icon: <Building2 className="h-4 w-4" />,
       },
@@ -181,7 +209,7 @@ export default function CompaniesPage() {
     {
       key: 'userCount',
       header: 'Users',
-      sortable: true,
+      sortable: false,
       render: (company) => (
         <span className="text-gray-900">{company.userCount}</span>
       ),
@@ -198,7 +226,7 @@ export default function CompaniesPage() {
     },
   ];
 
-  const handleRowClick = (company: Company) => {
+  const handleView = (company: Company) => {
     setViewModal({ isOpen: true, companyId: company.id });
   };
 
@@ -249,12 +277,12 @@ export default function CompaniesPage() {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          setViewModal({ isOpen: true, companyId: company.id });
+          handleView(company);
         }}
         className="text-green-600 hover:text-green-900 transition-colors"
         title="View"
       >
-        <Eye className="w-5 h-5" />
+        <Eye className="w-4 h-4" />
       </button>
       <button
         onClick={(e) => {
@@ -264,7 +292,7 @@ export default function CompaniesPage() {
         className="text-blue-600 hover:text-blue-900 transition-colors"
         title="Edit"
       >
-        <Pencil className="w-5 h-5" />
+        <Pencil className="w-4 h-4" />
       </button>
       <button
         onClick={(e) => {
@@ -278,7 +306,7 @@ export default function CompaniesPage() {
         }
         title={company.status === 'suspended' ? 'Activate' : 'Suspend'}
       >
-        {company.status === 'suspended' ? <CheckCircle2 className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
+        {company.status === 'suspended' ? <CheckCircle2 className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
       </button>
     </>
   );
@@ -311,12 +339,43 @@ export default function CompaniesPage() {
         <DataTable
           data={companies}
           columns={columns}
-          onRowClick={handleRowClick}
           actions={actions}
           searchable={true}
           searchPlaceholder="Search companies by name, code, or industry..."
           emptyMessage={loading ? 'Loading companies...' : 'No companies found'}
           loading={loading}
+          serverSide={true}
+          pagination={{
+            page,
+            limit,
+            total,
+            totalPages,
+          }}
+          onPageChange={(nextPage) => setPage(nextPage)}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(1);
+          }}
+          onSortChange={(key, direction) => {
+            const sortMap: Record<string, 'createdAt' | 'name' | 'code' | 'status'> = {
+              name: 'name',
+              code: 'code',
+              status: 'status',
+              createdAt: 'createdAt',
+            };
+            const mappedKey = sortMap[key];
+            if (!mappedKey) return;
+            setSortBy(mappedKey);
+            setSortOrder(direction);
+            setPage(1);
+          }}
+          onSearchChange={(query) => {
+            setSearch(query);
+          }}
+          onFilterChange={(nextFilters) => {
+            setFilters(nextFilters);
+            setPage(1);
+          }}
           filters={[
             {
               key: 'status',
@@ -327,7 +386,6 @@ export default function CompaniesPage() {
                 { value: 'suspended', label: 'Suspended' },
                 { value: 'archived', label: 'Archived' },
               ],
-              getValue: (company) => company.status,
             },
           ]}
         />

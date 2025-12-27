@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import type { ReactNode } from 'react';
 
 export interface DeleteConfirmDialogProps {
   isOpen: boolean;
@@ -21,6 +22,9 @@ export interface DeleteConfirmDialogProps {
   confirmLabel?: string;
   confirmVariant?: 'red' | 'blue' | 'cancel';
   warningText?: string;
+  icon?: ReactNode;
+  iconBgClassName?: string;
+  iconTextClassName?: string;
 }
 
 export function DeleteConfirmDialog({
@@ -34,6 +38,9 @@ export function DeleteConfirmDialog({
   confirmLabel = 'Delete',
   confirmVariant = 'red',
   warningText = 'This action cannot be undone.',
+  icon,
+  iconBgClassName = 'bg-red-100',
+  iconTextClassName = 'text-red-600',
 }: DeleteConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
@@ -44,8 +51,10 @@ export function DeleteConfirmDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
+            <div
+              className={`flex h-9 w-9 items-center justify-center rounded-full ${iconBgClassName} ${iconTextClassName}`}
+            >
+              {icon || <AlertTriangle className="h-5 w-5" />}
             </div>
             <DialogTitle>{title}</DialogTitle>
           </div>

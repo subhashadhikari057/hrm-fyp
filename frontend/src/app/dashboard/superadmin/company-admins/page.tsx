@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { UserCheck, UserCog, UserX, Users } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, Pencil, UserCheck, UserCog, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
-import { DataTable, Column, FilterOption } from '../../../../components/DataTable';
+import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
 import { PageHeader } from '../../../../components/PageHeader';
 import { DeleteConfirmDialog } from '../../../../components/DeleteConfirmDialog';
+import { ViewCompanyAdminModal } from '../../../../components/ViewCompanyAdminModal';
+import { UpdateUserModal } from '../../../../components/UpdateUserModal';
 import toast from 'react-hot-toast';
 import { companyApi } from '../../../../lib/api/company';
+import { API_BASE_URL } from '../../../../lib/api/types';
 import { type User } from '../../../../lib/api/superadmin';
 
 // Company Admin data type (mapped from backend)
@@ -18,23 +21,57 @@ interface CompanyAdmin {
   email: string;
   company: string;
   companyCode: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'active' | 'inactive';
   employeeCount: number;
   createdAt: string;
+  avatarUrl?: string | null;
 }
 
 export default function CompanyAdminsPage() {
   const [companyAdmins, setCompanyAdmins] = useState<CompanyAdmin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [adminToDelete, setAdminToDelete] = useState<CompanyAdmin | null>(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [adminToUpdate, setAdminToUpdate] = useState<CompanyAdmin | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [nextStatus, setNextStatus] = useState<'active' | 'inactive'>('inactive');
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedEditId, setSelectedEditId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState<'createdAt' | 'email' | 'fullName' | 'lastLoginAt' | 'updatedAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(handle);
+  }, [search]);
 
   const fetchCompanyAdmins = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await companyApi.getCompanyAdmins();
+      const statusValues = filters.status || [];
+      const isActive = statusValues.length === 1 ? statusValues[0] === 'active' : undefined;
+      const response = await companyApi.getCompanyAdmins({
+        search: debouncedSearch.trim() || undefined,
+        page,
+        limit,
+        isActive,
+        sortBy,
+        sortOrder,
+      });
       // Map backend users to frontend CompanyAdmin format
       const mappedAdmins: CompanyAdmin[] = response.data.map((user: User) => ({
         id: user.id,
@@ -45,11 +82,12 @@ export default function CompanyAdminsPage() {
         status: user.isActive ? 'active' : 'inactive', // Map isActive to status
         employeeCount: 0, // Will be updated from company data if available
         createdAt: user.createdAt,
+        avatarUrl: user.avatarUrl || null,
       }));
 
       // Fetch company data to get userCount (employee count) for each admin
       try {
-        const companiesResponse = await companyApi.getCompanies();
+        const companiesResponse = await companyApi.getCompanies({ page: 1, limit: 1000 });
         const companyMap = new Map(
           companiesResponse.data.map((company) => [company.id, company.userCount])
         );
@@ -67,6 +105,8 @@ export default function CompanyAdminsPage() {
         // If company fetch fails, just use the admins without counts
         setCompanyAdmins(mappedAdmins);
       }
+      setTotal(response.meta.total);
+      setTotalPages(response.meta.totalPages);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch company admins');
       toast.error(err.message || 'Failed to fetch company admins');
@@ -77,11 +117,11 @@ export default function CompanyAdminsPage() {
 
   useEffect(() => {
     fetchCompanyAdmins();
-  }, []);
+  }, [page, limit, debouncedSearch, filters, sortBy, sortOrder]);
 
   // Calculate stats
   const stats = useMemo(() => {
-    const total = companyAdmins.length;
+    const totalCount = total || companyAdmins.length;
     const active = companyAdmins.filter((ca) => ca.status === 'active').length;
     const inactive = companyAdmins.filter((ca) => ca.status === 'inactive').length;
     const totalEmployees = companyAdmins.reduce((sum, ca) => sum + ca.employeeCount, 0);
@@ -89,7 +129,7 @@ export default function CompanyAdminsPage() {
     return [
       {
         label: 'Total Company Admins',
-        value: total,
+        value: totalCount,
         iconBgColor: 'blue' as const,
         icon: <UserCog className="h-4 w-4" />,
       },
@@ -138,11 +178,19 @@ export default function CompanyAdminsPage() {
       sortable: true,
       render: (admin) => (
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-            <span className="text-blue-600 font-semibold text-sm">
-              {admin.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          {admin.avatarUrl ? (
+            <img
+              src={admin.avatarUrl.startsWith('http') ? admin.avatarUrl : `${API_BASE_URL}/uploads/${admin.avatarUrl}`}
+              alt={admin.name}
+              className="w-10 h-10 rounded-full object-cover border border-gray-200 mr-3"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+              <span className="text-blue-600 font-semibold text-sm">
+                {admin.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
           <div>
             <div className="font-medium text-gray-900">{admin.name}</div>
             <div className="text-xs text-gray-500">{admin.email}</div>
@@ -164,13 +212,13 @@ export default function CompanyAdminsPage() {
     {
       key: 'status',
       header: 'Status',
-      sortable: true,
+      sortable: false,
       render: (admin) => getStatusBadge(admin.status),
     },
     {
       key: 'employeeCount',
       header: 'Employees',
-      sortable: true,
+      sortable: false,
       render: (admin) => (
         <span className="text-gray-900">{admin.employeeCount}</span>
       ),
@@ -187,82 +235,74 @@ export default function CompanyAdminsPage() {
     },
   ];
 
-  const handleRowClick = (admin: CompanyAdmin) => {
-    console.log('Clicked company admin:', admin);
-    // Navigate to company admin details page
+  const handleView = (admin: CompanyAdmin) => {
+    setSelectedAdminId(admin.id);
+    setViewModalOpen(true);
   };
 
   const handleEdit = (admin: CompanyAdmin) => {
-    console.log('Edit company admin:', admin);
-    // Open edit dialog
+    setSelectedEditId(admin.id);
+    setEditModalOpen(true);
   };
 
-  const handleDeleteClick = (admin: CompanyAdmin) => {
-    setAdminToDelete(admin);
-    setIsDeleteConfirmOpen(true);
+  const handleStatusClick = (admin: CompanyAdmin) => {
+    setNextStatus(admin.status === 'active' ? 'inactive' : 'active');
+    setAdminToUpdate(admin);
+    setStatusDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (adminToDelete) {
-      try {
-        await companyApi.deleteCompanyAdmin(adminToDelete.id);
-        toast.success(`Company Admin "${adminToDelete.name}" deleted successfully`);
-        fetchCompanyAdmins(); // Refresh the list
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to delete company admin');
-      } finally {
-        setIsDeleteConfirmOpen(false);
-        setAdminToDelete(null);
-      }
+  const handleStatusConfirm = async () => {
+    if (!adminToUpdate) return;
+
+    setUpdatingStatus(true);
+    try {
+      await companyApi.updateCompanyAdminStatus(adminToUpdate.id, nextStatus === 'active');
+      const actionLabel = nextStatus === 'active' ? 'activated' : 'deactivated';
+      toast.success(`Company Admin "${adminToUpdate.name}" ${actionLabel} successfully`);
+      fetchCompanyAdmins();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update company admin');
+    } finally {
+      setUpdatingStatus(false);
+      setStatusDialogOpen(false);
+      setAdminToUpdate(null);
     }
+  };
+
+  const handleStatusCancel = () => {
+    setStatusDialogOpen(false);
+    setAdminToUpdate(null);
   };
 
   const actions = (admin: CompanyAdmin) => (
     <>
       <button
+        onClick={() => handleView(admin)}
+        className="text-green-600 hover:text-green-900 transition-colors"
+        title="View"
+      >
+        <Eye className="w-4 h-4" />
+      </button>
+      <button
         onClick={() => handleEdit(admin)}
         className="text-blue-600 hover:text-blue-900 transition-colors"
         title="Edit"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
+        <Pencil className="w-4 h-4" />
       </button>
       <button
-        onClick={() => handleDeleteClick(admin)}
-        className="text-red-600 hover:text-red-900 transition-colors"
-        title="Delete"
+        onClick={() => handleStatusClick(admin)}
+        className={
+          admin.status === 'active'
+            ? 'text-yellow-600 hover:text-yellow-900 transition-colors'
+            : 'text-green-600 hover:text-green-900 transition-colors'
+        }
+        title={admin.status === 'active' ? 'Deactivate' : 'Activate'}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        {admin.status === 'active' ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
       </button>
     </>
   );
-
-  const filters: FilterOption<CompanyAdmin>[] = [
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'multiselect',
-      options: [
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
-        { value: 'suspended', label: 'Suspended' },
-      ],
-      getValue: (admin) => admin.status,
-    },
-  ];
 
   return (
     <DashboardLayout>
@@ -286,26 +326,101 @@ export default function CompanyAdminsPage() {
         <DataTable
           data={companyAdmins}
           columns={columns}
-          onRowClick={handleRowClick}
           actions={actions}
           searchable={true}
           searchPlaceholder="Search company admins by name, email, or company..."
           emptyMessage="No company admins found"
           loading={isLoading}
-          filters={filters}
+          serverSide={true}
+          pagination={{
+            page,
+            limit,
+            total,
+            totalPages,
+          }}
+          onPageChange={(nextPage) => setPage(nextPage)}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(1);
+          }}
+          onSortChange={(key, direction) => {
+            const sortMap: Record<string, 'createdAt' | 'fullName' | 'email'> = {
+              name: 'fullName',
+              createdAt: 'createdAt',
+            };
+            const mappedKey = sortMap[key];
+            if (!mappedKey) return;
+            setSortBy(mappedKey);
+            setSortOrder(direction);
+            setPage(1);
+          }}
+          onSearchChange={(query) => {
+            setSearch(query);
+          }}
+          onFilterChange={(nextFilters) => {
+            setFilters(nextFilters);
+            setPage(1);
+          }}
+          filters={[
+            {
+              key: 'status',
+              label: 'Status',
+              type: 'multiselect',
+              options: [
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ],
+            },
+          ]}
         />
       </div>
 
-      {adminToDelete && (
+      {adminToUpdate && (
         <DeleteConfirmDialog
-          isOpen={isDeleteConfirmOpen}
-          onClose={() => setIsDeleteConfirmOpen(false)}
-          onConfirm={handleDeleteConfirm}
-          title="Delete Company Admin"
-          itemName={adminToDelete.name}
-          message="This action will deactivate the company admin. They will no longer be able to log in. This can be reversed later."
+          isOpen={statusDialogOpen}
+          onClose={handleStatusCancel}
+          onConfirm={handleStatusConfirm}
+          title={nextStatus === 'active' ? 'Activate Company Admin' : 'Deactivate Company Admin'}
+          itemName={adminToUpdate.name}
+          message={
+            nextStatus === 'active'
+              ? 'This will restore login access so the admin can sign in again.'
+              : 'This will disable login access for this admin. You can reactivate them later.'
+          }
+          warningText={nextStatus === 'active' ? '' : 'You can reactivate the admin later.'}
+          confirmLabel={nextStatus === 'active' ? 'Activate' : 'Deactivate'}
+          confirmVariant={nextStatus === 'active' ? 'blue' : 'red'}
+          loading={updatingStatus}
+          icon={
+            nextStatus === 'active' ? <CheckCircle2 className="h-5 w-5" /> : <Ban className="h-5 w-5" />
+          }
+          iconBgClassName={nextStatus === 'active' ? 'bg-green-100' : 'bg-yellow-100'}
+          iconTextClassName={nextStatus === 'active' ? 'text-green-600' : 'text-yellow-600'}
         />
       )}
+
+      <ViewCompanyAdminModal
+        isOpen={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedAdminId(null);
+        }}
+        userId={selectedAdminId}
+      />
+
+      <UpdateUserModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedEditId(null);
+        }}
+        onSuccess={() => {
+          fetchCompanyAdmins();
+        }}
+        userId={selectedEditId}
+        title="Update Company Admin"
+        submitLabel="Update Company Admin"
+      />
     </DashboardLayout>
   );
 }

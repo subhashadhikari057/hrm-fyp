@@ -17,6 +17,7 @@ export interface Company {
   country?: string | null;
   planExpiresAt?: string | null;
   maxEmployees?: number | null;
+  adminName?: string | null;
   status: 'active' | 'suspended' | 'archived';
   userCount: number;
   createdAt: string;
@@ -26,6 +27,14 @@ export interface Company {
 export interface CompaniesResponse {
   message: string;
   data: Company[];
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }
 
 export interface CompanyResponse {
@@ -82,8 +91,23 @@ export const companyApi = {
   /**
    * Get all companies
    */
-  async getCompanies(): Promise<CompaniesResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/companies`, {
+  async getCompanies(params?: {
+    search?: string;
+    status?: Company['status'];
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<CompaniesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page) queryParams.append('page', String(params.page));
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+    const response = await apiFetch(`${API_BASE_URL}/companies?${queryParams.toString()}`, {
       method: 'GET',
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -220,6 +244,7 @@ export const companyApi = {
    * Get all company admins (users with role='company_admin')
    */
   async getCompanyAdmins(params?: {
+    search?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
@@ -238,6 +263,7 @@ export const companyApi = {
     };
   }> {
     return superadminApi.getUsers({
+      search: params?.search,
       role: 'company_admin',
       ...params,
     });
@@ -248,5 +274,12 @@ export const companyApi = {
    */
   async deleteCompanyAdmin(adminId: string): Promise<{ message: string; data: User }> {
     return superadminApi.deleteUser(adminId);
+  },
+
+  /**
+   * Activate/deactivate a company admin
+   */
+  async updateCompanyAdminStatus(adminId: string, isActive: boolean): Promise<{ message: string; data: User }> {
+    return superadminApi.updateUser(adminId, { isActive });
   },
 };

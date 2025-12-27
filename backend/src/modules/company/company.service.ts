@@ -120,12 +120,26 @@ export class CompanyService {
   /**
    * Get all companies (Super Admin only)
    */
-  async findAll(page?: number, limit?: number) {
+  async findAll(page?: number, limit?: number, search?: string, status?: string, sortBy?: string, sortOrder?: string) {
     const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (status) where.status = status;
+
+    const validSortFields = ['createdAt', 'name', 'code', 'status', 'updatedAt'];
+    const validSortBy = validSortFields.includes(sortBy ?? '') ? (sortBy as string) : 'createdAt';
+    const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
     const [total, companies] = await Promise.all([
-      this.prisma.company.count(),
+      this.prisma.company.count({ where }),
       this.prisma.company.findMany({
+        where,
         select: {
           id: true,
           name: true,
@@ -147,7 +161,7 @@ export class CompanyService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          [validSortBy]: validSortOrder,
         },
         skip,
         take,
@@ -208,6 +222,20 @@ export class CompanyService {
       throw new NotFoundException(`Company with ID "${id}" not found`);
     }
 
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        companyId: company.id,
+        role: 'company_admin',
+      },
+      select: {
+        fullName: true,
+        email: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
     return {
       message: 'Company retrieved successfully',
       data: {
@@ -223,6 +251,7 @@ export class CompanyService {
         maxEmployees: company.maxEmployees,
         status: company.status,
         userCount: company._count.users,
+        adminName: admin?.fullName || admin?.email || null,
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       },

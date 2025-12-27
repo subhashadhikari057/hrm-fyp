@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const cacheKey = 'auth_user';
 
   /**
    * Convert backend user to frontend user format
@@ -46,18 +47,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const loadCachedUser = (): User | null => {
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const saveCachedUser = (nextUser: User | null) => {
+    try {
+      if (!nextUser) {
+        sessionStorage.removeItem(cacheKey);
+        return;
+      }
+      sessionStorage.setItem(cacheKey, JSON.stringify(nextUser));
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
   /**
    * Check authentication status on mount
    */
   useEffect(() => {
     const checkAuth = async () => {
+      const cachedUser = loadCachedUser();
+      if (cachedUser) {
+        setUser(cachedUser);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const response = await authApi.getCurrentUser();
         const frontendUser = mapBackendUserToFrontend(response.user);
         setUser(frontendUser);
+        saveCachedUser(frontendUser);
       } catch (error) {
         // Not authenticated or token expired
         setUser(null);
+        saveCachedUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -75,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const frontendUser = mapBackendUserToFrontend(response.user);
       
       setUser(frontendUser);
+      saveCachedUser(frontendUser);
       
       // Return user so caller can show welcome message
       return frontendUser;
@@ -96,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     setUser(null);
+    saveCachedUser(null);
     toast.success('Logged out successfully');
     router.push('/');
   };
@@ -105,12 +138,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const refreshUser = async () => {
     try {
-            const response = await authApi.getCurrentUser();
+      const response = await authApi.getCurrentUser();
       const frontendUser = mapBackendUserToFrontend(response.user);
       setUser(frontendUser);
+      saveCachedUser(frontendUser);
     } catch (error) {
       // If refresh fails, user might be logged out
       setUser(null);
+      saveCachedUser(null);
       throw error;
     }
   };
