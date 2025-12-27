@@ -138,6 +138,10 @@ export default function ProfilePage() {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <DetailItem label="Full Name" value={displayName} />
               <DetailItem label="Email" value={authUser?.email || user?.email || 'N/A'} />
+              <DetailItem
+                label="Phone"
+                value={authUser?.phone || employeeProfile?.phone || 'N/A'}
+              />
               <DetailItem label="Role" value={roleLabel} />
               <DetailItem
                 label="Company"
@@ -224,15 +228,7 @@ export default function ProfilePage() {
                 />
               </div>
             </div>
-          ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-semibold text-gray-900">Account Overview</h3>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailItem label="User ID" value={authUser?.id || user?.id || 'N/A'} />
-                <DetailItem label="Status" value="Active" />
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
         )}
       </div>
