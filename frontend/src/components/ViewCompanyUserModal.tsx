@@ -26,6 +26,7 @@ export interface ViewCompanyUserModalProps {
 }
 
 const roleMap: Record<string, string> = {
+  company_admin: 'Company Admin',
   hr_manager: 'HR Manager',
   manager: 'Manager',
   employee: 'Employee',
@@ -50,6 +51,7 @@ export function ViewCompanyUserModal({ isOpen, onClose, user }: ViewCompanyUserM
 
   const roleBadge = (role: string) => {
     const roleStyles: Record<string, string> = {
+      company_admin: 'bg-blue-100 text-blue-800',
       hr_manager: 'bg-green-100 text-green-800',
       manager: 'bg-orange-100 text-orange-800',
       employee: 'bg-gray-100 text-gray-800',

@@ -4,7 +4,7 @@
 
 import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
-export type CompanyUserRole = 'hr_manager' | 'manager' | 'employee';
+export type CompanyUserRole = 'company_admin' | 'hr_manager' | 'manager' | 'employee';
 
 export interface CompanyUser {
   id: string;
@@ -140,7 +140,7 @@ export const companyUserApi = {
     return response.json();
   },
 
-  async resetCompanyUserPassword(userId: string): Promise<{ message: string; data: { password: string } }> {
+  async resetCompanyUserPassword(userId: string): Promise<{ message: string; newPassword: string; userId: string; email: string }> {
     const response = await apiFetch(`${API_BASE_URL}/company/users/${userId}/reset-password`, {
       method: 'POST',
       credentials: 'include',

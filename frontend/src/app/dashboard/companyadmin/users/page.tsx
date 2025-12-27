@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Ban, CheckCircle2, Eye, Pencil, UserCheck, UserX, Users } from 'lucide-react';
+import { Ban, CheckCircle2, Eye, KeyRound, Pencil, UserCheck, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -16,6 +16,7 @@ import { companyUserApi, type CompanyUser, type CompanyUserRole } from '../../..
 import { API_BASE_URL } from '../../../../lib/api/types';
 
 const roleLabels: Record<CompanyUserRole, string> = {
+  company_admin: 'Company Admin',
   hr_manager: 'HR Manager',
   manager: 'Manager',
   employee: 'Employee',
@@ -38,6 +39,11 @@ export default function CompanyUsersPage() {
     isOpen: false,
     user: null,
   });
+  const [resetDialog, setResetDialog] = useState<{ isOpen: boolean; user: CompanyUser | null }>({
+    isOpen: false,
+    user: null,
+  });
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [nextStatus, setNextStatus] = useState<'active' | 'inactive'>('inactive');
@@ -129,6 +135,7 @@ export default function CompanyUsersPage() {
 
   const getRoleBadge = (role: CompanyUserRole) => {
     const roleStyles: Record<CompanyUserRole, string> = {
+      company_admin: 'bg-blue-100 text-blue-800',
       hr_manager: 'bg-green-100 text-green-800',
       manager: 'bg-orange-100 text-orange-800',
       employee: 'bg-gray-100 text-gray-800',
@@ -247,6 +254,29 @@ export default function CompanyUsersPage() {
     setStatusDialog({ isOpen: false, user: null });
   };
 
+  const handleResetClick = (user: CompanyUser) => {
+    setResetDialog({ isOpen: true, user });
+  };
+
+  const handleResetConfirm = async () => {
+    if (!resetDialog.user) return;
+    setResettingPassword(true);
+    try {
+      const response = await companyUserApi.resetCompanyUserPassword(resetDialog.user.id);
+      console.log(`New password for ${response.email}: ${response.newPassword}`);
+      toast.success('Password reset successfully. Check console for new password.');
+      setResetDialog({ isOpen: false, user: null });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleResetCancel = () => {
+    setResetDialog({ isOpen: false, user: null });
+  };
+
   const actions = (user: CompanyUser) => (
     <>
       <button
@@ -255,6 +285,13 @@ export default function CompanyUsersPage() {
         title="View"
       >
         <Eye className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => handleResetClick(user)}
+        className="text-purple-600 hover:text-purple-900 transition-colors"
+        title="Reset Password"
+      >
+        <KeyRound className="w-4 h-4" />
       </button>
       <button
         onClick={() => handleEdit(user)}
@@ -392,6 +429,22 @@ export default function CompanyUsersPage() {
         }
         iconBgClassName={nextStatus === 'active' ? 'bg-green-100' : 'bg-yellow-100'}
         iconTextClassName={nextStatus === 'active' ? 'text-green-600' : 'text-yellow-600'}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={resetDialog.isOpen}
+        onClose={handleResetCancel}
+        onConfirm={handleResetConfirm}
+        title="Reset Password"
+        itemName={resetDialog.user ? resetDialog.user.fullName || resetDialog.user.email : undefined}
+        message="This will generate a new password for this user."
+        warningText="Share the new password securely with the user."
+        confirmLabel="Reset Password"
+        confirmVariant="blue"
+        loading={resettingPassword}
+        icon={<KeyRound className="h-5 w-5" />}
+        iconBgClassName="bg-purple-100"
+        iconTextClassName="text-purple-600"
       />
     </DashboardLayout>
   );
