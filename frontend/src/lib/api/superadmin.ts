@@ -78,6 +78,7 @@ export const superadminApi = {
    * Get all users with filters and pagination
    */
   async getUsers(params?: {
+    search?: string;
     role?: BackendUserRole;
     companyId?: string;
     isActive?: boolean;
@@ -87,6 +88,7 @@ export const superadminApi = {
     sortOrder?: 'asc' | 'desc';
   }): Promise<UsersResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
     if (params?.role) queryParams.append('role', params.role);
     if (params?.companyId) queryParams.append('companyId', params.companyId);
     if (params?.isActive !== undefined) queryParams.append('isActive', String(params.isActive));

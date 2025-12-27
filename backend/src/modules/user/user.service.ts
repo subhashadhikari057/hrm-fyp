@@ -95,6 +95,7 @@ export class UserService {
    */
   async findAll(filterDto: FilterUsersDto) {
     const {
+      search,
       role,
       companyId,
       isActive,
@@ -106,6 +107,13 @@ export class UserService {
 
     // Build where clause
     const where: any = {};
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     if (role) where.role = role;
     if (companyId) where.companyId = companyId;
     if (isActive !== undefined) where.isActive = isActive;

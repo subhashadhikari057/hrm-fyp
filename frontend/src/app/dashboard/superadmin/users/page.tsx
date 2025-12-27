@@ -51,6 +51,24 @@ export default function UsersPage() {
     user: FrontendUser | null;
   }>({ isOpen: false, user: null });
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState<'createdAt' | 'email' | 'fullName' | 'lastLoginAt' | 'updatedAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(handle);
+  }, [search]);
 
   // Fetch users from backend
   useEffect(() => {
@@ -58,9 +76,19 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
       try {
+        const statusValues = filters.status || [];
+        const roleValue = filters.role?.[0] as BackendUserRole | undefined;
+        const isActive =
+          statusValues.length === 1 ? statusValues[0] === 'active' : undefined;
+
         const response = await superadminApi.getUsers({
-          page: 1,
-          limit: 100, // Get all users for now
+          search: debouncedSearch.trim() || undefined,
+          page,
+          limit,
+          role: roleValue,
+          isActive,
+          sortBy,
+          sortOrder,
         });
 
         // Map backend users to frontend format
@@ -75,6 +103,8 @@ export default function UsersPage() {
         }));
 
         setUsers(mappedUsers);
+        setTotal(response.meta.total);
+        setTotalPages(response.meta.totalPages);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch users');
         console.error('Error fetching users:', err);
@@ -84,18 +114,18 @@ export default function UsersPage() {
     };
 
     fetchUsers();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, page, limit, debouncedSearch, filters, sortBy, sortOrder]);
 
   // Calculate stats
   const stats = useMemo(() => {
-    const total = users.length;
+    const totalCount = total || users.length;
     const active = users.filter((u) => u.status === 'active').length;
     const inactive = users.filter((u) => u.status === 'inactive').length;
 
     return [
       {
         label: 'Total Users',
-        value: total,
+        value: totalCount,
         iconBgColor: 'blue' as const,
         icon: <Users className="h-4 w-4" />,
       },
@@ -208,19 +238,19 @@ export default function UsersPage() {
     {
       key: 'role',
       header: 'Role',
-      sortable: true,
+      sortable: false,
       render: (user) => getRoleBadge(user.role),
     },
     {
       key: 'status',
       header: 'Status',
-      sortable: true,
+      sortable: false,
       render: (user) => getStatusBadge(user.status),
     },
     {
       key: 'company',
       header: 'Company',
-      sortable: true,
+      sortable: false,
       render: (user) => (
         <span className="text-gray-900">{user.company || '-'}</span>
       ),
@@ -315,6 +345,36 @@ export default function UsersPage() {
           searchPlaceholder="Search users by name, email, or company..."
           emptyMessage={loading ? 'Loading users...' : 'No users found'}
           loading={loading}
+          serverSide={true}
+          pagination={{
+            page,
+            limit,
+            total,
+            totalPages,
+          }}
+          onPageChange={(nextPage) => setPage(nextPage)}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(1);
+          }}
+          onSortChange={(key, direction) => {
+            const sortMap: Record<string, 'createdAt' | 'fullName'> = {
+              name: 'fullName',
+              createdAt: 'createdAt',
+            };
+            const mappedKey = sortMap[key];
+            if (!mappedKey) return;
+            setSortBy(mappedKey);
+            setSortOrder(direction);
+            setPage(1);
+          }}
+          onSearchChange={(query) => {
+            setSearch(query);
+          }}
+          onFilterChange={(nextFilters) => {
+            setFilters(nextFilters);
+            setPage(1);
+          }}
           filters={[
             {
               key: 'status',
@@ -324,20 +384,18 @@ export default function UsersPage() {
                 { value: 'active', label: 'Active' },
                 { value: 'inactive', label: 'Inactive' },
               ],
-              getValue: (user) => user.status,
             },
             {
               key: 'role',
               label: 'Role',
               type: 'select',
               options: [
-                { value: 'Super Admin', label: 'Super Admin' },
-                { value: 'Company Admin', label: 'Company Admin' },
-                { value: 'HR Manager', label: 'HR Manager' },
-                { value: 'Manager', label: 'Manager' },
-                { value: 'Employee', label: 'Employee' },
+                { value: 'super_admin', label: 'Super Admin' },
+                { value: 'company_admin', label: 'Company Admin' },
+                { value: 'hr_manager', label: 'HR Manager' },
+                { value: 'manager', label: 'Manager' },
+                { value: 'employee', label: 'Employee' },
               ],
-              getValue: (user) => user.role,
             },
           ]}
         />

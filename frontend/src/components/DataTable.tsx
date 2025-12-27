@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -38,6 +38,18 @@ export interface DataTableProps<T> {
   searchPlaceholder?: string;
   searchKeys?: (keyof T)[];
   filters?: FilterOption<T>[];
+  serverSide?: boolean;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages?: number;
+  };
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (limit: number) => void;
+  onSortChange?: (key: string, direction: 'asc' | 'desc') => void;
+  onSearchChange?: (query: string) => void;
+  onFilterChange?: (filters: Record<string, string[]>) => void;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -51,6 +63,13 @@ export function DataTable<T extends Record<string, any>>({
   searchPlaceholder = 'Search...',
   searchKeys,
   filters,
+  serverSide = false,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  onSortChange,
+  onSearchChange,
+  onFilterChange,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{
@@ -61,8 +80,17 @@ export function DataTable<T extends Record<string, any>>({
   const [showFilters, setShowFilters] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
 
+  useEffect(() => {
+    if (serverSide && onFilterChange) {
+      onFilterChange(activeFilters);
+    }
+  }, [activeFilters, onFilterChange, serverSide]);
+
   // Filter data based on search query and filters
   const filteredData = useMemo(() => {
+    if (serverSide) {
+      return data;
+    }
     let result = data;
 
     // Apply search filter
@@ -113,6 +141,7 @@ export function DataTable<T extends Record<string, any>>({
 
   // Sort data
   const sortedData = useMemo(() => {
+    if (serverSide) return filteredData;
     if (!sortConfig) return filteredData;
 
     return [...filteredData].sort((a, b) => {
@@ -138,13 +167,19 @@ export function DataTable<T extends Record<string, any>>({
 
   const handleSort = (key: string) => {
     setSortConfig((current) => {
+      let nextConfig: { key: string; direction: 'asc' | 'desc' };
       if (current?.key === key) {
-        return {
+        nextConfig = {
           key,
           direction: current.direction === 'asc' ? 'desc' : 'asc',
         };
+      } else {
+        nextConfig = { key, direction: 'asc' };
       }
-      return { key, direction: 'asc' };
+      if (serverSide && onSortChange) {
+        onSortChange(nextConfig.key, nextConfig.direction);
+      }
+      return nextConfig;
     });
   };
 
@@ -226,7 +261,13 @@ export function DataTable<T extends Record<string, any>>({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setSearchQuery(nextValue);
+                  if (serverSide && onSearchChange) {
+                    onSearchChange(nextValue);
+                  }
+                }}
                 placeholder={searchPlaceholder}
                 className="block w-full pl-9 pr-3 py-2 sm:py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
@@ -394,14 +435,7 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* View Toggle - Mobile Only */}
-      <div className="md:hidden mb-3 flex items-center justify-between">
-        <div className="text-xs sm:text-sm text-gray-500">
-          {sortedData.length > 0 && (
-            <>
-              Showing <span className="font-medium">{sortedData.length}</span> of <span className="font-medium">{data.length}</span> {data.length === 1 ? 'result' : 'results'}
-            </>
-          )}
-        </div>
+      <div className="md:hidden mb-3 flex items-center justify-end">
         <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setMobileViewMode('card')}
@@ -501,6 +535,52 @@ export function DataTable<T extends Record<string, any>>({
           </TableBody>
         </Table>
       </div>
+
+      {pagination && (
+        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 text-sm text-gray-600">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span>Rows</span>
+              <select
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                value={pagination.limit}
+                onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+              >
+                {[10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onPageChange?.(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="px-2 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <span>
+                Page {pagination.page} of{' '}
+                {pagination.totalPages ?? Math.max(1, Math.ceil(pagination.total / pagination.limit))}
+              </span>
+              <button
+                type="button"
+                onClick={() => onPageChange?.(pagination.page + 1)}
+                disabled={
+                  pagination.page >=
+                  (pagination.totalPages ?? Math.ceil(pagination.total / pagination.limit))
+                }
+                className="px-2 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Views */}
       <div className="md:hidden">
@@ -620,12 +700,6 @@ export function DataTable<T extends Record<string, any>>({
         )}
       </div>
 
-      {/* Results Count - Desktop Only */}
-      {!loading && sortedData.length > 0 && (
-        <div className="hidden md:block mt-4 text-sm text-gray-500">
-          Showing <span className="font-medium">{sortedData.length}</span> of <span className="font-medium">{data.length}</span> {data.length === 1 ? 'result' : 'results'}
-        </div>
-      )}
     </div>
   );
 }

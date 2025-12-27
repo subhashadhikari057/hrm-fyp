@@ -130,6 +130,7 @@ export class UserController {
 
   @Get()
   @ApiOperation({ summary: 'Get all users with filters and pagination (Super Admin only)' })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'role', required: false, enum: ['super_admin', 'company_admin', 'hr_manager', 'manager', 'employee'] })
   @ApiQuery({ name: 'companyId', required: false, type: String })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
