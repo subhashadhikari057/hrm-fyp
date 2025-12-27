@@ -56,7 +56,17 @@ export class CompanyController {
           description: 'Company logo image file (optional)',
         },
       },
-      required: ['companyName', 'adminEmail', 'adminPassword'],
+      required: [
+        'companyName',
+        'adminEmail',
+        'adminPassword',
+        'adminFullName',
+        'adminPhone',
+        'industry',
+        'address',
+        'city',
+        'maxEmployees',
+      ],
     },
   })
   @ApiResponse({ 
@@ -311,4 +321,3 @@ export class CompanyController {
     return this.companyService.remove(id);
   }
 }
-

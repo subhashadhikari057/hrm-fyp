@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { AlertTriangle, Building2, CheckCircle2, Users } from 'lucide-react';
+import { AlertTriangle, Ban, Building2, CheckCircle2, Eye, Pencil, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column, FilterOption } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -30,11 +30,12 @@ export default function CompaniesPage() {
     isOpen: boolean;
     companyId: string | null;
   }>({ isOpen: false, companyId: null });
-  const [deleteDialog, setDeleteDialog] = useState<{
+  const [suspendDialog, setSuspendDialog] = useState<{
     isOpen: boolean;
     company: Company | null;
   }>({ isOpen: false, company: null });
-  const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [nextStatus, setNextStatus] = useState<'active' | 'suspended'>('suspended');
 
   // Fetch companies from backend
   useEffect(() => {
@@ -215,30 +216,32 @@ export default function CompaniesPage() {
     toast.success('Company updated successfully');
   };
 
-  const handleDeleteClick = (company: Company) => {
-    setDeleteDialog({ isOpen: true, company });
+  const handleSuspendClick = (company: Company) => {
+    setNextStatus(company.status === 'suspended' ? 'active' : 'suspended');
+    setSuspendDialog({ isOpen: true, company });
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteDialog.company) return;
+  const handleSuspendConfirm = async () => {
+    if (!suspendDialog.company) return;
 
-    setDeleting(true);
+    setUpdatingStatus(true);
     try {
-      await companyApi.deleteCompany(deleteDialog.company.id);
-      toast.success(`Company "${deleteDialog.company.name}" deleted successfully`);
-      setDeleteDialog({ isOpen: false, company: null });
+      await companyApi.updateCompanyStatus(suspendDialog.company.id, { status: nextStatus });
+      const actionLabel = nextStatus === 'suspended' ? 'suspended' : 'activated';
+      toast.success(`Company "${suspendDialog.company.name}" ${actionLabel} successfully`);
+      setSuspendDialog({ isOpen: false, company: null });
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to delete company'
+        err instanceof Error ? err.message : 'Failed to update company status'
       );
     } finally {
-      setDeleting(false);
+      setUpdatingStatus(false);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialog({ isOpen: false, company: null });
+  const handleSuspendCancel = () => {
+    setSuspendDialog({ isOpen: false, company: null });
   };
 
   const actions = (company: Company) => (
@@ -251,20 +254,7 @@ export default function CompaniesPage() {
         className="text-green-600 hover:text-green-900 transition-colors"
         title="View"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          />
-        </svg>
+        <Eye className="w-5 h-5" />
       </button>
       <button
         onClick={(e) => {
@@ -274,31 +264,21 @@ export default function CompaniesPage() {
         className="text-blue-600 hover:text-blue-900 transition-colors"
         title="Edit"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
+        <Pencil className="w-5 h-5" />
       </button>
       <button
         onClick={(e) => {
           e.stopPropagation();
-          handleDeleteClick(company);
+          handleSuspendClick(company);
         }}
-        className="text-red-600 hover:text-red-900 transition-colors"
-        title="Delete"
+        className={
+          company.status === 'suspended'
+            ? 'text-green-600 hover:text-green-900 transition-colors'
+            : 'text-yellow-600 hover:text-yellow-900 transition-colors'
+        }
+        title={company.status === 'suspended' ? 'Activate' : 'Suspend'}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        {company.status === 'suspended' ? <CheckCircle2 className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
       </button>
     </>
   );
@@ -374,15 +354,30 @@ export default function CompaniesPage() {
           onSuccess={handleUpdateCompanySuccess}
         />
 
-        {/* Delete Confirmation Dialog */}
+        {/* Suspend Confirmation Dialog */}
         <DeleteConfirmDialog
-          isOpen={deleteDialog.isOpen}
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-          title="Delete Company"
-          message="Are you sure you want to delete this company? This action cannot be undone and will affect all associated users."
-          itemName={deleteDialog.company ? `${deleteDialog.company.name} (${deleteDialog.company.code})` : undefined}
-          loading={deleting}
+          isOpen={suspendDialog.isOpen}
+          onClose={handleSuspendCancel}
+          onConfirm={handleSuspendConfirm}
+          title={nextStatus === 'suspended' ? 'Suspend Company' : 'Activate Company'}
+          message={
+            nextStatus === 'suspended'
+              ? 'This will temporarily disable login for all users in this company. You can reactivate it at any time.'
+              : 'This will restore login access for all users in this company.'
+          }
+          warningText={
+            nextStatus === 'suspended'
+              ? 'You can reactivate the company later.'
+              : ''
+          }
+          itemName={
+            suspendDialog.company
+              ? `${suspendDialog.company.name} (${suspendDialog.company.code})`
+              : undefined
+          }
+          confirmLabel={nextStatus === 'suspended' ? 'Suspend' : 'Activate'}
+          confirmVariant={nextStatus === 'suspended' ? 'red' : 'blue'}
+          loading={updatingStatus}
         />
       </div>
     </DashboardLayout>

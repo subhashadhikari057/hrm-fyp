@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { companyApi, type Company, type UpdateCompanyRequest } from '../lib/api/company';
+import { API_BASE_URL } from '../lib/api/types';
 import toast from 'react-hot-toast';
 import {
     Dialog,
@@ -71,6 +72,8 @@ export function UpdateCompanyModal({
                     : '',
                 maxEmployees: company.maxEmployees || undefined,
             });
+            setLogoFile(null);
+            setLogoPreview(company.logoUrl ? `${API_BASE_URL}/uploads/${company.logoUrl}` : null);
         } catch (error) {
             toast.error('Failed to load company data');
             onClose();

@@ -38,14 +38,14 @@ export interface CreateCompanyWithAdminRequest {
   companyCode?: string;
   adminEmail: string;
   adminPassword: string;
-  adminFullName?: string;
-  adminPhone?: string;
-  industry?: string;
-  address?: string;
-  city?: string;
+  adminFullName: string;
+  adminPhone: string;
+  industry: string;
+  address: string;
+  city: string;
   country?: string;
   planExpiresAt?: string;
-  maxEmployees?: number;
+  maxEmployees: number;
   logo?: File;
 }
 
@@ -122,16 +122,16 @@ export const companyApi = {
     const formData = new FormData();
     formData.append('companyName', companyData.companyName);
     if (companyData.companyCode) formData.append('companyCode', companyData.companyCode);
-      formData.append('adminEmail', companyData.adminEmail);
-      formData.append('adminPassword', companyData.adminPassword);
-      if (companyData.adminFullName) formData.append('adminFullName', companyData.adminFullName);
-      if (companyData.adminPhone) formData.append('adminPhone', companyData.adminPhone);
-      if (companyData.industry) formData.append('industry', companyData.industry);
-    if (companyData.address) formData.append('address', companyData.address);
-    if (companyData.city) formData.append('city', companyData.city);
+    formData.append('adminEmail', companyData.adminEmail);
+    formData.append('adminPassword', companyData.adminPassword);
+    formData.append('adminFullName', companyData.adminFullName);
+    formData.append('adminPhone', companyData.adminPhone);
+    formData.append('industry', companyData.industry);
+    formData.append('address', companyData.address);
+    formData.append('city', companyData.city);
     if (companyData.country) formData.append('country', companyData.country);
     if (companyData.planExpiresAt) formData.append('planExpiresAt', companyData.planExpiresAt);
-    if (companyData.maxEmployees) formData.append('maxEmployees', String(companyData.maxEmployees));
+    formData.append('maxEmployees', String(companyData.maxEmployees));
     if (companyData.logo) formData.append('logo', companyData.logo);
 
     const response = await apiFetch(`${API_BASE_URL}/companies`, {

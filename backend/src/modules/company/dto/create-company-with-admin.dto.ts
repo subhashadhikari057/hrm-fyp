@@ -43,47 +43,47 @@ export class CreateCompanyWithAdminDto {
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   adminPassword: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Full name of the company admin',
     example: 'Jane Smith',
   })
   @IsString()
-  @IsOptional()
-  adminFullName?: string;
+  @IsNotEmpty()
+  adminFullName: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Phone number of the company admin',
     example: '+1234567890',
     maxLength: 20,
   })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MaxLength(20, { message: 'Phone number must not exceed 20 characters' })
-  adminPhone?: string;
+  adminPhone: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Industry of the company',
     example: 'Technology',
   })
   @IsString()
-  @IsOptional()
-  industry?: string;
+  @IsNotEmpty()
+  industry: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Company address',
     example: '123 Main Street',
   })
   @IsString()
-  @IsOptional()
-  address?: string;
+  @IsNotEmpty()
+  address: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'City',
     example: 'New York',
   })
   @IsString()
-  @IsOptional()
-  city?: string;
+  @IsNotEmpty()
+  city: string;
 
   @ApiPropertyOptional({
     description: 'Country',
@@ -102,13 +102,12 @@ export class CreateCompanyWithAdminDto {
   @IsOptional()
   planExpiresAt?: Date;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Maximum number of employees allowed',
     example: 100,
   })
   @Type(() => Number)
   @IsInt()
-  @IsOptional()
-  maxEmployees?: number;
+  @IsNotEmpty()
+  maxEmployees: number;
 }
-

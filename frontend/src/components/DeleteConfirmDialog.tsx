@@ -18,6 +18,9 @@ export interface DeleteConfirmDialogProps {
   message: string;
   itemName?: string;
   loading?: boolean;
+  confirmLabel?: string;
+  confirmVariant?: 'red' | 'blue' | 'cancel';
+  warningText?: string;
 }
 
 export function DeleteConfirmDialog({
@@ -28,6 +31,9 @@ export function DeleteConfirmDialog({
   message,
   itemName,
   loading = false,
+  confirmLabel = 'Delete',
+  confirmVariant = 'red',
+  warningText = 'This action cannot be undone.',
 }: DeleteConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
@@ -52,9 +58,11 @@ export function DeleteConfirmDialog({
               {itemName}
             </p>
           )}
-          <p className="text-sm text-red-600 font-medium">
-            This action cannot be undone.
-          </p>
+          {warningText && (
+            <p className="text-sm text-red-600 font-medium">
+              {warningText}
+            </p>
+          )}
         </div>
 
         <div className="pt-6">
@@ -69,11 +77,11 @@ export function DeleteConfirmDialog({
             </Button>
             <Button
               type="button"
-              variant="red"
+              variant={confirmVariant}
               onClick={handleConfirm}
               disabled={loading}
             >
-              {loading ? 'Deleting...' : 'Delete'}
+              {loading ? 'Working...' : confirmLabel}
             </Button>
           </DialogFooter>
         </div>
