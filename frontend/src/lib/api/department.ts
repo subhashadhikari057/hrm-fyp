@@ -47,6 +47,7 @@ export interface UpdateDepartmentRequest {
 }
 
 export interface FilterDepartmentsParams {
+    search?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
@@ -61,6 +62,9 @@ export const departmentApi = {
     async getDepartments(params?: FilterDepartmentsParams): Promise<DepartmentsResponse> {
         const queryParams = new URLSearchParams();
 
+        if (params?.search) {
+            queryParams.append('search', params.search);
+        }
         if (params?.isActive !== undefined) {
             queryParams.append('isActive', String(params.isActive));
         }

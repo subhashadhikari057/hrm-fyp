@@ -367,7 +367,7 @@ export class UserService {
    * Create a new user under company (Company Admin only)
    * Auto-assigns companyId from authenticated user
    */
-  async createCompanyUser(createUserDto: CreateCompanyUserDto, companyId: string) {
+  async createCompanyUser(createUserDto: CreateCompanyUserDto, companyId: string, avatarPath?: string) {
     // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
@@ -403,7 +403,7 @@ export class UserService {
         phone: createUserDto.phone,
         role: createUserDto.role || 'employee',
         companyId: companyId, // Auto-assigned from authenticated user
-        avatarUrl: createUserDto.avatarUrl,
+        avatarUrl: avatarPath || createUserDto.avatarUrl,
         isActive: createUserDto.isActive !== undefined ? createUserDto.isActive : true,
       },
       select: {
@@ -432,6 +432,7 @@ export class UserService {
    */
   async findAllCompanyUsers(filterDto: FilterCompanyUsersDto, companyId: string) {
     const {
+      search,
       role,
       isActive,
       page = 1,
@@ -446,6 +447,13 @@ export class UserService {
     };
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     // Validate sortBy field
     const validSortFields = ['createdAt', 'email', 'fullName', 'lastLoginAt', 'updatedAt'];
@@ -490,7 +498,7 @@ export class UserService {
    * Update user in company (Company Admin only)
    * Cannot update email or companyId
    */
-  async updateCompanyUser(id: string, updateUserDto: UpdateCompanyUserDto, companyId: string) {
+  async updateCompanyUser(id: string, updateUserDto: UpdateCompanyUserDto, companyId: string, avatarPath?: string) {
     // Verify user belongs to company
     await this.verifyUserBelongsToCompany(id, companyId);
 
@@ -514,8 +522,23 @@ export class UserService {
       }
       updateData.role = updateUserDto.role;
     }
-    if (updateUserDto.avatarUrl !== undefined) updateData.avatarUrl = updateUserDto.avatarUrl;
+    if (avatarPath !== undefined) {
+      updateData.avatarUrl = avatarPath;
+    } else if (updateUserDto.avatarUrl !== undefined) {
+      updateData.avatarUrl = updateUserDto.avatarUrl;
+    }
     if (updateUserDto.isActive !== undefined) updateData.isActive = updateUserDto.isActive;
+
+    if (avatarPath && existingUser.avatarUrl?.startsWith('users/')) {
+      try {
+        const fileName = existingUser.avatarUrl.split('/').pop() || '';
+        if (fileName) {
+          unlinkSync(join(process.cwd(), 'uploads', 'users', fileName));
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete old avatar for user ${id}: ${String(error)}`);
+      }
+    }
 
     // Update user
     const updatedUser = await this.prisma.user.update({

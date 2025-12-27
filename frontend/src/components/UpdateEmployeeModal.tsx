@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { employeeApi, type Employee, type UpdateEmployeeData } from '../lib/api/employee';
+import { API_BASE_URL } from '../lib/api/types';
 import { departmentApi, type Department } from '../lib/api/department';
 import { designationApi, type Designation } from '../lib/api/designation';
 import { workShiftApi, type WorkShift } from '../lib/api/workshift';
@@ -59,6 +60,8 @@ export function UpdateEmployeeModal({
     const [fetchingData, setFetchingData] = useState(false);
     const [fetchingOptions, setFetchingOptions] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -117,6 +120,11 @@ export function UpdateEmployeeModal({
                     baseSalary: employee.baseSalary ? String(employee.baseSalary) : '',
                     image: null,
                 });
+                if (imagePreview) {
+                    URL.revokeObjectURL(imagePreview);
+                }
+                setImagePreview(null);
+                setExistingImageUrl(employee.imageUrl ? `${API_BASE_URL}/uploads/${employee.imageUrl}` : null);
                 setErrors({});
             } catch (error) {
                 console.error('Error fetching employee:', error);
@@ -129,6 +137,14 @@ export function UpdateEmployeeModal({
 
         fetchEmployee();
     }, [employeeId, isOpen, onClose]);
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -151,6 +167,26 @@ export function UpdateEmployeeModal({
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
+        if (!file) {
+            setFormData((prev) => ({ ...prev, image: null }));
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            setImagePreview(null);
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            setErrors((prev) => ({ ...prev, image: 'Please select a valid image file' }));
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setErrors((prev) => ({ ...prev, image: 'Image size must be less than 5MB' }));
+            return;
+        }
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+        }
+        setImagePreview(URL.createObjectURL(file));
         setFormData((prev) => ({
             ...prev,
             image: file,
@@ -224,6 +260,11 @@ export function UpdateEmployeeModal({
     const handleClose = () => {
         if (!loading) {
             setErrors({});
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            setImagePreview(null);
+            setExistingImageUrl(null);
             onClose();
         }
     };
@@ -511,12 +552,32 @@ export function UpdateEmployeeModal({
 
                             <div>
                                 <Label>Profile Image</Label>
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    disabled={loading}
-                                />
+                                <div className="flex items-center gap-4">
+                                    {imagePreview ? (
+                                        <img
+                                            src={imagePreview}
+                                            alt="Profile preview"
+                                            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                                        />
+                                    ) : existingImageUrl ? (
+                                        <img
+                                            src={existingImageUrl}
+                                            alt="Current profile"
+                                            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                                            No image
+                                        </div>
+                                    )}
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
                             </div>
                         </div>
 

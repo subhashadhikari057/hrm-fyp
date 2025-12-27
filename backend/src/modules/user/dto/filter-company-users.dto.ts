@@ -6,6 +6,14 @@ import { parseBoolean } from '../../../common/utils/transform.util';
 
 export class FilterCompanyUsersDto extends PaginationDto {
   @ApiPropertyOptional({
+    description: 'Search by name, email, or phone',
+    example: 'john',
+  })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({
     description: 'Filter by user role',
     enum: ['hr_manager', 'manager', 'employee'],
     example: 'employee',

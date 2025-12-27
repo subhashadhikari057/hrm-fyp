@@ -9,6 +9,8 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Request,
   ForbiddenException,
 } from '@nestjs/common';
@@ -20,6 +22,8 @@ import {
   ApiCookieAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateCompanyUserDto } from './dto/create-company-user.dto';
@@ -29,6 +33,10 @@ import { ResetPasswordResponseDto } from './dto/reset-password-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileUploadUtil } from '../../common/utils/file-upload.util';
+import { userAvatarFileFilter, userAvatarLimits, userAvatarStorage } from '../../common/config/multer.config';
+import { unlinkSync } from 'fs';
 
 @ApiTags('Company Admin - Users')
 @Controller('company/users')
@@ -41,7 +49,32 @@ export class CompanyUserController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: userAvatarStorage,
+      fileFilter: userAvatarFileFilter,
+      limits: userAvatarLimits,
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new user under your company (Company Admin only)' })
+  @ApiBody({
+    type: CreateCompanyUserDto,
+    description: 'User details. For multipart/form-data, use the schema below.',
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'employee@company.com' },
+        password: { type: 'string', example: 'SecurePassword123!' },
+        fullName: { type: 'string', example: 'John Doe' },
+        phone: { type: 'string', example: '+1234567890' },
+        role: { type: 'string', enum: ['hr_manager', 'manager', 'employee'] },
+        avatar: { type: 'string', format: 'binary' },
+        isActive: { type: 'boolean', example: true },
+      },
+      required: ['email', 'password'],
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'User created successfully',
@@ -64,16 +97,39 @@ export class CompanyUserController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Company Admin role required' })
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
-  async create(@Body() createUserDto: CreateCompanyUserDto, @Request() req: any) {
+  async create(
+    @Body() createUserDto: CreateCompanyUserDto,
+    @Request() req: any,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
     const companyId = req.user.companyId;
     if (!companyId) {
       throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
     }
-    return this.userService.createCompanyUser(createUserDto, companyId);
+    if (avatar) {
+      FileUploadUtil.validateFile(avatar);
+    }
+
+    const avatarPath = avatar ? `users/${avatar.filename}` : undefined;
+    const avatarFilePath = avatar ? avatar.path : undefined;
+
+    try {
+      return await this.userService.createCompanyUser(createUserDto, companyId, avatarPath);
+    } catch (error) {
+      if (avatarFilePath) {
+        try {
+          unlinkSync(avatarFilePath);
+        } catch (deleteError) {
+          console.error('Failed to delete uploaded avatar after error:', deleteError);
+        }
+      }
+      throw error;
+    }
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all users from your company with filters and pagination (Company Admin only)' })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'role', required: false, enum: ['hr_manager', 'manager', 'employee'] })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -120,8 +176,31 @@ export class CompanyUserController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: userAvatarStorage,
+      fileFilter: userAvatarFileFilter,
+      limits: userAvatarLimits,
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update user in your company (Company Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiBody({
+    type: UpdateCompanyUserDto,
+    description: 'User details to update. For multipart/form-data, use the schema below.',
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string', example: 'John Doe' },
+        phone: { type: 'string', example: '+1234567890' },
+        role: { type: 'string', enum: ['hr_manager', 'manager', 'employee'] },
+        avatar: { type: 'string', format: 'binary' },
+        avatarUrl: { type: 'string', example: 'https://example.com/avatar.jpg' },
+        isActive: { type: 'boolean', example: true },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'User updated successfully',
@@ -143,12 +222,35 @@ export class CompanyUserController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Company Admin role required or user does not belong to your company' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateCompanyUserDto, @Request() req: any) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateCompanyUserDto,
+    @Request() req: any,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
     const companyId = req.user.companyId;
     if (!companyId) {
       throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
     }
-    return this.userService.updateCompanyUser(id, updateUserDto, companyId);
+    if (avatar) {
+      FileUploadUtil.validateFile(avatar);
+    }
+
+    const avatarPath = avatar ? `users/${avatar.filename}` : undefined;
+    const avatarFilePath = avatar ? avatar.path : undefined;
+
+    try {
+      return await this.userService.updateCompanyUser(id, updateUserDto, companyId, avatarPath);
+    } catch (error) {
+      if (avatarFilePath) {
+        try {
+          unlinkSync(avatarFilePath);
+        } catch (deleteError) {
+          console.error('Failed to delete uploaded avatar after error:', deleteError);
+        }
+      }
+      throw error;
+    }
   }
 
   @Post(':id/reset-password')
@@ -171,4 +273,3 @@ export class CompanyUserController {
     return this.userService.resetCompanyUserPassword(id, companyId);
   }
 }
-

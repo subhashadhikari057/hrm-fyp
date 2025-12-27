@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Clock, UserCheck, UserX, Users } from 'lucide-react';
+import { Clock, Eye, Pencil, Trash2, UserCheck, UserX, Users } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -13,8 +13,9 @@ import { AddEmployeeModal } from '../../../../components/AddEmployeeModal';
 import { UpdateEmployeeModal } from '../../../../components/UpdateEmployeeModal';
 import toast from 'react-hot-toast';
 import { employeeApi, type Employee } from '../../../../lib/api/employee';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { departmentApi, type Department } from '../../../../lib/api/department';
+import { designationApi, type Designation } from '../../../../lib/api/designation';
+import { API_BASE_URL } from '../../../../lib/api/types';
 
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -35,6 +36,43 @@ export default function EmployeesPage() {
         employee: Employee | null;
     }>({ isOpen: false, employee: null });
     const [deleting, setDeleting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [filters, setFilters] = useState<Record<string, string[]>>({});
+    const [sortBy, setSortBy] = useState<'createdAt' | 'firstName' | 'lastName' | 'employeeCode' | 'joinDate'>('createdAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [designations, setDesignations] = useState<Designation[]>([]);
+
+    useEffect(() => {
+        const handle = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 400);
+
+        return () => clearTimeout(handle);
+    }, [search]);
+
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [departmentsResponse, designationsResponse] = await Promise.all([
+                    departmentApi.getDepartments({ isActive: true, page: 1, limit: 100 }),
+                    designationApi.getDesignations({ isActive: true, page: 1, limit: 100 }),
+                ]);
+                setDepartments(departmentsResponse.data);
+                setDesignations(designationsResponse.data);
+            } catch (err) {
+                console.error('Error fetching filter data:', err);
+            }
+        };
+
+        fetchFilters();
+    }, []);
 
     // Fetch employees from backend
     useEffect(() => {
@@ -42,8 +80,28 @@ export default function EmployeesPage() {
             setLoading(true);
             setError(null);
             try {
-                const response = await employeeApi.getEmployees();
+                const statusValues = filters.status || [];
+                const employmentTypeValues = filters.employmentType || [];
+                const departmentValues = filters.departmentId || [];
+                const designationValues = filters.designationId || [];
+
+                const response = await employeeApi.getEmployees({
+                    search: debouncedSearch.trim() || undefined,
+                    page,
+                    limit,
+                    status: statusValues.length === 1 ? (statusValues[0] as Employee['status']) : undefined,
+                    employmentType:
+                        employmentTypeValues.length === 1
+                            ? (employmentTypeValues[0] as NonNullable<Employee['employmentType']>)
+                            : undefined,
+                    departmentId: departmentValues.length === 1 ? departmentValues[0] : undefined,
+                    designationId: designationValues.length === 1 ? designationValues[0] : undefined,
+                    sortBy,
+                    sortOrder,
+                });
                 setEmployees(response.data);
+                setTotal(response.meta?.total || response.data.length);
+                setTotalPages(response.meta?.totalPages || 1);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch employees');
                 console.error('Error fetching employees:', err);
@@ -53,11 +111,11 @@ export default function EmployeesPage() {
         };
 
         fetchEmployees();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, page, limit, debouncedSearch, filters, sortBy, sortOrder]);
 
     // Calculate stats
     const stats = useMemo(() => {
-        const total = employees.length;
+        const totalCount = total || employees.length;
         const active = employees.filter((e) => e.status === 'active').length;
         const onLeave = employees.filter((e) => e.status === 'on_leave').length;
         const terminated = employees.filter((e) => e.status === 'terminated').length;
@@ -65,7 +123,7 @@ export default function EmployeesPage() {
         return [
             {
                 label: 'Total Employees',
-                value: total,
+                value: totalCount,
                 iconBgColor: 'indigo' as const,
                 icon: <Users className="h-4 w-4" />,
             },
@@ -124,10 +182,6 @@ export default function EmployeesPage() {
 
         return (
             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${config.color}`}>
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-                    <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
-                </svg>
                 {config.label}
             </span>
         );
@@ -283,20 +337,7 @@ export default function EmployeesPage() {
                 className="text-indigo-600 hover:text-indigo-900 transition-colors"
                 title="View Details"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                </svg>
+                <Eye className="w-4 h-4" />
             </button>
             <button
                 onClick={(e) => {
@@ -306,14 +347,7 @@ export default function EmployeesPage() {
                 className="text-blue-600 hover:text-blue-900 transition-colors"
                 title="Edit"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                </svg>
+                <Pencil className="w-4 h-4" />
             </button>
             <button
                 onClick={(e) => {
@@ -323,14 +357,7 @@ export default function EmployeesPage() {
                 className="text-red-600 hover:text-red-900 transition-colors"
                 title="Delete"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                </svg>
+                <Trash2 className="w-4 h-4" />
             </button>
         </>
     );
@@ -369,6 +396,36 @@ export default function EmployeesPage() {
                     searchPlaceholder="Search employees by name, code, or email..."
                     emptyMessage={loading ? 'Loading employees...' : 'No employees found'}
                     loading={loading}
+                    serverSide={true}
+                    pagination={{
+                        page,
+                        limit,
+                        total,
+                        totalPages,
+                    }}
+                    onPageChange={(nextPage) => setPage(nextPage)}
+                    onPageSizeChange={(nextLimit) => {
+                        setLimit(nextLimit);
+                        setPage(1);
+                    }}
+                    onSortChange={(key, direction) => {
+                        const sortMap: Record<string, typeof sortBy> = {
+                            employeeCode: 'employeeCode',
+                            joinDate: 'joinDate',
+                        };
+                        const mappedKey = sortMap[key];
+                        if (!mappedKey) return;
+                        setSortBy(mappedKey);
+                        setSortOrder(direction);
+                        setPage(1);
+                    }}
+                    onSearchChange={(query) => {
+                        setSearch(query);
+                    }}
+                    onFilterChange={(nextFilters) => {
+                        setFilters(nextFilters);
+                        setPage(1);
+                    }}
                     filters={[
                         {
                             key: 'status',
@@ -379,7 +436,6 @@ export default function EmployeesPage() {
                                 { value: 'on_leave', label: 'On Leave' },
                                 { value: 'terminated', label: 'Terminated' },
                             ],
-                            getValue: (employee) => employee.status,
                         },
                         {
                             key: 'employmentType',
@@ -391,20 +447,24 @@ export default function EmployeesPage() {
                                 { value: 'contract', label: 'Contract' },
                                 { value: 'intern', label: 'Intern' },
                             ],
-                            getValue: (employee) => employee.employmentType || '',
                         },
                         {
-                            key: 'department',
+                            key: 'departmentId',
                             label: 'Department',
                             type: 'multiselect',
-                            options: Array.from(
-                                new Set(
-                                    employees
-                                        .filter((e) => e.department)
-                                        .map((e) => e.department!.name)
-                                )
-                            ).map((name) => ({ value: name, label: name })),
-                            getValue: (employee) => employee.department?.name || '',
+                            options: departments.map((department) => ({
+                                value: department.id,
+                                label: department.name,
+                            })),
+                        },
+                        {
+                            key: 'designationId',
+                            label: 'Designation',
+                            type: 'multiselect',
+                            options: designations.map((designation) => ({
+                                value: designation.id,
+                                label: designation.name,
+                            })),
                         },
                     ]}
                 />

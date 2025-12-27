@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Pencil, Trash2, XCircle } from 'lucide-react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { DataTable, Column } from '../../../../components/DataTable';
 import { StatsGrid } from '../../../../components/StatsGrid';
@@ -37,14 +37,43 @@ export default function WorkShiftsPage() {
         workShift: WorkShift | null;
     }>({ isOpen: false, workShift: null });
     const [deleting, setDeleting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [filters, setFilters] = useState<Record<string, string[]>>({});
+    const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'code' | 'startTime' | 'endTime' | 'updatedAt'>('createdAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handle = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 400);
+
+        return () => clearTimeout(handle);
+    }, [search]);
 
     useEffect(() => {
         const fetchWorkShifts = async () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await workShiftApi.getWorkShifts();
+                const statusValues = filters.isActive || [];
+                const isActive = statusValues.length === 1 ? statusValues[0] === 'true' : undefined;
+                const response = await workShiftApi.getWorkShifts({
+                    search: debouncedSearch.trim() || undefined,
+                    isActive,
+                    page,
+                    limit,
+                    sortBy,
+                    sortOrder,
+                });
                 setWorkShifts(response.data);
+                setTotal(response.meta?.total || response.data.length);
+                setTotalPages(response.meta?.totalPages || 1);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch work shifts');
                 console.error('Error fetching work shifts:', err);
@@ -54,17 +83,17 @@ export default function WorkShiftsPage() {
         };
 
         fetchWorkShifts();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, page, limit, filters, sortBy, sortOrder, debouncedSearch]);
 
     const stats = useMemo(() => {
-        const total = workShifts.length;
+        const totalCount = total || workShifts.length;
         const active = workShifts.filter((shift) => shift.isActive).length;
         const inactive = workShifts.filter((shift) => !shift.isActive).length;
 
         return [
             {
                 label: 'Total Shifts',
-                value: total,
+                value: totalCount,
                 iconBgColor: 'purple' as const,
                 icon: <Clock className="h-4 w-4" />,
             },
@@ -195,14 +224,7 @@ export default function WorkShiftsPage() {
                 className="text-blue-600 hover:text-blue-900 transition-colors"
                 title="Edit"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                </svg>
+                <Pencil className="w-4 h-4" />
             </button>
             <button
                 onClick={(e) => {
@@ -212,14 +234,7 @@ export default function WorkShiftsPage() {
                 className="text-red-600 hover:text-red-900 transition-colors"
                 title="Delete"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                </svg>
+                <Trash2 className="w-4 h-4" />
             </button>
         </>
     );
@@ -254,6 +269,25 @@ export default function WorkShiftsPage() {
                     searchPlaceholder="Search shifts by name, code, or description..."
                     emptyMessage={loading ? 'Loading work shifts...' : 'No work shifts found'}
                     loading={loading}
+                    serverSide={true}
+                    pagination={{
+                        page,
+                        limit,
+                        total,
+                        totalPages,
+                    }}
+                    onPageChange={(nextPage) => setPage(nextPage)}
+                    onPageSizeChange={(nextLimit) => {
+                        setLimit(nextLimit);
+                        setPage(1);
+                    }}
+                    onSearchChange={(query) => {
+                        setSearch(query);
+                    }}
+                    onFilterChange={(nextFilters) => {
+                        setFilters(nextFilters);
+                        setPage(1);
+                    }}
                     filters={[
                         {
                             key: 'isActive',
@@ -263,7 +297,6 @@ export default function WorkShiftsPage() {
                                 { value: 'true', label: 'Active' },
                                 { value: 'false', label: 'Inactive' },
                             ],
-                            getValue: (shift) => String(shift.isActive),
                         },
                     ]}
                 />

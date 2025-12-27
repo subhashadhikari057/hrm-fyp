@@ -72,10 +72,6 @@ export function DataTable<T extends Record<string, any>>({
   onFilterChange,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
@@ -139,68 +135,7 @@ export function DataTable<T extends Record<string, any>>({
     return result;
   }, [data, searchQuery, searchKeys, columns, filters, activeFilters]);
 
-  // Sort data
-  const sortedData = useMemo(() => {
-    if (serverSide) return filteredData;
-    if (!sortConfig) return filteredData;
-
-    return [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      return 0;
-    });
-  }, [filteredData, sortConfig]);
-
-  const handleSort = (key: string) => {
-    setSortConfig((current) => {
-      let nextConfig: { key: string; direction: 'asc' | 'desc' };
-      if (current?.key === key) {
-        nextConfig = {
-          key,
-          direction: current.direction === 'asc' ? 'desc' : 'asc',
-        };
-      } else {
-        nextConfig = { key, direction: 'asc' };
-      }
-      if (serverSide && onSortChange) {
-        onSortChange(nextConfig.key, nextConfig.direction);
-      }
-      return nextConfig;
-    });
-  };
-
-  const getSortIcon = (columnKey: string) => {
-    if (!sortConfig || sortConfig.key !== columnKey) {
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
-    }
-    return sortConfig.direction === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
-  };
+  const sortedData = filteredData;
 
   const handleFilterChange = (filterKey: string, value: string, isMultiSelect: boolean) => {
     setActiveFilters((prev) => {
@@ -475,15 +410,6 @@ export function DataTable<T extends Record<string, any>>({
                 <TableHead key={column.key}>
                   <div className="flex items-center space-x-1">
                     <span>{column.header}</span>
-                    {column.sortable && (
-                      <button
-                        onClick={() => handleSort(column.key)}
-                        className="hover:text-gray-700 transition-colors"
-                        aria-label={`Sort by ${column.header}`}
-                      >
-                        {getSortIcon(column.key)}
-                      </button>
-                    )}
                   </div>
                 </TableHead>
               ))}
@@ -644,15 +570,6 @@ export function DataTable<T extends Record<string, any>>({
                     <TableHead key={column.key}>
                       <div className="flex items-center space-x-1">
                         <span>{column.header}</span>
-                        {column.sortable && (
-                          <button
-                            onClick={() => handleSort(column.key)}
-                            className="hover:text-gray-700 transition-colors flex-shrink-0"
-                            aria-label={`Sort by ${column.header}`}
-                          >
-                            {getSortIcon(column.key)}
-                          </button>
-                        )}
                       </div>
                     </TableHead>
                   ))}

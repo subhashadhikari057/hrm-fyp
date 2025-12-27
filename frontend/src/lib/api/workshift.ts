@@ -52,6 +52,7 @@ export interface UpdateWorkShiftRequest {
 }
 
 export interface FilterWorkShiftsParams {
+    search?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
@@ -66,6 +67,9 @@ export const workShiftApi = {
     async getWorkShifts(params?: FilterWorkShiftsParams): Promise<WorkShiftsResponse> {
         const queryParams = new URLSearchParams();
 
+        if (params?.search) {
+            queryParams.append('search', params.search);
+        }
         if (params?.isActive !== undefined) {
             queryParams.append('isActive', String(params.isActive));
         }

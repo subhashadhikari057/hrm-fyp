@@ -60,6 +60,7 @@ export function AddEmployeeModal({
     const [fetchingOptions, setFetchingOptions] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [step, setStep] = useState<1 | 2>(1);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -106,8 +107,36 @@ export function AddEmployeeModal({
         }
     };
 
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
+        if (!file) {
+            setFormData((prev) => ({ ...prev, image: null }));
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            setImagePreview(null);
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            setErrors((prev) => ({ ...prev, image: 'Please select a valid image file' }));
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setErrors((prev) => ({ ...prev, image: 'Image size must be less than 5MB' }));
+            return;
+        }
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+        }
+        setImagePreview(URL.createObjectURL(file));
         setFormData((prev) => ({
             ...prev,
             image: file,
@@ -236,6 +265,10 @@ export function AddEmployeeModal({
                 baseSalary: '',
                 image: null,
             });
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            setImagePreview(null);
             setErrors({});
             setStep(1);
             onClose();
@@ -368,12 +401,28 @@ export function AddEmployeeModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Profile Image</Label>
-                            <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                disabled={loading}
-                            />
+                            <div className="flex items-center gap-4">
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="Profile preview"
+                                        className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs text-center leading-tight px-2">
+                                        No image
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                            </div>
+                            {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
                         </div>
                     </div>
                         </>

@@ -111,6 +111,7 @@ export class WorkShiftService {
    */
   async findAll(filterDto: FilterWorkShiftsDto, companyId: string) {
     const {
+      search,
       isActive,
       page = 1,
       limit = 10,
@@ -123,6 +124,13 @@ export class WorkShiftService {
       companyId: companyId, // Auto-filter by company
     };
     if (isActive !== undefined) where.isActive = isActive;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     // Validate sortBy field
     const validSortFields = ['createdAt', 'name', 'code', 'startTime', 'endTime', 'updatedAt'];
