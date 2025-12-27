@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiCookieAuth, ApiBody, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { unlinkSync } from 'fs';
@@ -6,6 +6,7 @@ import { CompanyService } from './company.service';
 import { CreateCompanyWithAdminDto } from './dto/create-company-with-admin.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { FilterCompaniesDto } from './dto/filter-companies.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -143,14 +144,22 @@ export class CompanyController {
             userCount: 5,
             createdAt: '2024-01-01T00:00:00.000Z'
           }
-        ]
+        ],
+        meta: {
+          total: 1,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       }
     }
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin role required' })
-  async findAll() {
-    return this.companyService.findAll();
+  async findAll(@Query() filter: FilterCompaniesDto) {
+    return this.companyService.findAll(filter.page, filter.limit);
   }
 
   @Get(':id')

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkShiftDto } from './dto/create-workshift.dto';
 import { UpdateWorkShiftDto } from './dto/update-workshift.dto';
 import { FilterWorkShiftsDto } from './dto/filter-workshifts.dto';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
@@ -127,8 +128,7 @@ export class WorkShiftService {
     const validSortFields = ['createdAt', 'name', 'code', 'startTime', 'endTime', 'updatedAt'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.workShift.count({ where });
@@ -137,7 +137,7 @@ export class WorkShiftService {
     const workShifts = await this.prisma.workShift.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -158,14 +158,7 @@ export class WorkShiftService {
     return {
       message: 'Work shifts retrieved successfully',
       data: workShifts,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 

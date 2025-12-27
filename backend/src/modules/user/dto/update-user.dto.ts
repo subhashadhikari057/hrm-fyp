@@ -1,6 +1,8 @@
 import { IsEmail, IsString, IsOptional, IsEnum, MaxLength, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { UserRole } from '@prisma/client';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({
@@ -51,7 +53,7 @@ export class UpdateUserDto {
     example: true,
   })
   @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
 }
-

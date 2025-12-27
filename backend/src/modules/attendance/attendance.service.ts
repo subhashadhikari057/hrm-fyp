@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
 import { FilterAttendanceDto } from './dto/filter-attendance.dto';
@@ -436,13 +437,13 @@ export class AttendanceService {
       if (dateTo) where.date.lte = getUtcStartOfDay(dateTo);
     }
 
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
     const total = await (this.prisma as any).attendanceDay.count({ where });
 
     const days = await (this.prisma as any).attendanceDay.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: { date: 'desc' },
       include: {
         workShift: {
@@ -460,14 +461,7 @@ export class AttendanceService {
     return {
       message: 'Attendance retrieved successfully',
       data: days,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -513,13 +507,13 @@ export class AttendanceService {
       if (designationId) where.employee.designationId = designationId;
     }
 
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
     const total = await (this.prisma as any).attendanceDay.count({ where });
 
     const days = await (this.prisma as any).attendanceDay.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: { date: 'desc' },
       include: {
         employee: {
@@ -547,14 +541,7 @@ export class AttendanceService {
     return {
       message: 'Attendance records retrieved successfully',
       data: days,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 

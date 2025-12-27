@@ -3,15 +3,13 @@ import { Type } from 'class-transformer';
 import {
   IsDate,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
-  Max,
-  Min,
 } from 'class-validator';
 import { AttendanceStatus } from '@prisma/client';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class FilterAttendanceDto {
+export class FilterAttendanceDto extends PaginationDto {
   @ApiPropertyOptional({
     description: 'Filter by employee ID',
     example: 'employee-uuid',
@@ -71,32 +69,6 @@ export class FilterAttendanceDto {
   @IsOptional()
   dateTo?: Date;
 
-  @ApiPropertyOptional({
-    description: 'Page number (starts from 1)',
-    example: 1,
-    minimum: 1,
-    default: 1,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit?: number = 10;
 }
-
 
 

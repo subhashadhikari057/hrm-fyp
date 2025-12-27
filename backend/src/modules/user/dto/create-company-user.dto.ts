@@ -1,6 +1,8 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, MaxLength, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { UserRole } from '@prisma/client';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
 export class CreateCompanyUserDto {
   @ApiProperty({
@@ -62,7 +64,8 @@ export class CreateCompanyUserDto {
     example: true,
     default: true,
   })
+  @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
 }
-

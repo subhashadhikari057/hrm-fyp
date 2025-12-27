@@ -1,5 +1,7 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
 export class CreateDepartmentDto {
   @ApiProperty({
@@ -39,7 +41,8 @@ export class CreateDepartmentDto {
     example: true,
     default: true,
   })
+  @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
 }
-

@@ -1,5 +1,7 @@
 import { IsString, IsOptional, MaxLength, Matches, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
 export class UpdateDesignationDto {
   @ApiPropertyOptional({
@@ -39,9 +41,9 @@ export class UpdateDesignationDto {
     example: true,
   })
   @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
 }
-
 
 

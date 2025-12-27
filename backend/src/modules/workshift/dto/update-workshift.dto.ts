@@ -1,5 +1,7 @@
 import { IsString, IsOptional, MaxLength, Matches, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
@@ -65,6 +67,7 @@ export class UpdateWorkShiftDto {
     example: true,
   })
   @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
 }

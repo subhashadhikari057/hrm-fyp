@@ -1,42 +1,18 @@
-import { IsOptional, IsBoolean, IsInt, IsString, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
-export class FilterDepartmentsDto {
+export class FilterDepartmentsDto extends PaginationDto {
   @ApiPropertyOptional({
     description: 'Filter by active status',
     example: true,
   })
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Page number (starts from 1)',
-    example: 1,
-    minimum: 1,
-    default: 1,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit?: number = 10;
 
   @ApiPropertyOptional({
     description: 'Sort field',
@@ -44,9 +20,9 @@ export class FilterDepartmentsDto {
     enum: ['createdAt', 'name', 'code', 'updatedAt'],
     default: 'createdAt',
   })
-  @IsString()
+  @IsIn(['createdAt', 'name', 'code', 'updatedAt'])
   @IsOptional()
-  sortBy?: 'createdAt' | 'name' | 'code' | 'updatedAt' = 'createdAt';
+  sortBy?: 'createdAt' | 'name' | 'code' | 'updatedAt';
 
   @ApiPropertyOptional({
     description: 'Sort order',
@@ -54,8 +30,7 @@ export class FilterDepartmentsDto {
     enum: ['asc', 'desc'],
     default: 'desc',
   })
-  @IsString()
+  @IsIn(['asc', 'desc'])
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: 'asc' | 'desc';
 }
-

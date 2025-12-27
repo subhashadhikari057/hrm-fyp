@@ -1,9 +1,11 @@
-import { IsOptional, IsEnum, IsString, IsBoolean, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsEnum, IsString, IsBoolean, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { parseBoolean } from '../../../common/utils/transform.util';
 
-export class FilterUsersDto {
+export class FilterUsersDto extends PaginationDto {
   @ApiPropertyOptional({
     description: 'Filter by user role',
     enum: UserRole,
@@ -26,35 +28,9 @@ export class FilterUsersDto {
     example: true,
   })
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => parseBoolean(value))
   @IsOptional()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Page number (starts from 1)',
-    example: 1,
-    minimum: 1,
-    default: 1,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit?: number = 10;
 
   @ApiPropertyOptional({
     description: 'Sort field',
@@ -62,9 +38,9 @@ export class FilterUsersDto {
     enum: ['createdAt', 'email', 'fullName', 'lastLoginAt', 'updatedAt'],
     default: 'createdAt',
   })
-  @IsString()
+  @IsIn(['createdAt', 'email', 'fullName', 'lastLoginAt', 'updatedAt'])
   @IsOptional()
-  sortBy?: 'createdAt' | 'email' | 'fullName' | 'lastLoginAt' | 'updatedAt' = 'createdAt';
+  sortBy?: 'createdAt' | 'email' | 'fullName' | 'lastLoginAt' | 'updatedAt';
 
   @ApiPropertyOptional({
     description: 'Sort order',
@@ -72,8 +48,7 @@ export class FilterUsersDto {
     enum: ['asc', 'desc'],
     default: 'desc',
   })
-  @IsString()
+  @IsIn(['asc', 'desc'])
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: 'asc' | 'desc';
 }
-

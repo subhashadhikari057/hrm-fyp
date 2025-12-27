@@ -4,6 +4,7 @@ import { CreateCompanyWithAdminDto } from './dto/create-company-with-admin.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { FileUploadUtil } from '../../common/utils/file-upload.util';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
 import * as bcrypt from 'bcrypt';
@@ -119,32 +120,39 @@ export class CompanyService {
   /**
    * Get all companies (Super Admin only)
    */
-  async findAll() {
-    const companies = await this.prisma.company.findMany({
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        logoUrl: true,
-        industry: true,
-        address: true,
-        city: true,
-        country: true,
-        planExpiresAt: true,
-        maxEmployees: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            users: true,
+  async findAll(page?: number, limit?: number) {
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
+
+    const [total, companies] = await Promise.all([
+      this.prisma.company.count(),
+      this.prisma.company.findMany({
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          logoUrl: true,
+          industry: true,
+          address: true,
+          city: true,
+          country: true,
+          planExpiresAt: true,
+          maxEmployees: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              users: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      }),
+    ]);
 
     return {
       message: 'Companies retrieved successfully',
@@ -164,6 +172,7 @@ export class CompanyService {
         createdAt: company.createdAt,
         updatedAt: company.updatedAt,
       })),
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -392,4 +401,3 @@ export class CompanyService {
     };
   }
 }
-

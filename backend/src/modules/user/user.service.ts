@@ -6,6 +6,7 @@ import { FilterUsersDto } from './dto/filter-users.dto';
 import { CreateCompanyUserDto } from './dto/create-company-user.dto';
 import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
 import { FilterCompanyUsersDto } from './dto/filter-company-users.dto';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { AuthService } from '../auth/auth.service';
 import { PasswordGeneratorUtil } from '../../common/utils/password-generator.util';
 import * as bcrypt from 'bcrypt';
@@ -113,8 +114,7 @@ export class UserService {
     const validSortFields = ['createdAt', 'email', 'fullName', 'lastLoginAt', 'updatedAt'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.user.count({ where });
@@ -123,7 +123,7 @@ export class UserService {
     const users = await this.prisma.user.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -153,14 +153,7 @@ export class UserService {
     return {
       message: 'Users retrieved successfully',
       data: users,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -435,8 +428,7 @@ export class UserService {
     const validSortFields = ['createdAt', 'email', 'fullName', 'lastLoginAt', 'updatedAt'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.user.count({ where });
@@ -445,7 +437,7 @@ export class UserService {
     const users = await this.prisma.user.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -467,14 +459,7 @@ export class UserService {
     return {
       message: 'Company users retrieved successfully',
       data: users,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -583,4 +568,3 @@ export class UserService {
     };
   }
 }
-

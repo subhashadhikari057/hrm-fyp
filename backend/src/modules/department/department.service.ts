@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { FilterDepartmentsDto } from './dto/filter-departments.dto';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 
 @Injectable()
 export class DepartmentService {
@@ -101,8 +102,7 @@ export class DepartmentService {
     const validSortFields = ['createdAt', 'name', 'code', 'updatedAt'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.department.count({ where });
@@ -111,7 +111,7 @@ export class DepartmentService {
     const departments = await this.prisma.department.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -130,14 +130,7 @@ export class DepartmentService {
     return {
       message: 'Departments retrieved successfully',
       data: departments,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -286,4 +279,3 @@ export class DepartmentService {
     };
   }
 }
-

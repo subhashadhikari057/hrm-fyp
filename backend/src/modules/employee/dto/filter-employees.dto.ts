@@ -1,9 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min, Max, IsDate, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsDate, IsNumber, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeStatus, EmploymentType } from '@prisma/client';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class FilterEmployeesDto {
+export class FilterEmployeesDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Search by name or employee code', example: 'John' })
   @IsString()
   @IsOptional()
@@ -71,40 +72,14 @@ export class FilterEmployeesDto {
   maxSalary?: number;
 
   @ApiPropertyOptional({
-    description: 'Page number (starts from 1)',
-    example: 1,
-    minimum: 1,
-    default: 1,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit?: number = 10;
-
-  @ApiPropertyOptional({
     description: 'Sort field',
     example: 'createdAt',
     enum: ['createdAt', 'firstName', 'lastName', 'employeeCode', 'joinDate'],
     default: 'createdAt',
   })
-  @IsString()
+  @IsIn(['createdAt', 'firstName', 'lastName', 'employeeCode', 'joinDate'])
   @IsOptional()
-  sortBy?: 'createdAt' | 'firstName' | 'lastName' | 'employeeCode' | 'joinDate' = 'createdAt';
+  sortBy?: 'createdAt' | 'firstName' | 'lastName' | 'employeeCode' | 'joinDate';
 
   @ApiPropertyOptional({
     description: 'Sort order',
@@ -112,7 +87,7 @@ export class FilterEmployeesDto {
     enum: ['asc', 'desc'],
     default: 'desc',
   })
-  @IsString()
+  @IsIn(['asc', 'desc'])
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: 'asc' | 'desc';
 }

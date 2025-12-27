@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDesignationDto } from './dto/create-designation.dto';
 import { UpdateDesignationDto } from './dto/update-designation.dto';
 import { FilterDesignationsDto } from './dto/filter-designations.dto';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 
 @Injectable()
 export class DesignationService {
@@ -101,8 +102,7 @@ export class DesignationService {
     const validSortFields = ['createdAt', 'name', 'code', 'updatedAt'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.designation.count({ where });
@@ -111,7 +111,7 @@ export class DesignationService {
     const designations = await this.prisma.designation.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -130,14 +130,7 @@ export class DesignationService {
     return {
       message: 'Designations retrieved successfully',
       data: designations,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
@@ -286,6 +279,5 @@ export class DesignationService {
     };
   }
 }
-
 
 

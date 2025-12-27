@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
@@ -300,8 +301,7 @@ export class EmployeeService {
     const validSortFields = ['createdAt', 'firstName', 'lastName', 'employeeCode', 'joinDate'];
     const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
 
     // Get total count for pagination
     const total = await this.prisma.employee.count({ where });
@@ -310,7 +310,7 @@ export class EmployeeService {
     const employees = await this.prisma.employee.findMany({
       where,
       skip,
-      take: limit,
+      take,
       orderBy: {
         [validSortBy]: sortOrder,
       },
@@ -352,14 +352,7 @@ export class EmployeeService {
     return {
       message: 'Employees retrieved successfully',
       data: employees,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
 
