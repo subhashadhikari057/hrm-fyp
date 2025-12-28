@@ -242,10 +242,10 @@ export function AddAttendanceModal({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
+            <Button type="button" variant="cancel" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" variant="blue" disabled={loading}>
               {loading ? 'Saving...' : 'Add Attendance'}
             </Button>
           </DialogFooter>
