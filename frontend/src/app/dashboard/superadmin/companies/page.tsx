@@ -62,7 +62,8 @@ export default function CompaniesPage() {
       setError(null);
       try {
         const statusValues = filters.status || [];
-        const status = statusValues.length === 1 ? statusValues[0] : undefined;
+        const status =
+          statusValues.length === 1 ? (statusValues[0] as Company['status']) : undefined;
         const response = await companyApi.getCompanies({
           search: debouncedSearch.trim() || undefined,
           status,
