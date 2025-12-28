@@ -276,6 +276,47 @@ const attendanceApi = {
       throw error;
     }
   },
+
+  async exportAttendance(params?: {
+    employeeId?: string;
+    departmentId?: string;
+    designationId?: string;
+    shiftId?: string;
+    status?: AttendanceDay['status'];
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<Blob> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.employeeId) queryParams.append('employeeId', params.employeeId);
+      if (params?.departmentId) queryParams.append('departmentId', params.departmentId);
+      if (params?.designationId) queryParams.append('designationId', params.designationId);
+      if (params?.shiftId) queryParams.append('shiftId', params.shiftId);
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+      if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+      const response = await apiFetch(
+        `${API_BASE_URL}/attendance/export?${queryParams.toString()}`,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        },
+      );
+
+      if (!response.ok) {
+        throw await handleApiError(response);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      if (error instanceof Response) {
+        throw await handleApiError(error);
+      }
+      throw error;
+    }
+  },
 };
 
 export { attendanceApi };

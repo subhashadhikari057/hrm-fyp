@@ -174,6 +174,32 @@ export class AttendanceController {
     return this.attendanceService.findAll(req.user, filter);
   }
 
+  @Get('export')
+  @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager)
+  @ApiOperation({
+    summary: 'Export attendance records as CSV (Company Admin / HR / Manager)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV export',
+  })
+  async export(
+    @Query() filter: FilterAttendanceDto,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const xlsx = await this.attendanceService.exportXlsx(req.user, filter);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="attendance-export.xlsx"',
+    );
+    res.send(xlsx);
+  }
+
   @Get(':id')
   @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager)
   @ApiOperation({
@@ -232,29 +258,6 @@ export class AttendanceController {
     @Req() req: any,
   ) {
     return this.attendanceService.updateManual(req.user, id, dto);
-  }
-
-  @Get('export')
-  @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager)
-  @ApiOperation({
-    summary: 'Export attendance records as CSV (Company Admin / HR / Manager)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'CSV export',
-  })
-  async export(
-    @Query() filter: FilterAttendanceDto,
-    @Req() req: any,
-    @Res() res: Response,
-  ) {
-    const csv = await this.attendanceService.exportCsv(req.user, filter);
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="attendance-export.csv"',
-    );
-    res.send(csv);
   }
 
   @Post('import')
@@ -319,6 +322,4 @@ export class AttendanceController {
     return this.attendanceService.markAbsents(req.user, date);
   }
 }
-
-
 

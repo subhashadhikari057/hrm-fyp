@@ -14,6 +14,7 @@ import { UpdateAttendanceModal } from '../../../../components/UpdateAttendanceMo
 import { attendanceApi, type AttendanceRecord } from '../../../../lib/api/attendance';
 import { employeeApi, type Employee } from '../../../../lib/api/employee';
 import { workShiftApi, type WorkShift } from '../../../../lib/api/workshift';
+import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = [
   { value: 'PRESENT', label: 'Present' },
@@ -103,6 +104,7 @@ export default function CompanyAdminAttendancePage() {
     isOpen: boolean;
     record: AttendanceRecord | null;
   }>({ isOpen: false, record: null });
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const fetchAttendance = async () => {
@@ -370,6 +372,33 @@ export default function CompanyAdminAttendancePage() {
     </button>
   );
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const blob = await attendanceApi.exportAttendance({
+        status: statusFilter ? (statusFilter as AttendanceRecord['status']) : undefined,
+        employeeId: employeeId || undefined,
+        dateFrom: dateFrom ? toKtmIsoDate(dateFrom) : undefined,
+        dateTo: dateTo ? toKtmIsoDate(dateTo, true) : undefined,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `attendance-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Attendance exported');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to export attendance';
+      toast.error(message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -377,7 +406,15 @@ export default function CompanyAdminAttendancePage() {
           title="Attendance"
           description="Monitor daily attendance records for your company"
           actions={
-            <AddButton label="Add Attendance" onClick={() => setAddModalOpen(true)} />
+            <div className="flex items-center gap-2">
+              <AddButton
+                label={exporting ? 'Exporting...' : 'Export'}
+                variant="outline"
+                onClick={handleExport}
+                disabled={exporting}
+              />
+              <AddButton label="Add Attendance" onClick={() => setAddModalOpen(true)} />
+            </div>
           }
         />
 

@@ -16,6 +16,7 @@ import {
   UpdateAttendanceDto,
 } from './dto/manual-attendance.dto';
 import { ImportAttendanceSummaryDto } from './dto/import-attendance.dto';
+import ExcelJS from 'exceljs';
 
 const DEFAULT_GRACE_MINUTES = 30;
 const DEFAULT_BREAK_MINUTES = 0;
@@ -794,6 +795,84 @@ export class AttendanceService {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * XLSX export helper
+   */
+  async exportXlsx(currentUser: any, filter: FilterAttendanceDto): Promise<Buffer> {
+    const result = await this.findAll(currentUser, filter);
+    const rows = result.data as any[];
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Attendance');
+
+    worksheet.columns = [
+      { header: 'Employee Name', key: 'employeeName', width: 26 },
+      { header: 'Employee Code', key: 'employeeCode', width: 16 },
+      { header: 'Date', key: 'date', width: 14 },
+      { header: 'Status', key: 'status', width: 12 },
+      { header: 'Check In', key: 'checkInTime', width: 20 },
+      { header: 'Check Out', key: 'checkOutTime', width: 20 },
+      { header: 'Worked (min)', key: 'totalWorkMinutes', width: 14 },
+      { header: 'Late (min)', key: 'lateMinutes', width: 12 },
+      { header: 'Overtime (min)', key: 'overtimeMinutes', width: 14 },
+      { header: 'Shift', key: 'shiftName', width: 18 },
+      { header: 'Notes', key: 'notes', width: 28 },
+    ];
+
+    const formatKtmDate = (value?: Date | null) => {
+      if (!value) return '';
+      return value.toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Kathmandu',
+      });
+    };
+
+    const formatKtmTime = (value?: Date | null) => {
+      if (!value) return '';
+      return value.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Kathmandu',
+      });
+    };
+
+    rows.forEach((row) => {
+      const employeeName = row.employee
+        ? `${row.employee.firstName ?? ''} ${row.employee.lastName ?? ''}`.trim()
+        : '';
+      worksheet.addRow({
+        employeeName,
+        employeeCode: row.employee?.employeeCode ?? '',
+        date: formatKtmDate(row.date),
+        status: row.status,
+        checkInTime: formatKtmTime(row.checkInTime),
+        checkOutTime: formatKtmTime(row.checkOutTime),
+        totalWorkMinutes: row.totalWorkMinutes ?? 0,
+        lateMinutes: row.lateMinutes ?? 0,
+        overtimeMinutes: row.overtimeMinutes ?? 0,
+        shiftName: row.workShift?.name ?? '',
+        notes: row.notes ?? '',
+      });
+    });
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2563EB' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 20;
+
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: worksheet.columns.length },
+    };
+
+    return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
   /**
