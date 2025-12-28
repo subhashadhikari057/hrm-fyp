@@ -25,7 +25,7 @@ const KATHMANDU_OFFSET_MINUTES = 345;
 const KATHMANDU_OFFSET_MS = KATHMANDU_OFFSET_MINUTES * 60000;
 
 function toKathmanduDate(date: Date): Date {
-  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  const utcMs = date.getTime();
   return new Date(utcMs + KATHMANDU_OFFSET_MS);
 }
 

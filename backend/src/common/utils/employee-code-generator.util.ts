@@ -13,7 +13,8 @@ export class EmployeeCodeGeneratorUtil {
     });
 
     // Use company code prefix if available, otherwise use "EMP"
-    const prefix = company?.code ? company.code.toUpperCase() : 'EMP';
+    const rawPrefix = company?.code ? company.code.toUpperCase() : 'EMP';
+    const prefix = rawPrefix.replace(/\d+$/, '') || rawPrefix;
 
     // Find the highest existing employee code number for this company
     const existingEmployees = await prisma.employee.findMany({
@@ -43,8 +44,8 @@ export class EmployeeCodeGeneratorUtil {
       }
     }
 
-    // Format with leading zeros (e.g., 1 -> "001", 123 -> "123")
-    const paddedNumber = nextNumber.toString().padStart(3, '0');
+    // Format with leading zeros (e.g., 1 -> "01", 123 -> "123")
+    const paddedNumber = nextNumber.toString().padStart(2, '0');
     const generatedCode = `${prefix}${paddedNumber}`;
 
     // Double-check uniqueness (in case of race condition)
@@ -121,4 +122,3 @@ export class EmployeeCodeGeneratorUtil {
     return generatedCode;
   }
 }
-
