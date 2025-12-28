@@ -102,7 +102,41 @@ const attendanceApi = {
       throw error;
     }
   },
+
+  async getMyAttendance(params?: {
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AttendanceListResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+      if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+      if (params?.page) queryParams.append('page', String(params.page));
+      if (params?.limit) queryParams.append('limit', String(params.limit));
+
+      const response = await apiFetch(
+        `${API_BASE_URL}/attendance/me?${queryParams.toString()}`,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        },
+      );
+
+      if (!response.ok) {
+        throw await handleApiError(response);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Response) {
+        throw await handleApiError(error);
+      }
+      throw error;
+    }
+  },
 };
 
 export { attendanceApi };
-

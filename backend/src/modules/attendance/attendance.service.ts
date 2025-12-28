@@ -22,15 +22,19 @@ const DEFAULT_BREAK_MINUTES = 0;
 const DEFAULT_HALF_DAY_MINUTES = 240;
 const DEFAULT_EARLY_CHECK_IN_MINUTES = 30;
 const KATHMANDU_OFFSET_MINUTES = 345;
+const KATHMANDU_OFFSET_MS = KATHMANDU_OFFSET_MINUTES * 60000;
 
 function toKathmanduDate(date: Date): Date {
   const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
-  return new Date(utcMs + KATHMANDU_OFFSET_MINUTES * 60000);
+  return new Date(utcMs + KATHMANDU_OFFSET_MS);
 }
 
 function getKathmanduStartOfDay(date: Date): Date {
   const ktm = toKathmanduDate(date);
-  return new Date(ktm.getFullYear(), ktm.getMonth(), ktm.getDate(), 0, 0, 0, 0);
+  const utcMidnightKtm =
+    Date.UTC(ktm.getUTCFullYear(), ktm.getUTCMonth(), ktm.getUTCDate(), 0, 0, 0, 0) -
+    KATHMANDU_OFFSET_MS;
+  return new Date(utcMidnightKtm);
 }
 
 function diffMinutes(a: Date, b: Date): number {
@@ -39,13 +43,15 @@ function diffMinutes(a: Date, b: Date): number {
 
 function alignShiftTimeToDate(baseDate: Date, shiftTime: Date): Date {
   return new Date(
-    baseDate.getFullYear(),
-    baseDate.getMonth(),
-    baseDate.getDate(),
-    shiftTime.getUTCHours(),
-    shiftTime.getUTCMinutes(),
-    shiftTime.getUTCSeconds(),
-    shiftTime.getUTCMilliseconds(),
+    Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth(),
+      baseDate.getUTCDate(),
+      shiftTime.getUTCHours(),
+      shiftTime.getUTCMinutes(),
+      shiftTime.getUTCSeconds(),
+      shiftTime.getUTCMilliseconds(),
+    ),
   );
 }
 
@@ -257,10 +263,6 @@ export class AttendanceService {
     const shiftWindow = resolveShiftWindow(nowKtm, shift.startTime, shift.endTime);
     const earliestCheckIn = new Date(
       shiftWindow.shiftStartForNow.getTime() - DEFAULT_EARLY_CHECK_IN_MINUTES * 60000,
-    );
-
-    this.logger.log(
-      `[check-in] now(UTC)=${now.toISOString()} now(KTM)=${nowKtm.toISOString()} shiftStart=${shift.startTime.toISOString()} earliest=${earliestCheckIn.toISOString()}`
     );
 
     if (nowKtm < earliestCheckIn) {
@@ -1034,8 +1036,8 @@ export class AttendanceService {
     const targetDate = getKathmanduStartOfDay(date);
     const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
 
-    // Skip weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
+    // Skip Saturday only
+    if (dayOfWeek === 6) {
       return {
         message: 'Skipped absent marking for weekend',
         data: {
@@ -1045,27 +1047,85 @@ export class AttendanceService {
       };
     }
 
+    const created = await this.markAbsentsForCompanyId(
+      currentUser.companyId,
+      targetDate,
+      currentUser.id,
+    );
+
+    return {
+      message:
+        created === 0
+          ? 'No employees to mark absent for this date'
+          : 'Absents marked successfully',
+      data: {
+        created,
+        date: targetDate.toISOString(),
+      },
+    };
+  }
+
+  async markAbsentsForAllCompanies(date: Date): Promise<{
+    skippedWeekend: boolean;
+    date: string;
+    companiesProcessed: number;
+    created: number;
+  }> {
+    const targetDate = getKathmanduStartOfDay(date);
+    const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
+
+    // Skip Saturday only
+    if (dayOfWeek === 6) {
+      return {
+        skippedWeekend: true,
+        date: targetDate.toISOString(),
+        companiesProcessed: 0,
+        created: 0,
+      };
+    }
+
+    const companies = await this.prisma.company.findMany({
+      where: { status: 'active' },
+      select: { id: true },
+    });
+
+    let totalCreated = 0;
+    for (const company of companies) {
+      totalCreated += await this.markAbsentsForCompanyId(
+        company.id,
+        targetDate,
+        null,
+      );
+    }
+
+    return {
+      skippedWeekend: false,
+      date: targetDate.toISOString(),
+      companiesProcessed: companies.length,
+      created: totalCreated,
+    };
+  }
+
+  private async markAbsentsForCompanyId(
+    companyId: string,
+    targetDate: Date,
+    createdById: string | null,
+  ): Promise<number> {
     const activeEmployees = await this.prisma.employee.findMany({
       where: {
-        companyId: currentUser.companyId,
+        companyId,
         status: 'active',
       },
       select: { id: true, companyId: true },
     });
 
     if (activeEmployees.length === 0) {
-      return {
-        message: 'No active employees found to mark absent',
-        data: {
-          created: 0,
-          date: targetDate.toISOString(),
-        },
-      };
+      return 0;
     }
 
     const existing = await (this.prisma as any).attendanceDay.findMany({
       where: {
-        companyId: currentUser.companyId,
+        companyId,
         date: targetDate,
       },
       select: {
@@ -1080,13 +1140,7 @@ export class AttendanceService {
     );
 
     if (toCreate.length === 0) {
-      return {
-        message: 'No employees to mark absent for this date',
-        data: {
-          created: 0,
-          date: targetDate.toISOString(),
-        },
-      };
+      return 0;
     }
 
     await (this.prisma as any).attendanceDay.createMany({
@@ -1099,16 +1153,10 @@ export class AttendanceService {
         lateMinutes: 0,
         overtimeMinutes: 0,
         source: 'ADMIN',
-        createdById: currentUser.id,
+        createdById,
       })),
     });
 
-    return {
-      message: 'Absents marked successfully',
-      data: {
-        created: toCreate.length,
-        date: targetDate.toISOString(),
-      },
-    };
+    return toCreate.length;
   }
 }
