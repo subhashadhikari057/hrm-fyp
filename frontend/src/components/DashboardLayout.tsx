@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import Sidebar, { getMenuItemsForRole } from './Sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [todayLabel, setTodayLabel] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +33,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/');
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    handleFullscreenChange();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Get menu items for search
   const menuItems = user ? getMenuItemsForRole(user.role) : [];
@@ -89,6 +103,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push(href);
     setSearchQuery('');
     setShowSearchResults(false);
+  };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (error) {
+      console.error('Failed to toggle fullscreen:', error);
+    }
   };
 
   return (
@@ -213,6 +239,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {todayLabel}
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                  title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
