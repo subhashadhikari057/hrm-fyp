@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -20,12 +21,16 @@ const DEFAULT_GRACE_MINUTES = 30;
 const DEFAULT_BREAK_MINUTES = 0;
 const DEFAULT_HALF_DAY_MINUTES = 240;
 const DEFAULT_EARLY_CHECK_IN_MINUTES = 30;
+const KATHMANDU_OFFSET_MINUTES = 345;
 
-function getUtcStartOfDay(date: Date): Date {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+function toKathmanduDate(date: Date): Date {
+  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  return new Date(utcMs + KATHMANDU_OFFSET_MINUTES * 60000);
+}
+
+function getKathmanduStartOfDay(date: Date): Date {
+  const ktm = toKathmanduDate(date);
+  return new Date(ktm.getFullYear(), ktm.getMonth(), ktm.getDate(), 0, 0, 0, 0);
 }
 
 function diffMinutes(a: Date, b: Date): number {
@@ -37,10 +42,10 @@ function alignShiftTimeToDate(baseDate: Date, shiftTime: Date): Date {
     baseDate.getFullYear(),
     baseDate.getMonth(),
     baseDate.getDate(),
-    shiftTime.getHours(),
-    shiftTime.getMinutes(),
-    shiftTime.getSeconds(),
-    shiftTime.getMilliseconds(),
+    shiftTime.getUTCHours(),
+    shiftTime.getUTCMinutes(),
+    shiftTime.getUTCSeconds(),
+    shiftTime.getUTCMilliseconds(),
   );
 }
 
@@ -87,7 +92,7 @@ function computeAttendanceMetrics(params: {
     halfDayMinutes = DEFAULT_HALF_DAY_MINUTES,
   } = params;
 
-  const baseDate = checkIn ?? checkOut ?? new Date();
+  const baseDate = toKathmanduDate(checkIn ?? checkOut ?? new Date());
   const shiftWindow =
     shiftStart && shiftEnd ? resolveShiftWindow(baseDate, shiftStart, shiftEnd) : null;
 
@@ -105,9 +110,10 @@ function computeAttendanceMetrics(params: {
     const lateStart = new Date(
       shiftWindow.shiftStartForNow.getTime() + graceMinutes * 60000,
     );
+    const checkInKtm = toKathmanduDate(checkIn);
     const lateMinutes =
-      checkIn.getTime() > lateStart.getTime()
-        ? diffMinutes(checkIn, shiftWindow.shiftStartForNow)
+      checkInKtm.getTime() > lateStart.getTime()
+        ? diffMinutes(checkInKtm, shiftWindow.shiftStartForNow)
         : 0;
     return {
       totalWorkMinutes: 0,
@@ -117,7 +123,7 @@ function computeAttendanceMetrics(params: {
     };
   }
 
-  const rawMinutes = diffMinutes(checkOut, checkIn);
+  const rawMinutes = diffMinutes(toKathmanduDate(checkOut), toKathmanduDate(checkIn));
   const totalWorkMinutes = Math.max(0, rawMinutes - breakMinutes);
 
   const plannedMinutes =
@@ -126,9 +132,10 @@ function computeAttendanceMetrics(params: {
   const lateStart = new Date(
     shiftWindow.shiftStartForNow.getTime() + graceMinutes * 60000,
   );
+  const checkInKtm = toKathmanduDate(checkIn);
   const lateMinutes =
-    checkIn.getTime() > lateStart.getTime()
-      ? diffMinutes(checkIn, shiftWindow.shiftStartForNow)
+    checkInKtm.getTime() > lateStart.getTime()
+      ? diffMinutes(checkInKtm, shiftWindow.shiftStartForNow)
       : 0;
 
   let status: 'PRESENT' | 'LATE' | 'HALF_DAY' =
@@ -153,6 +160,8 @@ function computeAttendanceMetrics(params: {
 
 @Injectable()
 export class AttendanceService {
+  private readonly logger = new Logger(AttendanceService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private async resolveTargetEmployee(
@@ -236,7 +245,7 @@ export class AttendanceService {
    */
   async checkIn(currentUser: any, dto: CheckInDto, meta: { ip?: string; userAgent?: string }) {
     const now = new Date();
-    const today = getUtcStartOfDay(now);
+    const today = getKathmanduStartOfDay(now);
 
     const employee = await this.resolveTargetEmployee(
       currentUser,
@@ -244,12 +253,17 @@ export class AttendanceService {
     );
 
     const shift = await this.getEmployeeShift(employee.id);
-    const shiftWindow = resolveShiftWindow(now, shift.startTime, shift.endTime);
+    const nowKtm = toKathmanduDate(now);
+    const shiftWindow = resolveShiftWindow(nowKtm, shift.startTime, shift.endTime);
     const earliestCheckIn = new Date(
       shiftWindow.shiftStartForNow.getTime() - DEFAULT_EARLY_CHECK_IN_MINUTES * 60000,
     );
 
-    if (now < earliestCheckIn) {
+    this.logger.log(
+      `[check-in] now(UTC)=${now.toISOString()} now(KTM)=${nowKtm.toISOString()} shiftStart=${shift.startTime.toISOString()} earliest=${earliestCheckIn.toISOString()}`
+    );
+
+    if (nowKtm < earliestCheckIn) {
       throw new BadRequestException(
         `Check-in is allowed only within ${DEFAULT_EARLY_CHECK_IN_MINUTES} minutes before shift start`,
       );
@@ -339,7 +353,7 @@ export class AttendanceService {
     meta: { ip?: string; userAgent?: string },
   ) {
     const now = new Date();
-    const today = getUtcStartOfDay(now);
+    const today = getKathmanduStartOfDay(now);
 
     const employee = await this.resolveTargetEmployee(
       currentUser,
@@ -433,8 +447,8 @@ export class AttendanceService {
 
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = getUtcStartOfDay(dateFrom);
-      if (dateTo) where.date.lte = getUtcStartOfDay(dateTo);
+      if (dateFrom) where.date.gte = getKathmanduStartOfDay(dateFrom);
+      if (dateTo) where.date.lte = getKathmanduStartOfDay(dateTo);
     }
 
     const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
@@ -497,8 +511,8 @@ export class AttendanceService {
 
     if (dateFrom || dateTo) {
       where.date = {};
-      if (dateFrom) where.date.gte = getUtcStartOfDay(dateFrom);
-      if (dateTo) where.date.lte = getUtcStartOfDay(dateTo);
+      if (dateFrom) where.date.gte = getKathmanduStartOfDay(dateFrom);
+      if (dateTo) where.date.lte = getKathmanduStartOfDay(dateTo);
     }
 
     if (departmentId || designationId) {
@@ -614,7 +628,7 @@ export class AttendanceService {
       );
     }
 
-    const date = getUtcStartOfDay(dto.date);
+    const date = getKathmanduStartOfDay(dto.date);
 
     const shift =
       dto.shiftId
@@ -875,7 +889,7 @@ export class AttendanceService {
           throw new Error('Missing date');
         }
 
-        const date = getUtcStartOfDay(new Date(dateStr));
+        const date = getKathmanduStartOfDay(new Date(dateStr));
 
         let employee;
         if (employeeCode) {
@@ -1017,7 +1031,7 @@ export class AttendanceService {
       );
     }
 
-    const targetDate = getUtcStartOfDay(date);
+    const targetDate = getKathmanduStartOfDay(date);
     const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
 
     // Skip weekends
