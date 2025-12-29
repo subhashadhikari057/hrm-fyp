@@ -345,32 +345,14 @@ export default function Sidebar() {
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 border-b border-gray-200 shrink-0">
-            {!isCollapsed ? (
+<div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 shrink-0">            {!isCollapsed ? (
               <>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="relative flex-shrink-0">
-                    <div className="absolute inset-0 bg-[#5974E6]/40 rounded-lg blur-sm"></div>
-                    <div className="relative bg-[#5974E6] rounded-lg p-1.5 sm:p-2">
-                      <svg
-                        className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.196-2.137M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.137M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <h2 className="text-lg sm:text-xl font-semibold text-[#5974E6] truncate">
-                    Karyasetu
-                  </h2>
+                  <img
+                    src="/logo/logo2.png"
+                    alt="Karyasetu logo"
+                    className="h-30 w-30 object-contain"
+                  />
                 </div>
 
                 <button
