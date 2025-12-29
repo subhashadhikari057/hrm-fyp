@@ -37,9 +37,9 @@ export default function LoginPage() {
         <div className="absolute -bottom-32 left-0 h-96 w-96 rounded-full bg-sky-200/60 blur-[120px]" />
         <div className="absolute inset-0 opacity-[0.12] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.08),_transparent_55%)]" />
 
-        <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="flex items-center justify-center">
+        <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="grid w-full grid-cols-1 gap-6 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="hidden lg:flex items-center justify-center">
               <img
                 src="/loginimage.jpg"
                 alt="Login illustration"
@@ -48,7 +48,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-[520px] rounded-3xl border border-gray-200/80 bg-white p-8 text-gray-900 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
+              <div className="w-full max-w-[520px] rounded-3xl border border-gray-200/80 bg-white p-6 sm:p-8 text-gray-900 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
                 <LoginForm />
               </div>
             </div>

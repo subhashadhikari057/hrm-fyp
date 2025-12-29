@@ -52,10 +52,10 @@ export function QuickActionButton({
 
   const content = (
     <>
-      <span className={`flex h-9 w-9 items-center justify-center rounded-full ${iconClasses[color]}`}>
-        <span className="h-5 w-5">{icon}</span>
+      <span className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full ${iconClasses[color]}`}>
+        <span className="h-4 w-4 sm:h-5 sm:w-5">{icon}</span>
       </span>
-      <span className="flex-1 text-left font-semibold">{label}</span>
+      <span className="flex-1 text-left text-sm sm:text-base font-semibold">{label}</span>
     </>
   );
 
@@ -63,7 +63,7 @@ export function QuickActionButton({
     <Button
       onClick={handleClick}
       variant={color}
-      className={`w-full justify-between gap-3 rounded-xl border border-transparent px-4 py-3 shadow-sm ${baseClasses[color]}`}
+      className={`w-full justify-between gap-3 rounded-xl border border-transparent px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm ${baseClasses[color]}`}
     >
       {content}
     </Button>
