@@ -1,0 +1,255 @@
+## Attendance Module
+
+This module manages employee daily attendance (check-in / check-out), manual adjustments, CSV import/export, and daily absent marking.
+
+### Models (Prisma)
+
+- `AttendanceDay`
+  - One record per employee per date.
+  - Unique constraint on `(employeeId, date)`.
+  - Fields: `employeeId`, `companyId`, `workShiftId?`, `date`, `checkInTime?`, `checkOutTime?`, `totalWorkMinutes`, `lateMinutes`, `overtimeMinutes`, `status`, `source`, `notes?`, `createdById?`, `updatedById?`, timestamps.
+
+- `AttendanceLog`
+  - One record per punch event.
+  - Fields: `employeeId`, `companyId`, `attendanceDayId?`, `timestamp`, `type`, `method`, `ipAddress?`, `userAgent?`, `createdAt`.
+
+### Enums
+
+- `AttendanceStatus`: `PRESENT | LATE | HALF_DAY | ABSENT | ON_LEAVE | WEEKEND | HOLIDAY`
+- `AttendanceSource`: `SELF | ADMIN | IMPORT`
+- `AttendanceLogType`: `CHECK_IN | CHECK_OUT`
+- `AttendanceLogMethod`: `WEB | ADMIN | IMPORT`
+
+### API Endpoints
+
+Base path: `/attendance`
+
+#### 1. Check-in
+
+- **POST** `/attendance/check-in`
+- **Roles**: `employee`, `company_admin`, `hr_manager`, `manager`
+
+Request body (optional):
+
+```json
+{
+  "employeeId": "employee-uuid (admin/HR/manager only)"
+}
+```
+
+Example success response:
+
+```json
+{
+  "message": "Check-in recorded successfully",
+  "data": {
+    "id": "attendance-id",
+    "employeeId": "employee-id",
+    "companyId": "company-id",
+    "date": "2025-01-10T00:00:00.000Z",
+    "checkInTime": "2025-01-10T09:05:00.000Z",
+    "status": "PRESENT",
+    "lateMinutes": 5,
+    "totalWorkMinutes": 0,
+    "overtimeMinutes": 0
+  }
+}
+```
+
+#### 2. Check-out
+
+- **POST** `/attendance/check-out`
+- **Roles**: `employee`, `company_admin`, `hr_manager`, `manager`
+
+Request body (optional):
+
+```json
+{
+  "employeeId": "employee-uuid (admin/HR/manager only)"
+}
+```
+
+Example success response:
+
+```json
+{
+  "message": "Check-out recorded successfully",
+  "data": {
+    "id": "attendance-id",
+    "employeeId": "employee-id",
+    "companyId": "company-id",
+    "date": "2025-01-10T00:00:00.000Z",
+    "checkInTime": "2025-01-10T09:05:00.000Z",
+    "checkOutTime": "2025-01-10T18:00:00.000Z",
+    "totalWorkMinutes": 480,
+    "lateMinutes": 5,
+    "overtimeMinutes": 0,
+    "status": "PRESENT"
+  }
+}
+```
+
+#### 3. My attendance
+
+- **GET** `/attendance/me?dateFrom=&dateTo=&page=&limit=`
+- **Role**: `employee`
+
+Example success response:
+
+```json
+{
+  "message": "Attendance retrieved successfully",
+  "data": [
+    {
+      "id": "attendance-id",
+      "date": "2025-01-10T00:00:00.000Z",
+      "status": "PRESENT",
+      "checkInTime": "2025-01-10T09:05:00.000Z",
+      "checkOutTime": "2025-01-10T18:00:00.000Z",
+      "totalWorkMinutes": 480,
+      "lateMinutes": 5,
+      "overtimeMinutes": 0,
+      "workShift": {
+        "id": "shift-id",
+        "name": "Morning Shift",
+        "code": "MS",
+        "startTime": "1970-01-01T09:00:00.000Z",
+        "endTime": "1970-01-01T17:00:00.000Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+#### 4. Admin attendance list
+
+- **GET** `/attendance`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Query params:
+
+- `employeeId`
+- `departmentId`
+- `designationId`
+- `shiftId`
+- `status`
+- `dateFrom`
+- `dateTo`
+- `page`
+- `limit`
+
+Response follows standard `{ message, data, meta }` pattern.
+
+#### 5. Get single attendance
+
+- **GET** `/attendance/:id`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Returns a single `AttendanceDay` with basic employee and shift info.
+
+#### 6. Manual create
+
+- **POST** `/attendance/manual`
+- **Roles**: `company_admin`, `hr_manager`
+
+Sample request:
+
+```json
+{
+  "employeeId": "employee-uuid",
+  "date": "2025-01-10T00:00:00.000Z",
+  "shiftId": "workshift-uuid",
+  "checkInTime": "2025-01-10T09:30:00.000Z",
+  "checkOutTime": "2025-01-10T18:00:00.000Z",
+  "status": "LATE",
+  "notes": "Manually corrected by HR"
+}
+```
+
+#### 7. Manual update
+
+- **PATCH** `/attendance/:id`
+- **Roles**: `company_admin`, `hr_manager`
+
+Sample request:
+
+```json
+{
+  "checkInTime": "2025-01-10T09:00:00.000Z",
+  "checkOutTime": "2025-01-10T17:30:00.000Z",
+  "status": "PRESENT",
+  "notes": "Updated based on access logs"
+}
+```
+
+#### 8. CSV export
+
+- **GET** `/attendance/export`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+- Same filters as list (`employeeId`, `departmentId`, `designationId`, `shiftId`, `status`, `dateFrom`, `dateTo`, `page`, `limit`).
+- Returns `text/csv` with columns:
+  - `employeeCode,employeeId,date,status,checkInTime,checkOutTime,totalWorkMinutes,lateMinutes,overtimeMinutes,shiftName,notes`
+
+#### 9. CSV import
+
+- **POST** `/attendance/import`
+- **Roles**: `company_admin`, `hr_manager`
+- **Consumes**: `multipart/form-data`
+- Field: `file` (CSV)
+
+CSV columns:
+
+- `employeeCode` **OR** `employeeEmail`
+- `date`
+- `checkInTime` (optional)
+- `checkOutTime` (optional)
+- `shiftName` (optional)
+- `notes` (optional)
+
+Example response:
+
+```json
+{
+  "message": "Attendance import completed",
+  "data": {
+    "total": 10,
+    "successCount": 8,
+    "failCount": 2,
+    "errors": [
+      { "row": 3, "message": "Employee not found" },
+      { "row": 7, "message": "Missing date" }
+    ]
+  }
+}
+```
+
+#### 10. Mark daily absents
+
+- **POST** `/attendance/mark-absent?date=YYYY-MM-DD`
+- **Roles**: `company_admin`, `hr_manager`
+
+Behavior:
+
+- Marks all active employees in the company **without** an `AttendanceDay` for the given date as `ABSENT`.
+- Skips weekends (Saturday/Sunday).
+
+Example response:
+
+```json
+{
+  "message": "Absents marked successfully",
+  "data": {
+    "created": 25,
+    "date": "2025-01-10T00:00:00.000Z"
+  }
+}
+```
+

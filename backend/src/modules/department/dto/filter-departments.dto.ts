@@ -1,0 +1,41 @@
+import { IsOptional, IsBoolean, IsIn, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { parseBoolean } from '../../../common/utils/transform.util';
+
+export class FilterDepartmentsDto extends PaginationDto {
+  @ApiPropertyOptional({ description: 'Search by name, code, or description', example: 'Engineering' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+    example: true,
+  })
+  @IsBoolean()
+  @Transform(({ value }) => parseBoolean(value))
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Sort field',
+    example: 'createdAt',
+    enum: ['createdAt', 'name', 'code', 'updatedAt'],
+    default: 'createdAt',
+  })
+  @IsIn(['createdAt', 'name', 'code', 'updatedAt'])
+  @IsOptional()
+  sortBy?: 'createdAt' | 'name' | 'code' | 'updatedAt';
+
+  @ApiPropertyOptional({
+    description: 'Sort order',
+    example: 'desc',
+    enum: ['asc', 'desc'],
+    default: 'desc',
+  })
+  @IsIn(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc';
+}
