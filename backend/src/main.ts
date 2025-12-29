@@ -23,6 +23,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000', // Frontend URL
       'http://localhost:3001', // Frontend URL (alt)
+      'https://hrm-fyp.vercel.app',
     ],
     credentials: true, // Allow cookies
   });
