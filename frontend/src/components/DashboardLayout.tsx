@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       day: 'numeric',
       year: 'numeric',
     });
-    setTodayLabel(`Today, ${formatted}`);
+    setTodayLabel(`${formatted}`);
   }, []);
 
   useEffect(() => {
@@ -242,7 +242,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   type="button"
                   onClick={toggleFullscreen}
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                  className="hidden md:inline-flex p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
                   aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                   title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >

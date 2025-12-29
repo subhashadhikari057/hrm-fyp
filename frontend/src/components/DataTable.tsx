@@ -74,7 +74,7 @@ export function DataTable<T extends Record<string, any>>({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
+  const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('table');
 
   useEffect(() => {
     if (serverSide && onFilterChange) {
