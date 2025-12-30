@@ -1185,6 +1185,36 @@ export class AttendanceService {
     };
   }
 
+  async markTodayAbsentsIfAfterCutoff(cutoffHour = 17): Promise<{
+    ran: boolean;
+    reason: string;
+    result?: {
+      skippedWeekend: boolean;
+      date: string;
+      companiesProcessed: number;
+      created: number;
+    };
+  }> {
+    const nowKtm = toKathmanduDate(new Date());
+    const hour = nowKtm.getUTCHours();
+    const minute = nowKtm.getUTCMinutes();
+    const timeLabel = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+    if (hour < cutoffHour) {
+      return {
+        ran: false,
+        reason: `Current KTM time ${timeLabel} is before ${cutoffHour}:00`,
+      };
+    }
+
+    const result = await this.markAbsentsForAllCompanies(new Date());
+    return {
+      ran: true,
+      reason: `Current KTM time ${timeLabel} is after ${cutoffHour}:00`,
+      result,
+    };
+  }
+
   private async markAbsentsForCompanyId(
     companyId: string,
     targetDate: Date,
@@ -1215,7 +1245,7 @@ export class AttendanceService {
     const existingEmployeeIds = new Set(existing.map((e) => e.employeeId));
 
     const toCreate = activeEmployees.filter(
-      (e) => !existingEmployeeIds.has(e.id),
+      (employee) => !existingEmployeeIds.has(employee.id),
     );
 
     if (toCreate.length === 0) {
