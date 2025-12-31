@@ -2,9 +2,9 @@
 title: Work Shift Module
 ---
 
-# Work Shift Module
+## Work Shift Module
 
-## Overview
+### Overview
 
 The Work Shift module manages company-level shift definitions (start/end time, code, and active status). All endpoints are scoped to the authenticated user's company and require the `company_admin` or `hr_manager` role.
 
@@ -17,13 +17,11 @@ The Work Shift module manages company-level shift definitions (start/end time, c
 - ✅ Delete shift (blocked if employees are assigned)
 - ✅ Company-scoped access control
 
----
-
-## Endpoints
+### Endpoints
 
 All endpoints are prefixed with `/company/workshifts` and require `company_admin` or `hr_manager`.
 
-### 1. Create Work Shift
+#### 1. Create Work Shift
 
 **POST** `/company/workshifts`
 
@@ -59,24 +57,25 @@ All endpoints are prefixed with `/company/workshifts` and require `company_admin
   }
   ```
 - **Validation & Rules**:
-  - `startTime` and `endTime` must be **HH:mm** or **HH:mm:ss** (24-hour).
-  - `startTime` and `endTime` must be **different**.
-  - `name` must be unique within your company.
-  - `code` must be unique within your company (if provided).
-  - Company must be **active** (not suspended/archived).
+  - `startTime` and `endTime` must be **HH:mm** or **HH:mm:ss** (24-hour)
+  - `startTime` and `endTime` must be **different**
+  - `name` must be unique within your company
+  - `code` must be unique within your company (if provided)
+  - Company must be **active** (not suspended/archived)
 - **Errors**:
   - `400 Bad Request`: Validation failed or company is suspended/archived
   - `401 Unauthorized`
   - `403 Forbidden`: Role not allowed
   - `409 Conflict`: Name or code already exists
 
-### 2. List Work Shifts
+#### 2. List Work Shifts
 
 **GET** `/company/workshifts`
 
 - **Description**: Returns a paginated list of work shifts from your company
+- **Access**: Company Admin / HR Manager only
 - **Query Parameters**:
-  - `search` (optional): Search in name, code, or description
+  - `search` (optional): Search by name, code, or description
   - `isActive` (optional): Filter by active status (`true`/`false`)
   - `page` (optional): Page number (default: 1)
   - `limit` (optional): Items per page (default: 10, max: 100)
@@ -111,21 +110,42 @@ All endpoints are prefixed with `/company/workshifts` and require `company_admin
   }
   ```
 
-### 3. Get Work Shift by ID
+#### 3. Get Work Shift by ID
 
 **GET** `/company/workshifts/:id`
 
-- **Description**: Returns a specific work shift
+- **Description**: Returns detailed information about a specific work shift
+- **Access**: Company Admin / HR Manager only
 - **Parameters**: `id` (UUID)
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Work shift retrieved successfully",
+    "data": {
+      "id": "uuid",
+      "name": "Morning Shift",
+      "code": "MS",
+      "description": "Morning shift from 9 AM to 5 PM",
+      "startTime": "1970-01-01T09:00:00.000Z",
+      "endTime": "1970-01-01T17:00:00.000Z",
+      "isActive": true,
+      "companyId": "company-uuid",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
 - **Errors**:
   - `403 Forbidden`: Work shift does not belong to your company
   - `404 Not Found`: Work shift not found
 
-### 4. Update Work Shift
+#### 4. Update Work Shift
 
 **PATCH** `/company/workshifts/:id`
 
 - **Description**: Updates work shift details
+- **Access**: Company Admin / HR Manager only
+- **Parameters**: `id` (UUID)
 - **Request Body** (all fields optional):
   ```json
   {
@@ -137,26 +157,51 @@ All endpoints are prefixed with `/company/workshifts` and require `company_admin
     "isActive": true
   }
   ```
-- **Rules**:
-  - Unique name/code enforced if changed.
-  - `startTime` and `endTime` must be valid and different.
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Work shift updated successfully",
+    "data": {
+      "id": "uuid",
+      "name": "Evening Shift",
+      "code": "ES",
+      "description": "Updated description",
+      "startTime": "1970-01-01T13:00:00.000Z",
+      "endTime": "1970-01-01T21:00:00.000Z",
+      "isActive": true,
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
+- **Restrictions**:
+  - Can only update work shifts from your own company
+  - New name/code must be unique if changed
+  - `startTime` and `endTime` must be valid and different
 - **Errors**:
   - `400 Bad Request`: Validation failed
   - `403 Forbidden`: Work shift does not belong to your company
-  - `404 Not Found`
+  - `404 Not Found`: Work shift not found
   - `409 Conflict`: Name or code already exists
 
-### 5. Delete Work Shift
+#### 5. Delete Work Shift
 
 **DELETE** `/company/workshifts/:id`
 
 - **Description**: Deletes a work shift
+- **Access**: Company Admin / HR Manager only
+- **Parameters**: `id` (UUID)
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Work shift deleted successfully"
+  }
+  ```
 - **Restrictions**:
-  - Cannot delete if employees are assigned to the shift.
+  - Cannot delete if employees are assigned to this shift
 - **Errors**:
   - `400 Bad Request`: Employees are assigned to this shift
   - `403 Forbidden`: Work shift does not belong to your company
-  - `404 Not Found`
+  - `404 Not Found`: Work shift not found
 
 ---
 

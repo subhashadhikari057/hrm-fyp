@@ -1,7 +1,6 @@
 {
   "pages": [
     "auth-module",
-    "auth-refresh",
     "user-module",
     "company-module",
     "department-module",
