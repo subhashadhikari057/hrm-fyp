@@ -1,0 +1,51 @@
+---
+title: Karyasetu HRM Docs
+description: Documentation for the Karyasetu Human Resource Management app.
+---
+
+# Karyasetu Human Resource Management (HRM)
+
+Karyasetu HRM is a comprehensive Final Year Project (FYP) Human Resource Management system designed to streamline day-to-day HR operations in a structured, secure, and scalable way. The platform centralizes employee records and organizational processes into one system so that teams can manage workforce activities consistently, reduce manual paperwork, and generate reliable operational insights.
+
+This documentation focuses on how the backend is organized, how the system behaves through APIs, and how core HR workflows are handled in real-world usage scenarios (admin and employee perspectives). It is written to support development, testing, and future expansion of the platform.
+
+## What you will find here
+
+- Platform purpose, goals, and usage scope
+- Backend architecture and development setup
+- API behavior, validation rules, constraints, and error handling expectations
+- Workflow explanations for common HR actions (end-to-end system behavior)
+- Operational logic for time-based records such as attendance (including corrections and auditability)
+- Guidelines for extending features without breaking existing flows
+
+## Who this is for
+
+- Developers working on backend services and API integrations
+- Testers validating business rules and workflow behavior
+- Project reviewers/supervisors who want to understand how the system works at a platform level
+- Future maintainers who will add new features after the initial submission
+
+## Platform goals
+
+- Provide a reliable HR platform for organizational record keeping
+- Enforce consistent rules (validation, constraints, and permissions) across the system
+- Maintain audit-friendly history for critical actions (for example, corrections and updates)
+- Support scalability and a clean structure for adding future features
+
+## Tech stack
+
+### Backend
+
+- **NestJS** — Progressive Node.js framework for building efficient and scalable server-side applications
+- **TypeScript** — Typed superset of JavaScript
+- **Prisma** — Next-generation ORM for Node.js and TypeScript
+- **PostgreSQL** — Powerful open-source relational database
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or higher)
+- **npm** (v9 or higher) or **yarn**
+- **PostgreSQL** (v14 or higher)
+- **Git**

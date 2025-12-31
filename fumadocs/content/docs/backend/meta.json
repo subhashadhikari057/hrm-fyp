@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "auth-module",
+    "auth-refresh",
+    "user-module",
+    "company-module",
+    "department-module",
+    "designation-module",
+    "workshift-module",
+    "attendance-module"
+  ]
+}
