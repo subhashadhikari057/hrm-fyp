@@ -24,6 +24,13 @@ export interface Regularization {
   reviewNote?: string | null;
   beforeSnapshot?: any;
   afterSnapshot?: any;
+  employee?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    employeeCode?: string | null;
+    departmentId?: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -86,6 +93,70 @@ const regularizationApi = {
         method: 'GET',
         headers: { ...getAuthHeaders() },
         credentials: 'include',
+      },
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  async listAdmin(params?: {
+    status?: RegularizationStatus;
+    employeeId?: string;
+    departmentId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<RegularizationListResponse> {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.employeeId) query.append('employeeId', params.employeeId);
+    if (params?.departmentId) query.append('departmentId', params.departmentId);
+    if (params?.dateFrom) query.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) query.append('dateTo', params.dateTo);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+
+    const response = await apiFetch(
+      `${API_BASE_URL}/attendance/regularizations/admin?${query.toString()}`,
+      {
+        method: 'GET',
+        headers: { ...getAuthHeaders() },
+        credentials: 'include',
+      },
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  async approve(id: string, reviewNote?: string): Promise<RegularizationResponse> {
+    const response = await apiFetch(
+      `${API_BASE_URL}/attendance/regularizations/admin/${id}/approve`,
+      {
+        method: 'PATCH',
+        headers: { ...getAuthHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({ reviewNote }),
+      },
+    );
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+    return response.json();
+  },
+
+  async reject(id: string, reviewNote?: string): Promise<RegularizationResponse> {
+    const response = await apiFetch(
+      `${API_BASE_URL}/attendance/regularizations/admin/${id}/reject`,
+      {
+        method: 'PATCH',
+        headers: { ...getAuthHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({ reviewNote }),
       },
     );
     if (!response.ok) {

@@ -34,7 +34,6 @@ export function AddEmployeeModal({
         firstName: '',
         lastName: '',
         middleName: '',
-        employeeCode: '',
         departmentId: '',
         designationId: '',
         workShiftId: '',
@@ -204,7 +203,6 @@ export function AddEmployeeModal({
             };
 
             if (formData.middleName.trim()) payload.middleName = formData.middleName.trim();
-            if (formData.employeeCode.trim()) payload.employeeCode = formData.employeeCode.trim();
             if (formData.departmentId) payload.departmentId = formData.departmentId;
             if (formData.designationId) payload.designationId = formData.designationId;
             if (formData.workShiftId) payload.workShiftId = formData.workShiftId;
@@ -246,7 +244,6 @@ export function AddEmployeeModal({
                 firstName: '',
                 lastName: '',
                 middleName: '',
-                employeeCode: '',
                 departmentId: '',
                 designationId: '',
                 workShiftId: '',
@@ -433,19 +430,7 @@ export function AddEmployeeModal({
                     <div className="text-sm text-gray-600">
                         Company Info
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <Label>Employee Code</Label>
-                            <Input
-                                type="text"
-                                name="employeeCode"
-                                value={formData.employeeCode}
-                                onChange={handleInputChange}
-                                disabled={loading}
-                                placeholder="EMP001"
-                            />
-                        </div>
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Work Email</Label>
                             <Input

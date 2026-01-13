@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { PageHeader } from '../../../../components/PageHeader';
 import { regularizationApi, type Regularization, type RegularizationRequestType, type RegularizationStatus } from '../../../../lib/api/regularizations';
-import { format } from 'date-fns';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import toast from 'react-hot-toast';
@@ -24,6 +23,25 @@ const STATUS_BADGES: Record<RegularizationStatus, string> = {
   CANCELLED: 'bg-gray-100 text-gray-700',
 };
 
+const formatDate = (value?: string | null) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    timeZone: 'Asia/Kathmandu',
+  });
+};
+
+const formatTime = (value?: string | null) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleTimeString('en-GB', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kathmandu',
+  });
+};
+
 function StatusBadge({ status }: { status: RegularizationStatus }) {
   return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGES[status] || ''}`}>{status}</span>;
 }
@@ -35,7 +53,7 @@ export default function EmployeeRegularizationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RegularizationStatus | 'ALL'>('ALL');
 
-  const [formDate, setFormDate] = useState<string>(() => format(new Date(), 'yyyy-MM-dd'));
+  const [formDate, setFormDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [formCheckIn, setFormCheckIn] = useState<string>('');
   const [formCheckOut, setFormCheckOut] = useState<string>('');
   const [formReason, setFormReason] = useState<string>('');
@@ -221,14 +239,16 @@ export default function EmployeeRegularizationsPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filtered.map((r) => {
+                      const proposedIn = formatTime(r.requestedCheckInTime);
+                      const proposedOut = formatTime(r.requestedCheckOutTime);
                       const proposed =
-                        [r.requestedCheckInTime, r.requestedCheckOutTime]
-                          .filter(Boolean)
-                          .join(' → ') || '—';
+                        proposedIn === '-' && proposedOut === '-'
+                          ? '—'
+                          : `${proposedIn} → ${proposedOut}`;
                       return (
                         <tr key={r.id} className="hover:bg-gray-50">
                           <td className="px-3 py-2 text-gray-900">
-                            {format(new Date(r.date), 'dd MMM yyyy')}
+                            {formatDate(r.date)}
                           </td>
                           <td className="px-3 py-2 text-gray-700">{r.requestType}</td>
                           <td className="px-3 py-2 text-gray-700">{proposed}</td>

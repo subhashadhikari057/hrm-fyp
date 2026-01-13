@@ -149,6 +149,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       title: 'Operations',
       items: [
         { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
+        { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
         { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
       ],
     },
