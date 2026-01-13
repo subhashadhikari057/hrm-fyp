@@ -44,28 +44,29 @@ enum Gender {
 }
 
 model Company {
-  id            String         @id @default(uuid())
-  name          String         @db.VarChar(150)
-  code          String?        @unique          // short code like "PHL" or "BHINV"
-  logoUrl       String?
-  industry      String?
-  address       String?
-  city          String?
-  country       String?
-  planExpiresAt DateTime?
-  maxEmployees  Int?
-  status        CompanyStatus  @default(active)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                        String                     @id @default(uuid())
+  name                      String                     @db.VarChar(150)
+  code                      String?                    @unique // short code like "PHL" or "BHINV"
+  logoUrl                   String?
+  industry                  String?
+  address                   String?
+  city                      String?
+  country                   String?
+  planExpiresAt             DateTime?
+  maxEmployees              Int?
+  status                    CompanyStatus              @default(active)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
   // Relations
-  users         User[]
-  departments   Department[]
-  designations  Designation[]
-  workShifts    WorkShift[]
-  employees     Employee[]
-  attendanceDays AttendanceDay[]
-  attendanceLogs AttendanceLog[]
+  users                     User[]
+  departments               Department[]
+  designations              Designation[]
+  workShifts                WorkShift[]
+  employees                 Employee[]
+  attendanceDays            AttendanceDay[]
+  attendanceLogs            AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
+  notices                   Notice[]
 
   @@index([name])
   @@index([status])
@@ -77,14 +78,14 @@ model Company {
 model User {
   id          String    @id @default(uuid())
   email       String    @unique
-  password    String    // hashed with bcrypt
+  password    String // hashed with bcrypt
   fullName    String?
   phone       String?   @db.VarChar(20)
-  avatarUrl   String?   // optional profile photo
+  avatarUrl   String? // optional profile photo
   role        UserRole  @default(employee)
   // Multi-tenant
-  companyId   String?         // null for super_admin
-  company     Company?        @relation(fields: [companyId], references: [id])
+  companyId   String? // null for super_admin
+  company     Company?  @relation(fields: [companyId], references: [id])
   // Account status
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
@@ -92,11 +93,13 @@ model User {
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  employee              Employee?
-  attendanceDaysCreated AttendanceDay[] @relation("AttendanceDayCreatedBy")
-  attendanceDaysUpdated AttendanceDay[] @relation("AttendanceDayUpdatedBy")
-  refreshTokens         RefreshToken[]
+  employee                Employee?
+  attendanceDaysCreated   AttendanceDay[]            @relation("AttendanceDayCreatedBy")
+  attendanceDaysUpdated   AttendanceDay[]            @relation("AttendanceDayUpdatedBy")
+  refreshTokens           RefreshToken[]
   reviewedRegularizations AttendanceRegularization[] @relation("regularizationReviewedBy")
+  noticesCreated          Notice[]                   @relation("NoticeCreatedBy")
+  noticesUpdated          Notice[]                   @relation("NoticeUpdatedBy")
 
   @@index([email])
   @@index([role])
@@ -107,13 +110,13 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -121,117 +124,122 @@ model RefreshToken {
 }
 
 model Department {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  name        String   @db.VarChar(100)   // e.g. "Human Resources"
-  code        String?  @db.VarChar(20)    // e.g. "HR", "DEV"
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(uuid())
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id])
+  name            String           @db.VarChar(100) // e.g. "Human Resources"
+  code            String?          @db.VarChar(20) // e.g. "HR", "DEV"
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  employees       Employee[]
+  noticeAudiences NoticeAudience[]
 
   // A company cannot have two departments with same name/code
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
-  employees     Employee[]
   @@map("departments")
 }
 
 model Designation {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  name        String   @db.VarChar(100)   // e.g. "Software Engineer", "Senior Manager"
-  code        String?  @db.VarChar(20)    // e.g. "SE", "SM", "HR_EXEC"
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(uuid())
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id])
+  name            String           @db.VarChar(100) // e.g. "Software Engineer", "Senior Manager"
+  code            String?          @db.VarChar(20) // e.g. "SE", "SM", "HR_EXEC"
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  employees       Employee[]
+  noticeAudiences NoticeAudience[]
 
   // A company cannot have two designations with same name/code
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
-  employees     Employee[]
   @@map("designations")
 }
 
 model WorkShift {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  name        String   @db.VarChar(100)
-  code        String?  @db.VarChar(20)
-  description String?
-  startTime   DateTime @db.Time
-  endTime     DateTime @db.Time
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String           @id @default(uuid())
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id])
+  name            String           @db.VarChar(100)
+  code            String?          @db.VarChar(20)
+  description     String?
+  startTime       DateTime         @db.Time
+  endTime         DateTime         @db.Time
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  employees       Employee[]
+  attendanceDays  AttendanceDay[]
+  noticeAudiences NoticeAudience[]
 
   @@unique([companyId, name])
   @@unique([companyId, code])
   @@index([companyId, isActive])
-  employees      Employee[]
-  attendanceDays AttendanceDay[]
   @@map("work_shifts")
 }
 
 model Employee {
-  id            String         @id @default(uuid())
+  id            String       @id @default(uuid())
   // Relations
-  userId        String         @unique
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyId     String
-  company       Company        @relation(fields: [companyId], references: [id])
+  company       Company      @relation(fields: [companyId], references: [id])
   departmentId  String?
-  department    Department?    @relation(fields: [departmentId], references: [id])
+  department    Department?  @relation(fields: [departmentId], references: [id])
   designationId String?
-  designation   Designation?   @relation(fields: [designationId], references: [id])
+  designation   Designation? @relation(fields: [designationId], references: [id])
   workShiftId   String?
-  workShift     WorkShift?     @relation(fields: [workShiftId], references: [id])
-  
+  workShift     WorkShift?   @relation(fields: [workShiftId], references: [id])
+
   // Core HR identity
-  employeeCode  String         // e.g. "EMP-0001"
-  firstName     String         @db.VarChar(80)
-  lastName      String         @db.VarChar(80)
-  middleName    String?        @db.VarChar(80)
-  gender        Gender?
-  dateOfBirth   DateTime?
-  
+  employeeCode String // e.g. "EMP-0001"
+  firstName    String    @db.VarChar(80)
+  lastName     String    @db.VarChar(80)
+  middleName   String?   @db.VarChar(80)
+  gender       Gender?
+  dateOfBirth  DateTime?
+
   // Job & employment
-  joinDate        DateTime?
-  probationEnd    DateTime?
-  employmentType  EmploymentType?
-  locationId      String?              // (optional future relation to CompanyLocation)
-  
+  joinDate       DateTime?
+  probationEnd   DateTime?
+  employmentType EmploymentType?
+  locationId     String? // (optional future relation to CompanyLocation)
+
   // Contacts
-  workEmail      String?
-  personalEmail  String?
-  phone          String?        @db.VarChar(20)
-  address        String?
+  workEmail             String?
+  personalEmail         String?
+  phone                 String? @db.VarChar(20)
+  address               String?
   emergencyContactName  String?
   emergencyContactPhone String? @db.VarChar(20)
-  
+
   // Profile image
-  imageUrl     String?                 // e.g. "employees/emp-0001.jpg" or full CDN URL
-  
+  imageUrl String? // e.g. "employees/emp-0001.jpg" or full CDN URL
+
   // Payroll starter fields
-  baseSalary   Float?
-  
+  baseSalary Float?
+
   // Status & audit
-  status       EmployeeStatus @default(active)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  status    EmployeeStatus @default(active)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   // Relations
-  attendanceDays AttendanceDay[]
-  attendanceLogs AttendanceLog[]
+  attendanceDays            AttendanceDay[]
+  attendanceLogs            AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
+  noticeReads               NoticeRead[]
+  noticeAudiences           NoticeAudience[]
 
-  @@unique([companyId, employeeCode])        // code unique per company
+  @@unique([companyId, employeeCode]) // code unique per company
   @@index([companyId])
   @@index([companyId, departmentId])
   @@index([companyId, designationId])
@@ -282,6 +290,26 @@ enum RegularizationStatus {
   CANCELLED
 }
 
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NoticePriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum NoticeAudienceType {
+  DEPARTMENT
+  DESIGNATION
+  EMPLOYEE
+  ROLE
+  WORK_SHIFT
+}
+
 model AttendanceDay {
   id               String           @id @default(uuid())
   companyId        String
@@ -290,7 +318,7 @@ model AttendanceDay {
   employee         Employee         @relation(fields: [employeeId], references: [id])
   workShiftId      String?
   workShift        WorkShift?       @relation(fields: [workShiftId], references: [id])
-  date             DateTime         // stored as UTC start-of-day
+  date             DateTime // stored as UTC start-of-day
   checkInTime      DateTime?
   checkOutTime     DateTime?
   totalWorkMinutes Int              @default(0)
@@ -306,8 +334,8 @@ model AttendanceDay {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  logs             AttendanceLog[]
-  regularizations  AttendanceRegularization[]
+  logs            AttendanceLog[]
+  regularizations AttendanceRegularization[]
 
   @@unique([employeeId, date])
   @@index([companyId, date])
@@ -316,48 +344,112 @@ model AttendanceDay {
 }
 
 model AttendanceLog {
-  id          String              @id @default(uuid())
-  companyId   String
-  company     Company             @relation(fields: [companyId], references: [id])
-  employeeId  String
-  employee    Employee            @relation(fields: [employeeId], references: [id])
+  id              String              @id @default(uuid())
+  companyId       String
+  company         Company             @relation(fields: [companyId], references: [id])
+  employeeId      String
+  employee        Employee            @relation(fields: [employeeId], references: [id])
   attendanceDayId String?
-  attendanceDay   AttendanceDay?  @relation(fields: [attendanceDayId], references: [id])
-  timestamp   DateTime
-  type        AttendanceLogType
-  method      AttendanceLogMethod
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime            @default(now())
+  attendanceDay   AttendanceDay?      @relation(fields: [attendanceDayId], references: [id])
+  timestamp       DateTime
+  type            AttendanceLogType
+  method          AttendanceLogMethod
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime            @default(now())
 
   @@index([companyId, employeeId, timestamp])
   @@map("attendance_logs")
 }
 
 model AttendanceRegularization {
-  id                   String                   @id @default(uuid())
-  companyId            String
-  company              Company                  @relation(fields: [companyId], references: [id])
-  employeeId           String
-  employee             Employee                 @relation(fields: [employeeId], references: [id])
-  attendanceDayId      String?
-  attendanceDay        AttendanceDay?           @relation(fields: [attendanceDayId], references: [id])
-  date                 DateTime
-  requestType          RegularizationRequestType
-  requestedCheckInTime DateTime?
+  id                    String                    @id @default(uuid())
+  companyId             String
+  company               Company                   @relation(fields: [companyId], references: [id])
+  employeeId            String
+  employee              Employee                  @relation(fields: [employeeId], references: [id])
+  attendanceDayId       String?
+  attendanceDay         AttendanceDay?            @relation(fields: [attendanceDayId], references: [id])
+  date                  DateTime
+  requestType           RegularizationRequestType
+  requestedCheckInTime  DateTime?
   requestedCheckOutTime DateTime?
-  reason               String
-  status               RegularizationStatus     @default(PENDING)
-  reviewedBy           String?
-  reviewedByUser       User?                    @relation("regularizationReviewedBy", fields: [reviewedBy], references: [id])
-  reviewedAt           DateTime?
-  reviewNote           String?
-  beforeSnapshot       Json?
-  afterSnapshot        Json?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
+  reason                String
+  status                RegularizationStatus      @default(PENDING)
+  reviewedBy            String?
+  reviewedByUser        User?                     @relation("regularizationReviewedBy", fields: [reviewedBy], references: [id])
+  reviewedAt            DateTime?
+  reviewNote            String?
+  beforeSnapshot        Json?
+  afterSnapshot         Json?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
 
   @@index([companyId, employeeId, date])
   @@index([status, date])
   @@map("attendance_regularizations")
+}
+
+model Notice {
+  id            String         @id @default(uuid())
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id])
+  title         String         @db.VarChar(200)
+  body          String
+  bannerUrl     String?
+  priority      NoticePriority @default(NORMAL)
+  status        NoticeStatus   @default(DRAFT)
+  publishAt     DateTime?
+  expiresAt     DateTime?
+  isCompanyWide Boolean        @default(true)
+  createdById   String?
+  createdBy     User?          @relation("NoticeCreatedBy", fields: [createdById], references: [id])
+  updatedById   String?
+  updatedBy     User?          @relation("NoticeUpdatedBy", fields: [updatedById], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  reads     NoticeRead[]
+  audiences NoticeAudience[]
+
+  @@index([companyId, status])
+  @@index([companyId, publishAt])
+  @@map("notices")
+}
+
+model NoticeAudience {
+  id            String             @id @default(uuid())
+  noticeId      String
+  notice        Notice             @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  type          NoticeAudienceType
+  departmentId  String?
+  department    Department?        @relation(fields: [departmentId], references: [id])
+  designationId String?
+  designation   Designation?       @relation(fields: [designationId], references: [id])
+  employeeId    String?
+  employee      Employee?          @relation(fields: [employeeId], references: [id])
+  role          UserRole?
+  workShiftId   String?
+  workShift     WorkShift?         @relation(fields: [workShiftId], references: [id])
+  createdAt     DateTime           @default(now())
+
+  @@index([type, departmentId])
+  @@index([type, designationId])
+  @@index([type, employeeId])
+  @@index([type, role])
+  @@index([type, workShiftId])
+  @@map("notice_audiences")
+}
+
+model NoticeRead {
+  id         String   @id @default(uuid())
+  noticeId   String
+  notice     Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  readAt     DateTime @default(now())
+
+  @@unique([noticeId, employeeId])
+  @@index([employeeId, readAt])
+  @@map("notice_reads")
 }

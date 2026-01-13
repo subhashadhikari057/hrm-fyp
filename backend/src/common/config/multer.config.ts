@@ -91,6 +91,36 @@ export const userAvatarLimits = {
   fileSize: 5 * 1024 * 1024, // 5MB
 };
 
+export const noticeBannerStorage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = './uploads/notices';
+    FileUploadUtil.ensureUploadDir(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const fileName = FileUploadUtil.generateFileName(file.originalname, 'notice-');
+    cb(null, fileName);
+  },
+});
+
+export const noticeBannerFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+  if (!file) {
+    return cb(null, true); // File is optional
+  }
+
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Invalid file type. Allowed types: ${allowedMimes.join(', ')}`), false);
+  }
+};
+
+export const noticeBannerLimits = {
+  fileSize: 5 * 1024 * 1024, // 5MB
+};
+
 export const attendanceCsvStorage = diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = './uploads/attendance-imports';
