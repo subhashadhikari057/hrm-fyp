@@ -52,6 +52,9 @@ export default function EmployeeRegularizationsPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RegularizationStatus | 'ALL'>('ALL');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [formDate, setFormDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [formCheckIn, setFormCheckIn] = useState<string>('');
@@ -70,9 +73,11 @@ export default function EmployeeRegularizationsPage() {
     try {
       const res = await regularizationApi.listMy({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
-        limit: 100,
+        page,
+        limit,
       });
       setRequests(res.data || []);
+      setTotalPages(res.meta?.totalPages || 1);
     } catch (err: any) {
       setError(err?.message || 'Failed to load requests');
     } finally {
@@ -83,7 +88,7 @@ export default function EmployeeRegularizationsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, page, limit]);
 
   const handleCreate = async () => {
     if (!formReason.trim()) {
@@ -208,7 +213,10 @@ export default function EmployeeRegularizationsPage() {
               <select
                 className="w-48 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as RegularizationStatus | 'ALL')}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as RegularizationStatus | 'ALL');
+                  setPage(1);
+                }}
               >
                 <option value="ALL">All statuses</option>
                 <option value="PENDING">Pending</option>
@@ -274,6 +282,30 @@ export default function EmployeeRegularizationsPage() {
                 </table>
               </div>
             )}
+
+            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+              <span>
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
