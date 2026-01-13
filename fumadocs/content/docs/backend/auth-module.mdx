@@ -1,0 +1,330 @@
+---
+title: Authentication Module
+---
+
+# Authentication Module
+
+## Overview
+
+The Authentication module handles login, session management, refresh tokens, and password updates. It uses JWT tokens stored in **HttpOnly cookies** and enforces role-based access control (RBAC).
+
+## Features
+
+- ✅ Super Admin initialization (one-time setup)
+- ✅ JWT-based authentication with HttpOnly cookies
+- ✅ Access + refresh token flow (no rotation)
+- ✅ Role-based access control (RBAC)
+- ✅ Password change functionality
+- ✅ User session management
+
+## User Roles
+
+- `super_admin` - Platform administrator (no company association)
+- `company_admin` - Company administrator
+- `hr_manager` - HR Manager
+- `manager` - Department Manager
+- `employee` - Regular employee
+
+---
+
+## Endpoints
+
+### 1. Create Super Admin
+
+**GET** `/auth/super-admin`
+
+- **Description**: Returns an HTML form for creating the first super admin user
+- **Access**: Public (one-time setup)
+- **Response**: HTML form page
+
+**POST** `/auth/super-admin`
+
+- **Description**: Creates the first super admin user (can only be created once)
+- **Access**: Public (one-time setup)
+- **Request Body**:
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "SecurePassword123",
+    "fullName": "John Doe",
+    "phone": "+1234567890"
+  }
+  ```
+- **Response** (201 Created):
+  ```json
+  {
+    "message": "Super admin created successfully",
+    "user": {
+      "id": "uuid",
+      "email": "admin@example.com",
+      "fullName": "John Doe",
+      "role": "super_admin"
+    }
+  }
+  ```
+- **Errors**:
+  - `409 Conflict`: Super admin already exists or email already in use
+
+### 2. Login
+
+**POST** `/auth/login`
+
+- **Description**: Authenticates user and sets JWT tokens in cookies
+- **Access**: Public
+- **Request Body**:
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "SecurePassword123"
+  }
+  ```
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Login successful",
+    "user": {
+      "id": "uuid",
+      "email": "admin@example.com",
+      "fullName": "John Doe",
+      "role": "super_admin",
+      "companyId": null
+    }
+  }
+  ```
+- **Cookies**:
+  - `access_token` (short-lived)
+  - `refresh_token` (long-lived)
+- **Errors**:
+  - `401 Unauthorized`: Invalid credentials or inactive account
+
+### 3. Logout
+
+**POST** `/auth/logout`
+
+- **Description**: Revokes refresh token and clears cookies
+- **Access**: Authenticated users
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Logged out successfully"
+  }
+  ```
+
+### 4. Refresh Access Token
+
+**POST** `/auth/refresh`
+
+- **Description**: Issues a new access token using the refresh token cookie
+- **Access**: Authenticated users (via `refresh_token` cookie)
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Access token refreshed",
+    "user": {
+      "id": "uuid",
+      "email": "admin@example.com",
+      "fullName": "John Doe",
+      "role": "super_admin"
+    }
+  }
+  ```
+- **Cookie**: Updates `access_token` only
+- **Errors**:
+  - `401 Unauthorized`: Refresh token missing or invalid
+
+### 5. Get Current User
+
+**GET** `/auth/me`
+
+- **Description**: Returns information about the currently authenticated user
+- **Access**: Authenticated users
+- **Headers**: Cookie with `access_token`
+- **Response** (200 OK):
+  ```json
+  {
+    "user": {
+      "id": "uuid",
+      "email": "admin@example.com",
+      "fullName": "John Doe",
+      "role": "super_admin",
+      "companyId": null,
+      "isActive": true,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
+- **Errors**:
+  - `401 Unauthorized`: Invalid or missing token
+
+### 6. Change Password
+
+**PATCH** `/auth/change-password`
+
+- **Description**: Allows authenticated users to change their password
+- **Access**: Authenticated users
+- **Request Body**:
+  ```json
+  {
+    "currentPassword": "OldPassword123",
+    "newPassword": "NewSecurePassword456"
+  }
+  ```
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Password changed successfully"
+  }
+  ```
+- **Errors**:
+  - `400 Bad Request`: Validation failed
+  - `401 Unauthorized`: Current password is incorrect or account inactive
+  - `400 Bad Request`: New password must be different from current password
+
+---
+
+## Refresh Token Authentication
+
+### Summary
+
+- Access token: short-lived JWT in `access_token` HttpOnly cookie.
+- Refresh token: long-lived JWT in `refresh_token` HttpOnly cookie.
+- Refresh token is hashed and stored in DB for revocation.
+- When access expires, the frontend calls `/auth/refresh` and retries the request.
+
+### Data Model
+
+Refresh tokens are stored as hashed values:
+
+```text
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+}
+```
+
+Storage rules:
+- Raw refresh token lives only in the HttpOnly cookie.
+- DB stores only a hash (for revocation + validation).
+
+### Environment Variables
+
+Backend (.env):
+
+```ini
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=30d
+ACCESS_TOKEN_SECRET=your_access_secret
+REFRESH_TOKEN_SECRET=your_refresh_secret
+AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SAMESITE=lax
+AUTH_COOKIE_DOMAIN=
+```
+
+Frontend (.env):
+
+```ini
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+If frontend and backend are on different domains (HTTPS), set:
+
+```ini
+AUTH_COOKIE_SECURE=true
+AUTH_COOKIE_SAMESITE=none
+AUTH_COOKIE_DOMAIN=
+```
+
+### Cookie Behavior
+
+- Login sets `access_token` and `refresh_token`.
+- Refresh updates `access_token` only.
+- Logout clears both cookies and revokes the refresh token.
+
+### Refresh Flow
+
+1) Login:
+   - Access + refresh tokens issued.
+   - Refresh token hash stored in DB.
+
+2) Normal API request:
+   - `access_token` authenticates request.
+
+3) Access expires:
+   - API returns 401.
+   - Frontend calls `/auth/refresh`.
+   - New access token is set in cookie.
+   - Original request is retried.
+
+4) Logout:
+   - Refresh token revoked and cookies cleared.
+
+### Migration
+
+Run migration after adding `RefreshToken`:
+
+```bash
+npx prisma migrate dev -n add_refresh_tokens
+```
+
+---
+
+## Frontend Integration Details
+
+### Shared API wrapper
+
+Location:
+- `frontend/src/lib/api/types.ts`
+
+Behavior:
+- `apiFetch` wraps `fetch` and retries once after a 401.
+- It calls `/auth/refresh` in a single-flight manner.
+- Requests to `/auth/login`, `/auth/logout`, `/auth/refresh` are excluded from retry.
+
+### API modules use apiFetch
+
+All API modules under `frontend/src/lib/api/` call `apiFetch`, so refresh happens automatically.
+
+### AuthContext
+
+Location:
+- `frontend/src/contexts/AuthContext.tsx`
+
+Behavior:
+- On mount, calls `authApi.getCurrentUser()` to hydrate user state.
+- On login, calls `authApi.login()`.
+- On logout, calls `authApi.logout()` and clears user state.
+- No access token is stored in localStorage or memory; cookies are the source of truth.
+
+---
+
+## Security Features
+
+- **HttpOnly Cookies**: Prevents XSS attacks (JavaScript cannot access token)
+- **Secure Flag**: Enabled in production (HTTPS only)
+- **SameSite**: `lax` for same-site, `none` for cross-site with HTTPS
+- **Password Hashing**: Bcrypt with 10 salt rounds
+- **JWT Expiry**: Configurable via env (`ACCESS_TOKEN_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_IN`)
+
+## Using RBAC in Your Code
+
+```typescript
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { Roles } from './auth/decorators/roles.decorator';
+
+@Controller('example')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class ExampleController {
+  @Get('admin-only')
+  @Roles('super_admin', 'company_admin')
+  adminOnly() {
+    // Only super_admin and company_admin can access
+  }
+}
+```

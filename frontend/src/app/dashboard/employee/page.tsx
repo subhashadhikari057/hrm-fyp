@@ -15,6 +15,7 @@ export default function EmployeeDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastAttendance, setLastAttendance] = useState<AttendanceDay | null>(null);
 
+  const hasRecordForToday = !!lastAttendance;
   const hasCheckedIn = !!lastAttendance?.checkInTime;
   const hasCheckedOut = !!lastAttendance?.checkOutTime;
 
@@ -64,7 +65,7 @@ export default function EmployeeDashboard() {
           description="Welcome to your personal workspace"
           actions={(
             <div className="flex items-center gap-3">
-              {!hasCheckedIn && (
+              {!hasRecordForToday && (
                 <Button
                   onClick={handleCheckIn}
                   disabled={isLoading}

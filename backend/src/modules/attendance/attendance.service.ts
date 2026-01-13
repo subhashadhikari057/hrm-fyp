@@ -5,7 +5,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { AttendanceLogMethod, AttendanceLogType, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { CheckInDto } from './dto/check-in.dto';
@@ -245,6 +245,23 @@ export class AttendanceService {
     }
 
     return employee.workShift;
+  }
+
+  private async getEmployeeWithShift(employeeId: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: { workShift: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID "${employeeId}" not found`);
+    }
+
+    if (!employee.workShift) {
+      throw new BadRequestException('Employee does not have a work shift assigned');
+    }
+
+    return employee;
   }
 
   /**
@@ -1185,6 +1202,151 @@ export class AttendanceService {
     };
   }
 
+  async markTodayAbsentsIfAfterCutoff(cutoffHour = 17): Promise<{
+    ran: boolean;
+    reason: string;
+    result?: {
+      skippedWeekend: boolean;
+      date: string;
+      companiesProcessed: number;
+      created: number;
+    };
+  }> {
+    const nowKtm = toKathmanduDate(new Date());
+    const hour = nowKtm.getUTCHours();
+    const minute = nowKtm.getUTCMinutes();
+    const timeLabel = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+    if (hour < cutoffHour) {
+      return {
+        ran: false,
+        reason: `Current KTM time ${timeLabel} is before ${cutoffHour}:00`,
+      };
+    }
+
+    const result = await this.markAbsentsForAllCompanies(new Date());
+    return {
+      ran: true,
+      reason: `Current KTM time ${timeLabel} is after ${cutoffHour}:00`,
+      result,
+    };
+  }
+
+  /**
+   * Apply a regularization request by updating/creating AttendanceDay
+   */
+  async applyRegularization(params: {
+    employeeId: string;
+    date: Date;
+    requestedCheckInTime?: Date | null;
+    requestedCheckOutTime?: Date | null;
+    createdById?: string | null;
+  }) {
+    const { employeeId, date, requestedCheckInTime, requestedCheckOutTime, createdById = null } = params;
+    const targetDate = getKathmanduStartOfDay(date);
+
+    const employee = await this.getEmployeeWithShift(employeeId);
+    const shiftStart = employee.workShift?.startTime ?? null;
+    const shiftEnd = employee.workShift?.endTime ?? null;
+
+    const metrics = computeAttendanceMetrics({
+      checkIn: requestedCheckInTime ?? undefined,
+      checkOut: requestedCheckOutTime ?? undefined,
+      shiftStart,
+      shiftEnd,
+      graceMinutes: DEFAULT_GRACE_MINUTES,
+      breakMinutes: DEFAULT_BREAK_MINUTES,
+      halfDayMinutes: DEFAULT_HALF_DAY_MINUTES,
+    });
+
+    const existingDay = await (this.prisma as any).attendanceDay.findFirst({
+      where: {
+        employeeId,
+        date: targetDate,
+      },
+    });
+
+    const beforeSnapshot = existingDay
+      ? {
+          checkInTime: existingDay.checkInTime,
+          checkOutTime: existingDay.checkOutTime,
+          status: existingDay.status,
+          totalWorkMinutes: existingDay.totalWorkMinutes,
+          lateMinutes: existingDay.lateMinutes,
+          overtimeMinutes: existingDay.overtimeMinutes,
+        }
+      : null;
+
+    const dataPayload = {
+      checkInTime: requestedCheckInTime ?? null,
+      checkOutTime: requestedCheckOutTime ?? null,
+      status: metrics.status,
+      totalWorkMinutes: metrics.totalWorkMinutes,
+      lateMinutes: metrics.lateMinutes,
+      overtimeMinutes: metrics.overtimeMinutes,
+      workShiftId: employee.workShiftId ?? null,
+      companyId: employee.companyId,
+      employeeId,
+      date: targetDate,
+      source: 'ADMIN',
+      ...(createdById ? { createdById } : {}),
+    };
+
+    const createdCheckIn = requestedCheckInTime && !existingDay?.checkInTime;
+    const createdCheckOut = requestedCheckOutTime && !existingDay?.checkOutTime;
+
+    const day =
+      existingDay
+        ? await (this.prisma as any).attendanceDay.update({
+            where: { id: existingDay.id },
+            data: dataPayload,
+          })
+        : await (this.prisma as any).attendanceDay.create({
+            data: dataPayload,
+          });
+
+    if (createdCheckIn) {
+      await (this.prisma as any).attendanceLog.create({
+        data: {
+          companyId: employee.companyId,
+          employeeId,
+          attendanceDayId: day.id,
+          timestamp: requestedCheckInTime,
+          type: AttendanceLogType.CHECK_IN,
+          method: AttendanceLogMethod.ADMIN,
+        },
+      });
+    }
+
+    if (createdCheckOut) {
+      await (this.prisma as any).attendanceLog.create({
+        data: {
+          companyId: employee.companyId,
+          employeeId,
+          attendanceDayId: day.id,
+          timestamp: requestedCheckOutTime,
+          type: AttendanceLogType.CHECK_OUT,
+          method: AttendanceLogMethod.ADMIN,
+        },
+      });
+    }
+
+    const afterSnapshot = {
+      checkInTime: day.checkInTime,
+      checkOutTime: day.checkOutTime,
+      status: day.status,
+      totalWorkMinutes: day.totalWorkMinutes,
+      lateMinutes: day.lateMinutes,
+      overtimeMinutes: day.overtimeMinutes,
+    };
+
+    return {
+      attendanceDayId: day.id,
+      beforeSnapshot,
+      afterSnapshot,
+    };
+  }
+
   private async markAbsentsForCompanyId(
     companyId: string,
     targetDate: Date,
@@ -1215,7 +1377,7 @@ export class AttendanceService {
     const existingEmployeeIds = new Set(existing.map((e) => e.employeeId));
 
     const toCreate = activeEmployees.filter(
-      (e) => !existingEmployeeIds.has(e.id),
+      (employee) => !existingEmployeeIds.has(employee.id),
     );
 
     if (toCreate.length === 0) {

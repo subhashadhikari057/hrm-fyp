@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "auth-module",
+    "user-module",
+    "company-module",
+    "department-module",
+    "designation-module",
+    "workshift-module",
+    "attendance-module"
+  ]
+}

@@ -1,3 +1,7 @@
+---
+title: Attendance Module
+---
+
 ## Attendance Module
 
 This module manages employee daily attendance (check-in / check-out), manual adjustments, CSV import/export, and daily absent marking.
@@ -253,3 +257,30 @@ Example response:
 }
 ```
 
+---
+
+## Cron Job: Daily Absent Marking
+
+The attendance service includes a scheduled job to auto-mark absents for the current day.
+
+**Schedule**:
+
+- Runs daily at **23:30 Asia/Kathmandu**.
+- Skips **Saturday** (weekend rule).
+
+**Logic**:
+
+- For each active company, find active employees without an `AttendanceDay` for today.
+- Create an `ABSENT` record for those employees.
+- If an attendance record already exists, it is not changed.
+
+**Startup behavior**:
+
+- When the server starts, it performs a **one-time check for today**.
+- If the current Kathmandu time is **before 17:00**, it **skips**.
+- If the time is **17:00 or later**, it runs the same absent-marking logic for today.
+
+**Notes**:
+
+- The cron only runs while the backend is running.
+- On hosting platforms that sleep services, use an external scheduler (cron job) to call `POST /attendance/mark-absent`.

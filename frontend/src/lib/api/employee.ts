@@ -286,7 +286,6 @@ const employeeApi = {
             if (data.departmentId !== undefined) formData.append('departmentId', data.departmentId);
             if (data.designationId !== undefined) formData.append('designationId', data.designationId);
             if (data.workShiftId !== undefined) formData.append('workShiftId', data.workShiftId);
-            if (data.workShiftId !== undefined) formData.append('workShiftId', data.workShiftId);
             if (data.employmentType) formData.append('employmentType', data.employmentType);
             if (data.gender) formData.append('gender', data.gender);
             if (data.dateOfBirth) formData.append('dateOfBirth', data.dateOfBirth);
