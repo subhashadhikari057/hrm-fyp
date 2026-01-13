@@ -120,4 +120,3 @@ export const attendanceCsvFileFilter = (req: any, file: Express.Multer.File, cb:
 export const attendanceCsvLimits = {
   fileSize: 5 * 1024 * 1024, // 5MB
 };
-

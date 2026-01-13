@@ -179,6 +179,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       title: 'Self Service',
       items: [
         { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar },
+        { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
         { name: 'My Leave', href: '/dashboard/employee/leave', icon: IconCalendar },
       ],
     },

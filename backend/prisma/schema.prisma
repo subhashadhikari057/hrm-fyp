@@ -65,6 +65,7 @@ model Company {
   employees     Employee[]
   attendanceDays AttendanceDay[]
   attendanceLogs AttendanceLog[]
+  attendanceRegularizations AttendanceRegularization[]
 
   @@index([name])
   @@index([status])
@@ -95,6 +96,7 @@ model User {
   attendanceDaysCreated AttendanceDay[] @relation("AttendanceDayCreatedBy")
   attendanceDaysUpdated AttendanceDay[] @relation("AttendanceDayUpdatedBy")
   refreshTokens         RefreshToken[]
+  reviewedRegularizations AttendanceRegularization[] @relation("regularizationReviewedBy")
 
   @@index([email])
   @@index([role])
@@ -227,6 +229,7 @@ model Employee {
   // Relations
   attendanceDays AttendanceDay[]
   attendanceLogs AttendanceLog[]
+  attendanceRegularizations AttendanceRegularization[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -265,6 +268,20 @@ enum AttendanceLogMethod {
   IMPORT
 }
 
+enum RegularizationRequestType {
+  MISSED_CHECKIN
+  MISSED_CHECKOUT
+  WRONG_TIME
+  FULL_DAY_EDIT
+}
+
+enum RegularizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model AttendanceDay {
   id               String           @id @default(uuid())
   companyId        String
@@ -290,6 +307,7 @@ model AttendanceDay {
   updatedAt        DateTime         @updatedAt
 
   logs             AttendanceLog[]
+  regularizations  AttendanceRegularization[]
 
   @@unique([employeeId, date])
   @@index([companyId, date])
@@ -314,4 +332,32 @@ model AttendanceLog {
 
   @@index([companyId, employeeId, timestamp])
   @@map("attendance_logs")
+}
+
+model AttendanceRegularization {
+  id                   String                   @id @default(uuid())
+  companyId            String
+  company              Company                  @relation(fields: [companyId], references: [id])
+  employeeId           String
+  employee             Employee                 @relation(fields: [employeeId], references: [id])
+  attendanceDayId      String?
+  attendanceDay        AttendanceDay?           @relation(fields: [attendanceDayId], references: [id])
+  date                 DateTime
+  requestType          RegularizationRequestType
+  requestedCheckInTime DateTime?
+  requestedCheckOutTime DateTime?
+  reason               String
+  status               RegularizationStatus     @default(PENDING)
+  reviewedBy           String?
+  reviewedByUser       User?                    @relation("regularizationReviewedBy", fields: [reviewedBy], references: [id])
+  reviewedAt           DateTime?
+  reviewNote           String?
+  beforeSnapshot       Json?
+  afterSnapshot        Json?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  @@index([companyId, employeeId, date])
+  @@index([status, date])
+  @@map("attendance_regularizations")
 }

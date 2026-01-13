@@ -11,6 +11,7 @@ import { DesignationModule } from './modules/designation/designation.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { WorkShiftModule } from './modules/workshift/workshift.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { AttendanceRegularizationModule } from './modules/attendance-regularization/attendance-regularization.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     WorkShiftModule,
     EmployeeModule,
     AttendanceModule,
+    AttendanceRegularizationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
