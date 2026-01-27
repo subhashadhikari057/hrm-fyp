@@ -123,42 +123,26 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       ],
     },
     {
-      title: 'Organization',
+      title: 'People',
       items: [
-        {
-          name: 'People',
-          href: '/dashboard/companyadmin/employees',
-          icon: IconUsers,
-          children: [
-            { name: 'Employee', href: '/dashboard/companyadmin/employees', icon: IconUsers },
-            { name: 'Users', href: '/dashboard/companyadmin/users', icon: IconUsers },
-          ],
-        },
-        {
-          name: 'Structure',
-          href: '/dashboard/companyadmin/departments',
-          icon: IconCompany,
-          children: [
-            { name: 'Department', href: '/dashboard/companyadmin/departments', icon: IconCompany },
-            { name: 'Designation', href: '/dashboard/companyadmin/designations', icon: IconBriefcase },
-          ],
-        },
+        { name: 'Employees', href: '/dashboard/companyadmin/employees', icon: IconUsers },
+        { name: 'Users', href: '/dashboard/companyadmin/users', icon: IconUsers },
+      ],
+    },
+    {
+      title: 'Structure',
+      items: [
+        { name: 'Departments', href: '/dashboard/companyadmin/departments', icon: IconCompany },
+        { name: 'Designations', href: '/dashboard/companyadmin/designations', icon: IconBriefcase },
+        { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
       ],
     },
     {
       title: 'Operations',
       items: [
-        {
-          name: 'Attendance',
-          href: '/dashboard/companyadmin/attendance',
-          icon: IconCalendar,
-          children: [
-            { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
-            { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
-            { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
-            { name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar },
-          ],
-        },
+        { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
+        { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
+        { name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar },
       ],
     },
   ],
@@ -171,9 +155,9 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
     {
       title: 'HR',
       items: [
-        { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
-        { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
-        { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
+        { name: 'Employees', href: '/dashboard/hrmanager/employees', icon: IconUsers },
+        { name: 'Departments', href: '/dashboard/hrmanager/departments', icon: IconCompany },
+        { name: 'Designations', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
         { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock },
       ],
     },
@@ -187,16 +171,9 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
     {
       title: 'Self Service',
       items: [
-        {
-          name: 'Attendance',
-          href: '/dashboard/employee/attendance',
-          icon: IconCalendar,
-          children: [
-            { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar },
-            { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
-            { name: 'Notices', href: '/dashboard/employee/notices', icon: IconCalendar },
-          ],
-        },
+        { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar },
+        { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
+        { name: 'Notices', href: '/dashboard/employee/notices', icon: IconCalendar },
         { name: 'My Leave', href: '/dashboard/employee/leave', icon: IconCalendar },
       ],
     },
@@ -206,6 +183,13 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
     {
       title: 'Main',
       items: [{ name: 'Dashboard', href: '/dashboard/employee', icon: IconDashboard }],
+    },
+    {
+      title: 'Team',
+      items: [
+        { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
+        { name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar },
+      ],
     },
   ],
 };

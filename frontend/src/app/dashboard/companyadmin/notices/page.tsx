@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from '../../../../components/ui/dialog';
 import toast from 'react-hot-toast';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const PRIORITY_BADGE: Record<string, string> = {
   HIGH: 'bg-red-100 text-red-700',
@@ -49,6 +50,15 @@ const dateToIsoStart = (val?: string) => {
   // Interpret as local date, start of day
   const d = new Date(`${val}T00:00:00`);
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+};
+
+const toDateInput = (iso?: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 function Badge({ text, className }: { text: string; className: string }) {
@@ -84,6 +94,8 @@ export default function CompanyAdminNoticesPage() {
   const [audienceId, setAudienceId] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editNotice, setEditNotice] = useState<Notice | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
@@ -114,6 +126,46 @@ export default function CompanyAdminNoticesPage() {
     } finally {
       setDeletingId(null);
       setConfirmDeleteId(null);
+    }
+  };
+
+  const handleStartEdit = (notice: Notice) => {
+    setEditNotice({
+      ...notice,
+      publishAt: toDateInput(notice.publishAt),
+      expiresAt: toDateInput(notice.expiresAt),
+    } as any);
+  };
+
+  const handleUpdate = async () => {
+    if (!editNotice) return;
+    if (!editNotice.title.trim() || !editNotice.body.trim()) {
+      toast.error('Title and body are required');
+      return;
+    }
+    if (!editNotice.publishAt) {
+      toast.error('Publish date is required');
+      return;
+    }
+    setEditSubmitting(true);
+    try {
+      const payload: any = {
+        title: editNotice.title,
+        body: editNotice.body,
+        status: editNotice.status,
+        priority: editNotice.priority,
+        isCompanyWide: editNotice.isCompanyWide,
+        publishAt: dateToIsoStart(editNotice.publishAt),
+        expiresAt: editNotice.expiresAt ? dateToIsoStart(editNotice.expiresAt) : undefined,
+      };
+      await noticesApi.updateAdmin(editNotice.id, payload);
+      toast.success('Notice updated');
+      setEditNotice(null);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -169,6 +221,39 @@ export default function CompanyAdminNoticesPage() {
     }
   }, [audienceType, departments, designations, workShifts, employees]);
 
+  const roleLabels: Record<string, string> = {
+    employee: 'Employee',
+    manager: 'Manager',
+    hr_manager: 'HR Manager',
+    company_admin: 'Company Admin',
+    super_admin: 'Super Admin',
+  };
+
+  const audienceLabel = (a: any) => {
+    switch (a.type) {
+      case 'DEPARTMENT': {
+        const d = departments.find((x) => x.id === a.departmentId);
+        return d ? `Department: ${d.name}` : 'Department';
+      }
+      case 'DESIGNATION': {
+        const d = designations.find((x) => x.id === a.designationId);
+        return d ? `Designation: ${d.name}` : 'Designation';
+      }
+      case 'WORK_SHIFT': {
+        const w = workShifts.find((x) => x.id === a.workShiftId);
+        return w ? `Shift: ${w.name}` : 'Shift';
+      }
+      case 'EMPLOYEE': {
+        const e = employees.find((x) => x.id === a.employeeId);
+        return e ? `Employee: ${e.firstName} ${e.lastName}` : 'Employee';
+      }
+      case 'ROLE':
+        return `Role: ${roleLabels[a.role] || a.role}`;
+      default:
+        return 'Audience';
+    }
+  };
+
   const handleAddAudience = () => {
     if (!audienceId) {
       toast.error('Select a target');
@@ -191,6 +276,10 @@ export default function CompanyAdminNoticesPage() {
   const handleCreate = async () => {
     if (!form.title.trim() || !form.body.trim()) {
       toast.error('Title and body are required');
+      return;
+    }
+    if (!form.publishAt) {
+      toast.error('Publish date is required');
       return;
     }
 
@@ -297,6 +386,7 @@ export default function CompanyAdminNoticesPage() {
                 <label className="text-sm font-medium text-gray-700">Publish Date</label>
                 <Input
                   type="date"
+                  required
                   value={form.publishAt}
                   onChange={(e) => setForm((prev) => ({ ...prev, publishAt: e.target.value }))}
                 />
@@ -419,52 +509,177 @@ export default function CompanyAdminNoticesPage() {
               </div>
             )}
 
-            <div className="grid gap-3">
+            <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
               {!loading && filtered.map((notice) => (
-                <Card key={notice.id} className="border border-gray-200 bg-white/70">
-                  <CardHeader className="space-y-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge text={notice.status} className={STATUS_BADGE[notice.status] || 'bg-gray-100 text-gray-700'} />
-                          <Badge text={notice.priority} className={PRIORITY_BADGE[notice.priority] || 'bg-gray-100 text-gray-700'} />
-                          <span className="text-xs text-gray-600">Company‑wide: {notice.isCompanyWide ? 'Yes' : 'No'}</span>
-                        </div>
-                        <CardTitle className="text-xl leading-tight text-gray-900">{notice.title}</CardTitle>
-                        <p className="text-sm text-gray-700 whitespace-pre-line">{notice.body}</p>
-                      </div>
-                      <Dialog open={confirmDeleteId === notice.id} onOpenChange={(open) => setConfirmDeleteId(open ? notice.id : null)}>
-                        <DialogTrigger asChild>
-                          <Button variant="red" size="sm">Delete</Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Delete this notice?</DialogTitle>
-                          </DialogHeader>
-                          <p className="text-sm text-gray-600">
-                            This action cannot be undone. Are you sure you want to delete “{notice.title}”?
-                          </p>
-                          <DialogFooter className="mt-4 flex justify-end gap-2">
-                            <Button variant="gray" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-                            <Button
-                              variant="red"
-                              size="sm"
-                              disabled={deletingId === notice.id}
-                              onClick={() => handleDelete(notice.id)}
-                            >
-                              {deletingId === notice.id ? 'Deleting...' : 'Confirm Delete'}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                <div key={notice.id} className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge text={notice.status} className={STATUS_BADGE[notice.status] || 'bg-gray-100 text-gray-700'} />
+                      <Badge text={notice.priority} className={PRIORITY_BADGE[notice.priority] || 'bg-gray-100 text-gray-700'} />
+                      {notice.isCompanyWide ? (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                          Company-wide
+                        </span>
+                      ) : (notice.audiences?.length ?? 0) > 0 ? (
+                        notice.audiences?.map((a) => (
+                          <span
+                            key={`${notice.id}-${a.type}-${a.departmentId || a.designationId || a.workShiftId || a.employeeId || a.role}`}
+                            className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                          >
+                            {audienceLabel(a)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                          Targeted
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-lg font-semibold text-gray-900">{notice.title}</div>
+                      <p className="text-sm text-gray-700 whitespace-pre-line">{notice.body}</p>
                     </div>
                     <div className="flex flex-wrap gap-6 text-xs text-gray-700">
                       <div><span className="font-semibold text-gray-800">Publish:</span> {formatDate(notice.publishAt)}</div>
                       <div><span className="font-semibold text-gray-800">Expires:</span> {formatDate(notice.expiresAt)}</div>
                       <div><span className="font-semibold text-gray-800">Reads:</span> {notice._count?.reads ?? 0}</div>
                     </div>
-                  </CardHeader>
-                </Card>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Dialog open={editNotice?.id === notice.id} onOpenChange={(open) => setEditNotice(open ? notice : null)}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-700 h-10 w-10 hover:bg-blue-100 hover:text-blue-800 active:bg-blue-200"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>Edit notice</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700">Title</label>
+                            <Input
+                              value={editNotice?.title || ''}
+                              onChange={(e) => setEditNotice((prev) => prev ? { ...prev, title: e.target.value } : prev)}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700">Body</label>
+                            <textarea
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              rows={3}
+                              value={editNotice?.body || ''}
+                              onChange={(e) => setEditNotice((prev) => prev ? { ...prev, body: e.target.value } : prev)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-sm font-medium text-gray-700">Priority</label>
+                              <select
+                                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                value={editNotice?.priority || 'NORMAL'}
+                                onChange={(e) => setEditNotice((prev) => prev ? { ...prev, priority: e.target.value as NoticePriority } : prev)}
+                              >
+                                <option value="HIGH">High</option>
+                                <option value="NORMAL">Normal</option>
+                                <option value="LOW">Low</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-sm font-medium text-gray-700">Status</label>
+                              <select
+                                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                value={editNotice?.status || 'PUBLISHED'}
+                                onChange={(e) => setEditNotice((prev) => prev ? { ...prev, status: e.target.value as NoticeStatus } : prev)}
+                              >
+                                <option value="DRAFT">Draft</option>
+                                <option value="PUBLISHED">Published</option>
+                                <option value="ARCHIVED">Archived</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-sm font-medium text-gray-700">Publish Date</label>
+                              <Input
+                                type="date"
+                                value={editNotice ? toDateInput(editNotice.publishAt || undefined) : ''}
+                                onChange={(e) => setEditNotice((prev) => prev ? { ...prev, publishAt: e.target.value } : prev)}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-sm font-medium text-gray-700">Expires Date</label>
+                              <Input
+                                type="date"
+                                value={editNotice ? toDateInput(editNotice.expiresAt || undefined) : ''}
+                                onChange={(e) => setEditNotice((prev) => prev ? { ...prev, expiresAt: e.target.value } : prev)}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="editCompanyWide"
+                              type="checkbox"
+                              checked={editNotice?.isCompanyWide ?? true}
+                              onChange={(e) => setEditNotice((prev) => prev ? { ...prev, isCompanyWide: e.target.checked } : prev)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label htmlFor="editCompanyWide" className="text-sm text-gray-700">
+                              Company-wide notice
+                            </label>
+                          </div>
+                        </div>
+                        <DialogFooter className="mt-4 flex justify-end gap-2">
+                          <Button variant="gray" size="sm" onClick={() => setEditNotice(null)}>Cancel</Button>
+                          <Button
+                            variant="blue"
+                            size="sm"
+                            disabled={editSubmitting}
+                            onClick={handleUpdate}
+                          >
+                            {editSubmitting ? 'Saving...' : 'Save Changes'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={confirmDeleteId === notice.id} onOpenChange={(open) => setConfirmDeleteId(open ? notice.id : null)}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-700 h-10 w-10 hover:bg-red-100 hover:text-red-800 active:bg-red-200"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Delete this notice?</DialogTitle>
+                        </DialogHeader>
+                        <p className="text-sm text-gray-600">
+                          This action cannot be undone. Are you sure you want to delete “{notice.title}”?
+                        </p>
+                        <DialogFooter className="mt-4 flex justify-end gap-2">
+                          <Button variant="gray" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                          <Button
+                            variant="red"
+                            size="sm"
+                            disabled={deletingId === notice.id}
+                            onClick={() => handleDelete(notice.id)}
+                          >
+                            {deletingId === notice.id ? 'Deleting...' : 'Confirm Delete'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               ))}
             </div>
 
