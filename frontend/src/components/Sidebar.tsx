@@ -138,12 +138,16 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       ],
     },
     {
-      title: 'Operations',
+      title: 'Attendance',
       items: [
-        { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
+        { name: 'Overview', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
+        { name: 'Employee Attendance', href: '/dashboard/companyadmin/attendance/employee', icon: IconCalendar },
         { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
-        { name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar },
       ],
+    },
+    {
+      title: 'Operations',
+      items: [{ name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar }],
     },
   ],
 
@@ -414,19 +418,19 @@ export default function Sidebar() {
                   // - clicking the row navigates to parent href (same as before)
                   return (
                     <div key={item.name} className="space-y-1">
-                      <div
-                        className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors ${
-                          isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5'
-                        } ${
-                          isActive(item.href) || childActive
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
+                    <div
+                      className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                        isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5'
+                      } ${
+                        isActive(item.href) || childActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-100'
                         }`}
                         title={isCollapsed ? item.name : undefined}
                       >
                         <button
                           onClick={() => handleNavigation(item.href)}
-                          className={`flex items-center w-full ${isCollapsed ? 'justify-center' : ''}`}
+                          className={`flex items-center w-full cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
                         >
                           <span className={`${isCollapsed ? '' : 'mr-2.5 sm:mr-3'} flex-shrink-0`}>
                             {item.icon}
@@ -440,7 +444,7 @@ export default function Sidebar() {
                               e.stopPropagation();
                               toggleSubmenu(item.href);
                             }}
-                            className="ml-2 p-1 rounded hover:bg-black/5 transition-colors"
+                            className="ml-2 p-1 rounded hover:bg-black/5 transition-colors cursor-pointer"
                             aria-label={expanded ? 'Collapse submenu' : 'Expand submenu'}
                           >
                             <svg
@@ -462,7 +466,7 @@ export default function Sidebar() {
                             <button
                               key={child.name}
                               onClick={() => handleNavigation(child.href)}
-                              className={`w-full flex items-center rounded-lg text-sm transition-colors px-3 py-2 ${
+                              className={`w-full flex items-center rounded-lg text-sm transition-colors px-3 py-2 cursor-pointer ${
                                 isActive(child.href)
                                   ? 'bg-blue-50 text-blue-700 font-medium'
                                   : 'text-gray-600 hover:bg-gray-100'

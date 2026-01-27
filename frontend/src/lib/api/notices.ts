@@ -152,6 +152,8 @@ const noticesApi = {
     publishTo?: string;
     page?: number;
     limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<NoticeListResponse> {
     const query = new URLSearchParams();
     if (params?.search) query.append('search', params.search);
@@ -163,6 +165,8 @@ const noticesApi = {
     if (params?.publishTo) query.append('publishTo', params.publishTo);
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.sortBy) query.append('sortBy', params.sortBy);
+    if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
 
     const response = await apiFetch(`${API_BASE_URL}/admin/notices?${query.toString()}`, {
       method: 'GET',
