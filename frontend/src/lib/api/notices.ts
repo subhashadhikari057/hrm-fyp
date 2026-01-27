@@ -164,7 +164,7 @@ const noticesApi = {
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
 
-    const response = await apiFetch(`${API_BASE_URL}/notices/admin?${query.toString()}`, {
+    const response = await apiFetch(`${API_BASE_URL}/admin/notices?${query.toString()}`, {
       method: 'GET',
       headers: { ...getAuthHeaders() },
       credentials: 'include',
@@ -178,7 +178,7 @@ const noticesApi = {
   },
 
   async getAdmin(id: string): Promise<NoticeResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/notices/admin/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/admin/notices/${id}`, {
       method: 'GET',
       headers: { ...getAuthHeaders() },
       credentials: 'include',
@@ -192,7 +192,7 @@ const noticesApi = {
   },
 
   async createAdmin(payload: CreateNoticeRequest): Promise<NoticeResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/notices/admin`, {
+    const response = await apiFetch(`${API_BASE_URL}/admin/notices`, {
       method: 'POST',
       credentials: 'include',
       headers: { ...getAuthHeaders() },
@@ -207,7 +207,7 @@ const noticesApi = {
   },
 
   async updateAdmin(id: string, payload: UpdateNoticeRequest): Promise<NoticeResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/notices/admin/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/admin/notices/${id}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { ...getAuthHeaders() },
@@ -222,7 +222,7 @@ const noticesApi = {
   },
 
   async removeAdmin(id: string): Promise<{ message: string }> {
-    const response = await apiFetch(`${API_BASE_URL}/notices/admin/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/admin/notices/${id}`, {
       method: 'DELETE',
       headers: { ...getAuthHeaders() },
       credentials: 'include',

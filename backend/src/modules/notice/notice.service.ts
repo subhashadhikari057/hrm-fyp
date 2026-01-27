@@ -383,15 +383,19 @@ export class NoticeService {
   }
 
   async listAdmin(filter: FilterNoticesDto, currentUser: any) {
-    if (!currentUser.companyId) {
-      throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
+    let companyId = currentUser.companyId as string | null | undefined;
+    if (!companyId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { companyId: true, role: true },
+      });
+      companyId = user?.companyId ?? null;
     }
 
     const { skip, take, page, limit } = getPagination(filter.page, filter.limit);
 
-    const where: any = {
-      companyId: currentUser.companyId,
-    };
+    const where: any = {};
+    if (companyId) where.companyId = companyId;
 
     if (filter.status) where.status = filter.status;
     if (filter.priority) where.priority = filter.priority;
@@ -465,6 +469,13 @@ export class NoticeService {
     });
 
     if (!employee) {
+      if (['company_admin', 'hr_manager', 'manager', 'super_admin'].includes(currentUser.role)) {
+        return {
+          message: 'Notices retrieved successfully',
+          data: [],
+          meta: buildPaginationMeta(0, filter.page ?? 1, filter.limit ?? 10),
+        };
+      }
       throw new NotFoundException('Employee profile not found for current user');
     }
 
@@ -513,6 +524,12 @@ export class NoticeService {
     });
 
     if (!employee) {
+      if (['company_admin', 'hr_manager', 'manager', 'super_admin'].includes(currentUser.role)) {
+        return {
+          message: 'Notice retrieved successfully',
+          data: null,
+        };
+      }
       throw new NotFoundException('Employee profile not found for current user');
     }
 
@@ -560,6 +577,12 @@ export class NoticeService {
     });
 
     if (!employee) {
+      if (['company_admin', 'hr_manager', 'manager', 'super_admin'].includes(currentUser.role)) {
+        return {
+          message: 'Notice marked as read',
+          data: null,
+        };
+      }
       throw new NotFoundException('Employee profile not found for current user');
     }
 

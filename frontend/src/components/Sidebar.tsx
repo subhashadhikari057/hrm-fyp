@@ -156,6 +156,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
             { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
             { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
+            { name: 'Notices', href: '/dashboard/companyadmin/notices', icon: IconCalendar },
           ],
         },
       ],
@@ -193,6 +194,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           children: [
             { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar },
             { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
+            { name: 'Notices', href: '/dashboard/employee/notices', icon: IconCalendar },
           ],
         },
         { name: 'My Leave', href: '/dashboard/employee/leave', icon: IconCalendar },

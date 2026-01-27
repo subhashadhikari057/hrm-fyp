@@ -71,9 +71,7 @@ export const userAvatarStorage = diskStorage({
     const fileName = FileUploadUtil.generateFileName(file.originalname, 'user-');
     cb(null, fileName);
   },
-});
-
-export const userAvatarFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+});export const userAvatarFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
   if (!file) {
     return cb(null, true); // File is optional
   }
@@ -101,14 +99,10 @@ export const noticeBannerStorage = diskStorage({
     const fileName = FileUploadUtil.generateFileName(file.originalname, 'notice-');
     cb(null, fileName);
   },
-});
-
-export const noticeBannerFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+});export const noticeBannerFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
   if (!file) {
     return cb(null, true); // File is optional
-  }
-
-  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  }  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);

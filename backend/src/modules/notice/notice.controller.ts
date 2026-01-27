@@ -38,14 +38,14 @@ export class NoticeEmployeeController {
   constructor(private readonly noticeService: NoticeService) {}
 
   @Get()
-  @Roles('employee', 'manager', 'hr_manager', 'company_admin')
+  @Roles('employee', 'manager', 'hr_manager', 'company_admin', 'super_admin')
   @ApiOperation({ summary: 'List published notices visible to the current employee' })
   async listMy(@Query() filter: FilterMyNoticesDto, @Request() req: any) {
     return this.noticeService.listMy(filter, req.user);
   }
 
   @Get(':id')
-  @Roles('employee', 'manager', 'hr_manager', 'company_admin')
+  @Roles('employee', 'manager', 'hr_manager', 'company_admin', 'super_admin')
   @ApiOperation({ summary: 'Get a published notice visible to the current employee' })
   async getMy(@Param('id') id: string, @Request() req: any) {
     return this.noticeService.getMyById(id, req.user);
@@ -53,7 +53,7 @@ export class NoticeEmployeeController {
 
   @Post(':id/read')
   @HttpCode(HttpStatus.OK)
-  @Roles('employee', 'manager', 'hr_manager', 'company_admin')
+  @Roles('employee', 'manager', 'hr_manager', 'company_admin', 'super_admin')
   @ApiOperation({ summary: 'Mark a notice as read' })
   async markRead(@Param('id') id: string, @Request() req: any) {
     return this.noticeService.markRead(id, req.user);
@@ -61,7 +61,7 @@ export class NoticeEmployeeController {
 }
 
 @ApiTags('Notices - Admin')
-@Controller('notices/admin')
+@Controller('admin/notices')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
 @ApiCookieAuth('access_token')
@@ -69,7 +69,7 @@ export class NoticeAdminController {
   constructor(private readonly noticeService: NoticeService) {}
 
   @Post()
-  @Roles('company_admin', 'hr_manager', 'manager')
+  @Roles('company_admin', 'hr_manager', 'manager', 'super_admin')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new notice (Company Admin / HR Manager / Manager)' })
   @ApiBody({
@@ -99,21 +99,21 @@ export class NoticeAdminController {
   }
 
   @Get()
-  @Roles('company_admin', 'hr_manager', 'manager')
+  @Roles('company_admin', 'hr_manager', 'manager', 'super_admin')
   @ApiOperation({ summary: 'List notices in company scope (Company Admin / HR Manager / Manager)' })
   async listAdmin(@Query() filter: FilterNoticesDto, @Request() req: any) {
     return this.noticeService.listAdmin(filter, req.user);
   }
 
   @Get(':id')
-  @Roles('company_admin', 'hr_manager', 'manager')
+  @Roles('company_admin', 'hr_manager', 'manager', 'super_admin')
   @ApiOperation({ summary: 'Get notice by ID in company scope' })
   async getAdminById(@Param('id') id: string, @Request() req: any) {
     return this.noticeService.getAdminById(id, req.user);
   }
 
   @Patch(':id')
-  @Roles('company_admin', 'hr_manager', 'manager')
+  @Roles('company_admin', 'hr_manager', 'manager', 'super_admin')
   @ApiOperation({ summary: 'Update notice details' })
   @ApiBody({
     description: 'Notice update fields',
@@ -141,7 +141,7 @@ export class NoticeAdminController {
   }
 
   @Delete(':id')
-  @Roles('company_admin', 'hr_manager', 'manager')
+  @Roles('company_admin', 'hr_manager', 'manager', 'super_admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a notice' })
   async remove(@Param('id') id: string, @Request() req: any) {
