@@ -145,22 +145,31 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
         },
       ],
     },
-    {
-      title: 'Operations',
-      items: [
         {
-          name: 'Attendance',
-          href: '/dashboard/companyadmin/attendance',
-          icon: IconCalendar,
-          children: [
-            { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
-            { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
-            { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
+          title: 'Operations',
+          items: [
+            {
+              name: 'Attendance',
+              href: '/dashboard/companyadmin/attendance',
+              icon: IconCalendar,
+              children: [
+                { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
+                { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
+                { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
+              ],
+            },
+            {
+              name: 'Leave',
+              href: '/dashboard/companyadmin/leave-requests',
+              icon: IconCalendar,
+              children: [
+                { name: 'Leave Requests', href: '/dashboard/companyadmin/leave-requests', icon: IconCalendar },
+                { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock },
+              ],
+            },
           ],
         },
       ],
-    },
-  ],
 
   hrmanager: [
     {
@@ -174,6 +183,15 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
         { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
         { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
         { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock },
+        {
+          name: 'Leave',
+          href: '/dashboard/hrmanager/leave-requests',
+          icon: IconCalendar,
+          children: [
+            { name: 'Leave Requests', href: '/dashboard/hrmanager/leave-requests', icon: IconCalendar },
+            { name: 'Leave Types', href: '/dashboard/hrmanager/leave-types', icon: IconClock },
+          ],
+        },
       ],
     },
   ],

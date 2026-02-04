@@ -66,6 +66,8 @@ model Company {
   attendanceDays AttendanceDay[]
   attendanceLogs AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
+  leaveTypes    LeaveType[]
+  leaveRequests LeaveRequest[]
 
   @@index([name])
   @@index([status])
@@ -97,6 +99,8 @@ model User {
   attendanceDaysUpdated AttendanceDay[] @relation("AttendanceDayUpdatedBy")
   refreshTokens         RefreshToken[]
   reviewedRegularizations AttendanceRegularization[] @relation("regularizationReviewedBy")
+  leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
+  leaveRequestsReviewed LeaveRequest[] @relation("LeaveRequestReviewedBy")
 
   @@index([email])
   @@index([role])
@@ -230,6 +234,7 @@ model Employee {
   attendanceDays AttendanceDay[]
   attendanceLogs AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
+  leaveRequests LeaveRequest[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -276,6 +281,13 @@ enum RegularizationRequestType {
 }
 
 enum RegularizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveStatus {
   PENDING
   APPROVED
   REJECTED
@@ -360,4 +372,50 @@ model AttendanceRegularization {
   @@index([companyId, employeeId, date])
   @@index([status, date])
   @@map("attendance_regularizations")
+}
+
+model LeaveType {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  name        String   @db.VarChar(100)
+  code        String?  @db.VarChar(20)
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leaveRequests LeaveRequest[]
+
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@index([companyId, isActive])
+  @@map("leave_types")
+}
+
+model LeaveRequest {
+  id           String      @id @default(uuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id])
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+  leaveTypeId  String
+  leaveType    LeaveType   @relation(fields: [leaveTypeId], references: [id])
+  startDate    DateTime
+  endDate      DateTime
+  totalDays    Float
+  reason       String
+  status       LeaveStatus @default(PENDING)
+  createdById  String?
+  createdBy    User?       @relation("LeaveRequestCreatedBy", fields: [createdById], references: [id])
+  reviewedById String?
+  reviewedBy   User?       @relation("LeaveRequestReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([companyId, employeeId, startDate])
+  @@index([companyId, status])
+  @@map("leave_requests")
 }
