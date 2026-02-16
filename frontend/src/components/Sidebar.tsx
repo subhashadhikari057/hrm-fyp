@@ -87,6 +87,17 @@ const IconClock = (
   </svg>
 );
 
+const IconChat = (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.94 9.94 0 01-4.255-.949L3 20l1.244-3.728C3.458 15.096 3 13.594 3 12 3 7.582 7.03 4 12 4s9 3.582 9 8z"
+    />
+  </svg>
+);
+
 /** -------------------------------------------------------
  *  ROLE-BASED MENU STRUCTURE (Menu + Submenu)
  *  ----------------------------------------------------- */
@@ -167,6 +178,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
                 { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock },
               ],
             },
+            { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat },
           ],
         },
       ],
@@ -192,6 +204,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Leave Types', href: '/dashboard/hrmanager/leave-types', icon: IconClock },
           ],
         },
+        { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat },
       ],
     },
   ],
@@ -222,6 +235,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Leave Usages', href: '/dashboard/employee/leave-usages', icon: IconClock },
           ],
         },
+        { name: 'Complaints', href: '/dashboard/employee/complaints', icon: IconChat },
       ],
     },
   ],

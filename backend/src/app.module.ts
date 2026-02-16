@@ -13,6 +13,7 @@ import { WorkShiftModule } from './modules/workshift/workshift.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AttendanceRegularizationModule } from './modules/attendance-regularization/attendance-regularization.module';
 import { LeaveModule } from './modules/leave/leave.module';
+import { ComplaintModule } from './modules/complaint/complaint.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LeaveModule } from './modules/leave/leave.module';
     AttendanceModule,
     AttendanceRegularizationModule,
     LeaveModule,
+    ComplaintModule,
   ],
   controllers: [AppController],
   providers: [AppService],

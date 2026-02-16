@@ -68,6 +68,8 @@ model Company {
   attendanceRegularizations AttendanceRegularization[]
   leaveTypes    LeaveType[]
   leaveRequests LeaveRequest[]
+  complaints    Complaint[]
+  complaintNotes ComplaintNote[]
 
   @@index([name])
   @@index([status])
@@ -101,6 +103,9 @@ model User {
   reviewedRegularizations AttendanceRegularization[] @relation("regularizationReviewedBy")
   leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
   leaveRequestsReviewed LeaveRequest[] @relation("LeaveRequestReviewedBy")
+  complaintsCreated     Complaint[] @relation("ComplaintCreatedBy")
+  complaintsUpdated     Complaint[] @relation("ComplaintUpdatedBy")
+  complaintNotes        ComplaintNote[]
 
   @@index([email])
   @@index([role])
@@ -235,6 +240,7 @@ model Employee {
   attendanceLogs AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
   leaveRequests LeaveRequest[]
+  complaints    Complaint[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -297,6 +303,18 @@ enum LeaveStatus {
 enum HalfDaySession {
   FIRST_HALF
   SECOND_HALF
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 model AttendanceDay {
@@ -426,4 +444,46 @@ model LeaveRequest {
   @@index([companyId, employeeId, startDate])
   @@index([companyId, status])
   @@map("leave_requests")
+}
+
+model Complaint {
+  id          String            @id @default(uuid())
+  companyId   String
+  company     Company           @relation(fields: [companyId], references: [id])
+  employeeId  String
+  employee    Employee          @relation(fields: [employeeId], references: [id])
+  title       String            @db.VarChar(200)
+  description String
+  priority    ComplaintPriority @default(MEDIUM)
+  status      ComplaintStatus   @default(OPEN)
+  closedAt    DateTime?
+  createdById String?
+  createdBy   User?             @relation("ComplaintCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?             @relation("ComplaintUpdatedBy", fields: [updatedById], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  notes       ComplaintNote[]
+
+  @@index([companyId, status])
+  @@index([companyId, priority])
+  @@index([companyId, employeeId, createdAt])
+  @@map("complaints")
+}
+
+model ComplaintNote {
+  id           String    @id @default(uuid())
+  complaintId  String
+  complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id])
+  authorUserId String
+  authorUser   User      @relation(fields: [authorUserId], references: [id])
+  note         String
+  createdAt    DateTime  @default(now())
+
+  @@index([complaintId, createdAt])
+  @@index([companyId, createdAt])
+  @@map("complaint_notes")
 }
