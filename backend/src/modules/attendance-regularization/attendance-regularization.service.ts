@@ -12,7 +12,6 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
-const MAX_PAST_DAYS = 30;
 
 function parseTimeToDate(time: string): Date {
   if (!TIME_REGEX.test(time)) {
@@ -77,13 +76,12 @@ export class AttendanceRegularizationService {
     const today = getStartOfDay(new Date());
     const target = getStartOfDay(dto.date);
 
-    if (target.getTime() > today.getTime()) {
-      throw new BadRequestException('Cannot request regularization for a future date');
+    if (target.getTime() < today.getTime()) {
+      throw new BadRequestException('Past dates are not allowed for attendance requests');
     }
 
-    const diffDays = Math.floor((today.getTime() - target.getTime()) / (24 * 60 * 60 * 1000));
-    if (diffDays > MAX_PAST_DAYS) {
-      throw new BadRequestException(`Regularization allowed only within past ${MAX_PAST_DAYS} days`);
+    if (target.getTime() > today.getTime()) {
+      throw new BadRequestException('Cannot request regularization for a future date');
     }
 
     if (

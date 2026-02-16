@@ -4,20 +4,31 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { AttendanceCard } from '../../../components/AttendanceCard';
+import EmployeeLeaveUsagePieChart from '../../../components/EmployeeLeaveUsagePieChart';
 import { PageHeader } from '../../../components/PageHeader';
 import { QuickActionsGrid } from '../../../components/QuickActionsGrid';
 import { StatsGrid } from '../../../components/StatsGrid';
 import { Button } from '../../../components/ui/button';
 import { attendanceApi, type AttendanceDay } from '../../../lib/api/attendance';
+import { leaveApi, type LeaveStatsItem } from '../../../lib/api/leave';
 import { CalendarDays, ClipboardCheck, FileText, LogIn, LogOut, UserCircle } from 'lucide-react';
 
 export default function EmployeeDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastAttendance, setLastAttendance] = useState<AttendanceDay | null>(null);
+  const [leaveStats, setLeaveStats] = useState<LeaveStatsItem[]>([]);
+  const [leaveStatsLoading, setLeaveStatsLoading] = useState(false);
 
   const hasRecordForToday = !!lastAttendance;
   const hasCheckedIn = !!lastAttendance?.checkInTime;
   const hasCheckedOut = !!lastAttendance?.checkOutTime;
+  const todayStatus = !lastAttendance
+    ? 'Not Checked In'
+    : lastAttendance.status === 'ON_LEAVE'
+      ? 'On Leave'
+      : hasCheckedIn || hasCheckedOut
+        ? 'Present'
+        : 'Not Checked In';
 
   useEffect(() => {
     (async () => {
@@ -28,6 +39,20 @@ export default function EmployeeDashboard() {
         }
       } catch {
         // Ignore initial load errors for now
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLeaveStatsLoading(true);
+        const res = await leaveApi.getMyStats();
+        setLeaveStats(res.data || []);
+      } catch {
+        setLeaveStats([]);
+      } finally {
+        setLeaveStatsLoading(false);
       }
     })();
   }, []);
@@ -117,8 +142,8 @@ export default function EmployeeDashboard() {
               iconBgColor: 'green',
             },
             {
-              label: 'Profile Status',
-              value: 'Complete',
+              label: 'Today Status',
+              value: todayStatus,
               icon: <UserCircle className="h-4 w-4" />,
               iconBgColor: 'purple',
             },
@@ -147,10 +172,10 @@ export default function EmployeeDashboard() {
                 color: 'green',
               },
               {
-                label: 'Update Profile',
-                href: '/dashboard/employee/profile',
+                label: 'View Attendance',
+                href: '/dashboard/employee/attendance',
                 icon: (
-                  <UserCircle className="h-full w-full" />
+                  <CalendarDays className="h-full w-full" />
                 ),
                 color: 'purple',
               },
@@ -159,6 +184,8 @@ export default function EmployeeDashboard() {
 
           <AttendanceCard attendance={lastAttendance} />
         </div>
+
+        <EmployeeLeaveUsagePieChart leaveStats={leaveStats} loading={leaveStatsLoading} />
       </div>
     </DashboardLayout>
   );

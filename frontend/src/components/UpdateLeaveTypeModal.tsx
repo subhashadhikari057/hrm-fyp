@@ -31,6 +31,7 @@ export function UpdateLeaveTypeModal({
     name: '',
     code: '',
     description: '',
+    allocatedDays: 0,
     isActive: true,
   });
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,7 @@ export function UpdateLeaveTypeModal({
         name: leaveType.name || '',
         code: leaveType.code || '',
         description: leaveType.description || '',
+        allocatedDays: leaveType.allocatedDays ?? 0,
         isActive: leaveType.isActive,
       });
     } catch (error) {
@@ -66,15 +68,23 @@ export function UpdateLeaveTypeModal({
   };
 
   const resetForm = () => {
-    setFormData({ name: '', code: '', description: '', isActive: true });
+    setFormData({ name: '', code: '', description: '', allocatedDays: 0, isActive: true });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     const nextValue = name === 'code' ? value.toUpperCase() : value;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : nextValue,
+      [name]: nextValue,
+    }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
     }));
   };
 
@@ -84,10 +94,17 @@ export function UpdateLeaveTypeModal({
 
     setLoading(true);
     try {
-      const payload: { name?: string; code?: string; description?: string; isActive?: boolean } = {};
+      const payload: {
+        name?: string;
+        code?: string;
+        description?: string;
+        allocatedDays?: number;
+        isActive?: boolean;
+      } = {};
       if (formData.name?.trim()) payload.name = formData.name.trim();
       if (formData.code?.trim()) payload.code = formData.code.trim().toUpperCase();
       if (formData.description?.trim()) payload.description = formData.description.trim();
+      if (formData.allocatedDays !== undefined) payload.allocatedDays = Number(formData.allocatedDays);
       if (formData.isActive !== undefined) payload.isActive = formData.isActive;
 
       await leaveApi.updateLeaveType(leaveTypeId, payload);
@@ -160,13 +177,30 @@ export function UpdateLeaveTypeModal({
                 />
               </div>
 
+              <div>
+                <Label htmlFor="allocatedDays">
+                  Allocated Days <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  id="allocatedDays"
+                  name="allocatedDays"
+                  value={String(formData.allocatedDays ?? 0)}
+                  onChange={handleInputChange}
+                  min={0}
+                  step="0.5"
+                  required
+                  placeholder="e.g., 12"
+                />
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="isActive"
                   name="isActive"
                   checked={!!formData.isActive}
-                  onChange={handleInputChange}
+                  onChange={handleCheckboxChange}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <Label htmlFor="isActive" className="ml-2">

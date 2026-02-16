@@ -213,7 +213,15 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
           ],
         },
-        { name: 'My Leave', href: '/dashboard/employee/leave', icon: IconCalendar },
+        {
+          name: 'Leave',
+          href: '/dashboard/employee/leave',
+          icon: IconCalendar,
+          children: [
+            { name: 'Leave Requests', href: '/dashboard/employee/leave', icon: IconCalendar },
+            { name: 'Leave Usages', href: '/dashboard/employee/leave-usages', icon: IconClock },
+          ],
+        },
       ],
     },
   ],

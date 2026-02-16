@@ -4,25 +4,30 @@ import { useMemo } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from './ui/card';
 import type { AttendanceDay } from '../lib/api/attendance';
+import type { LeaveRequest } from '../lib/api/leave';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const STATUS_STYLES: Record<AttendanceDay['status'], string> = {
+type CalendarStatus = AttendanceDay['status'] | 'PENDING_LEAVE';
+
+const STATUS_STYLES: Record<CalendarStatus, string> = {
   PRESENT: 'bg-green-100 text-green-800',
   LATE: 'bg-yellow-100 text-yellow-800',
   HALF_DAY: 'bg-orange-100 text-orange-800',
   ABSENT: 'bg-red-100 text-red-800',
   ON_LEAVE: 'bg-blue-100 text-blue-800',
+  PENDING_LEAVE: 'bg-amber-100 text-amber-800',
   WEEKEND: 'bg-gray-100 text-gray-700',
   HOLIDAY: 'bg-purple-100 text-purple-800',
 };
 
-const STATUS_DOT: Record<AttendanceDay['status'], string> = {
+const STATUS_DOT: Record<CalendarStatus, string> = {
   PRESENT: 'bg-green-500',
   LATE: 'bg-yellow-500',
   HALF_DAY: 'bg-orange-500',
   ABSENT: 'bg-red-500',
   ON_LEAVE: 'bg-blue-500',
+  PENDING_LEAVE: 'bg-amber-500',
   WEEKEND: 'bg-gray-500',
   HOLIDAY: 'bg-purple-500',
 };
@@ -31,14 +36,29 @@ type AttendanceCalendarProps = {
   currentMonth: Date;
   onMonthChange: (next: Date) => void;
   attendance: AttendanceDay[];
+  pendingLeaves?: LeaveRequest[];
   loading?: boolean;
   error?: string | null;
 };
+
+function toKtmDateKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kathmandu',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === 'year')?.value ?? '';
+  const month = parts.find((p) => p.type === 'month')?.value ?? '';
+  const day = parts.find((p) => p.type === 'day')?.value ?? '';
+  return `${year}-${month}-${day}`;
+}
 
 export default function AttendanceCalendar({
   currentMonth,
   onMonthChange,
   attendance,
+  pendingLeaves = [],
   loading,
   error,
 }: AttendanceCalendarProps) {
@@ -50,14 +70,29 @@ export default function AttendanceCalendar({
   const attendanceMap = useMemo(() => {
     const map = new Map<string, AttendanceDay>();
     attendance.forEach((day) => {
-      const d = new Date(day.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-        d.getDate(),
-      ).padStart(2, '0')}`;
+      const key = toKtmDateKey(new Date(day.date));
       map.set(key, day);
     });
     return map;
   }, [attendance]);
+
+  const pendingLeaveDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+    pendingLeaves.forEach((request) => {
+      let cursor = new Date(request.startDate);
+      const end = new Date(request.endDate);
+
+      while (cursor <= end) {
+        const dayInKtm = toKtmDateKey(cursor);
+        const dayOfWeek = new Date(`${dayInKtm}T00:00:00+05:45`).getUTCDay();
+        if (dayOfWeek !== 6) {
+          keys.add(dayInKtm);
+        }
+        cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+      }
+    });
+    return keys;
+  }, [pendingLeaves]);
 
   const calendarCells = useMemo(() => {
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -112,7 +147,7 @@ export default function AttendanceCalendar({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-gray-700">
-          {(Object.keys(STATUS_STYLES) as AttendanceDay['status'][]).map((status) => (
+          {(Object.keys(STATUS_STYLES) as CalendarStatus[]).map((status) => (
             <div
               key={status}
               className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2 py-1"
@@ -145,8 +180,14 @@ export default function AttendanceCalendar({
         {calendarCells.map((cell) => {
           const day = attendanceMap.get(cell.key);
           const status = day?.status;
-          const isPresentDay = status === 'PRESENT' || status === 'LATE' || status === 'HALF_DAY';
-          const isAbsentDay = status === 'ABSENT';
+          const hasPendingLeave = !status && pendingLeaveDateKeys.has(cell.key);
+          const displayStatus: CalendarStatus | undefined = hasPendingLeave
+            ? 'PENDING_LEAVE'
+            : status;
+          const isPresentDay =
+            displayStatus === 'PRESENT' || displayStatus === 'LATE' || displayStatus === 'HALF_DAY';
+          const isAbsentDay = displayStatus === 'ABSENT';
+          const isPendingDay = displayStatus === 'PENDING_LEAVE';
           return (
             <div
               key={cell.key}
@@ -158,6 +199,8 @@ export default function AttendanceCalendar({
                     ? 'bg-green-100 border-green-300'
                     : isAbsentDay
                       ? 'bg-red-50 border-red-200'
+                      : isPendingDay
+                        ? 'bg-amber-50 border-amber-200'
                       : 'bg-white'
                   : ''
               }`}
@@ -166,11 +209,11 @@ export default function AttendanceCalendar({
                 <span className="text-[11px] font-semibold text-gray-700">
                   {cell.isCurrentMonth ? cell.dayNumber : ''}
                 </span>
-                {status && (
+                {displayStatus && (
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_STYLES[status]}`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_STYLES[displayStatus]}`}
                   >
-                    {status.replace('_', ' ')}
+                    {displayStatus.replace('_', ' ')}
                   </span>
                 )}
               </div>

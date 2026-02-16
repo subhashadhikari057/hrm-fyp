@@ -8,6 +8,7 @@ import {
 import {
   AttendanceSource,
   AttendanceStatus,
+  HalfDaySession,
   LeaveStatus,
   UserRole,
 } from '@prisma/client';
@@ -119,6 +120,62 @@ export class LeaveService {
       throw new BadRequestException('Leave type is inactive');
     }
     return leaveType;
+  }
+
+  private async getConsumedLeaveDays(params: {
+    companyId: string;
+    employeeId: string;
+    leaveTypeId: string;
+    statuses: LeaveStatus[];
+  }) {
+    const { companyId, employeeId, leaveTypeId, statuses } = params;
+    const aggregate = await this.prisma.leaveRequest.aggregate({
+      where: {
+        companyId,
+        employeeId,
+        leaveTypeId,
+        status: { in: statuses },
+      },
+      _sum: {
+        totalDays: true,
+      },
+    });
+
+    return aggregate._sum.totalDays ?? 0;
+  }
+
+  private async ensureLeaveBalance(params: {
+    companyId: string;
+    employeeId: string;
+    leaveTypeId: string;
+    leaveTypeName: string;
+    allocatedDays: number;
+    requestedDays: number;
+  }) {
+    const { companyId, employeeId, leaveTypeId, leaveTypeName, allocatedDays, requestedDays } = params;
+
+    if (allocatedDays <= 0) {
+      throw new BadRequestException(
+        `You have no allocated ${leaveTypeName} days left. Please contact HR.`,
+      );
+    }
+
+    const consumedDays = await this.getConsumedLeaveDays({
+      companyId,
+      employeeId,
+      leaveTypeId,
+      statuses: [LeaveStatus.PENDING, LeaveStatus.APPROVED],
+    });
+
+    const remainingDays = allocatedDays - consumedDays;
+    if (remainingDays < requestedDays) {
+      throw new BadRequestException(
+        `Insufficient ${leaveTypeName} balance. Requested ${requestedDays} day(s), but only ${Math.max(
+          0,
+          Number(remainingDays.toFixed(2)),
+        )} day(s) are left.`,
+      );
+    }
   }
 
   private async ensureNoOverlappingRequests(params: {
@@ -242,6 +299,7 @@ export class LeaveService {
         name: dto.name,
         code: dto.code,
         description: dto.description,
+        allocatedDays: dto.allocatedDays,
         isActive: dto.isActive !== undefined ? dto.isActive : true,
         companyId,
       },
@@ -341,6 +399,7 @@ export class LeaveService {
         name: dto.name ?? undefined,
         code: dto.code ?? undefined,
         description: dto.description ?? undefined,
+        allocatedDays: dto.allocatedDays ?? undefined,
         isActive: dto.isActive ?? undefined,
       },
     });
@@ -382,6 +441,22 @@ export class LeaveService {
     const employee = await this.resolveTargetEmployee(currentUser, dto.employeeId);
     const leaveType = await this.resolveLeaveType(dto.leaveTypeId, employee.companyId);
     const { start, end } = this.normalizeDateRange(dto.startDate, dto.endDate);
+    const todayStart = getKathmanduStartOfDay(new Date());
+
+    if (start.getTime() < todayStart.getTime()) {
+      throw new BadRequestException('Past dates are not allowed for leave requests');
+    }
+
+    const isHalfDay = dto.isHalfDay === true;
+
+    if (isHalfDay) {
+      if (start.getTime() !== end.getTime()) {
+        throw new BadRequestException('Half-day leave can only be requested for a single date');
+      }
+      if (!dto.halfDaySession) {
+        throw new BadRequestException('halfDaySession is required when isHalfDay is true');
+      }
+    }
 
     await this.ensureNoOverlappingRequests({
       employeeId: employee.id,
@@ -394,6 +469,16 @@ export class LeaveService {
     if (dates.length === 0) {
       throw new BadRequestException('Leave range contains only weekend days');
     }
+    const requestedDays = isHalfDay ? 0.5 : dates.length;
+
+    await this.ensureLeaveBalance({
+      companyId: employee.companyId,
+      employeeId: employee.id,
+      leaveTypeId: leaveType.id,
+      leaveTypeName: leaveType.name,
+      allocatedDays: leaveType.allocatedDays,
+      requestedDays,
+    });
 
     const request = await this.prisma.leaveRequest.create({
       data: {
@@ -402,7 +487,9 @@ export class LeaveService {
         leaveTypeId: leaveType.id,
         startDate: start,
         endDate: end,
-        totalDays: dates.length,
+        totalDays: requestedDays,
+        isHalfDay,
+        halfDaySession: isHalfDay ? (dto.halfDaySession as HalfDaySession) : null,
         reason: dto.reason,
         status: LeaveStatus.PENDING,
         createdById: currentUser.id,
@@ -417,11 +504,12 @@ export class LeaveService {
 
   async findMyRequests(filter: FilterLeaveRequestsDto, currentUser: any) {
     const employee = await this.resolveTargetEmployee(currentUser);
-    const { status, dateFrom, dateTo } = filter;
+    const { status, dateFrom, dateTo, leaveTypeId } = filter;
     const { skip, take, page, limit } = getPagination(filter.page, filter.limit);
 
     const where: any = { employeeId: employee.id };
     if (status) where.status = status;
+    if (leaveTypeId) where.leaveTypeId = leaveTypeId;
     if (dateFrom) where.startDate = { ...(where.startDate || {}), gte: getKathmanduStartOfDay(dateFrom) };
     if (dateTo) where.endDate = { ...(where.endDate || {}), lte: getKathmanduStartOfDay(dateTo) };
 
@@ -438,6 +526,81 @@ export class LeaveService {
       message: 'Leave requests retrieved successfully',
       data,
       meta: buildPaginationMeta(total, page, limit),
+    };
+  }
+
+  async getMyLeaveStats(currentUser: any) {
+    const employee = await this.resolveTargetEmployee(currentUser);
+
+    const leaveTypes = await this.prisma.leaveType.findMany({
+      where: {
+        companyId: employee.companyId,
+      },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        allocatedDays: true,
+        isActive: true,
+      },
+    });
+
+    const [approvedAgg, pendingAgg] = await Promise.all([
+      this.prisma.leaveRequest.groupBy({
+        by: ['leaveTypeId'],
+        where: {
+          companyId: employee.companyId,
+          employeeId: employee.id,
+          status: LeaveStatus.APPROVED,
+        },
+        _sum: {
+          totalDays: true,
+        },
+      }),
+      this.prisma.leaveRequest.groupBy({
+        by: ['leaveTypeId'],
+        where: {
+          companyId: employee.companyId,
+          employeeId: employee.id,
+          status: LeaveStatus.PENDING,
+        },
+        _sum: {
+          totalDays: true,
+        },
+      }),
+    ]);
+
+    const approvedMap = new Map(
+      approvedAgg.map((row) => [row.leaveTypeId, row._sum.totalDays ?? 0]),
+    );
+    const pendingMap = new Map(
+      pendingAgg.map((row) => [row.leaveTypeId, row._sum.totalDays ?? 0]),
+    );
+
+    const stats = leaveTypes.map((leaveType) => {
+      const usedDays = approvedMap.get(leaveType.id) ?? 0;
+      const pendingDays = pendingMap.get(leaveType.id) ?? 0;
+      const remainingDays = Math.max(
+        0,
+        Number((leaveType.allocatedDays - usedDays - pendingDays).toFixed(2)),
+      );
+
+      return {
+        leaveTypeId: leaveType.id,
+        leaveTypeName: leaveType.name,
+        leaveTypeCode: leaveType.code,
+        isActive: leaveType.isActive,
+        allocatedDays: leaveType.allocatedDays,
+        usedDays,
+        pendingDays,
+        remainingDays,
+      };
+    });
+
+    return {
+      message: 'Leave stats retrieved successfully',
+      data: stats,
     };
   }
 

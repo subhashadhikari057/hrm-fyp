@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { HalfDaySession } from '@prisma/client';
+import { IsBoolean, IsDate, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateLeaveRequestDto {
   @ApiProperty({
@@ -42,4 +43,21 @@ export class CreateLeaveRequestDto {
   @IsOptional()
   @IsString()
   employeeId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether this is a half-day leave request',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isHalfDay?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Half-day session (required when isHalfDay=true)',
+    enum: HalfDaySession,
+    example: HalfDaySession.FIRST_HALF,
+  })
+  @IsOptional()
+  @IsEnum(HalfDaySession)
+  halfDaySession?: HalfDaySession;
 }

@@ -25,6 +25,7 @@ export function AddLeaveTypeModal({ isOpen, onClose, onSuccess }: AddLeaveTypeMo
     name: '',
     code: '',
     description: '',
+    allocatedDays: '0',
     isActive: true,
   });
   const [loading, setLoading] = useState(false);
@@ -72,6 +73,13 @@ export function AddLeaveTypeModal({ isOpen, onClose, onSuccess }: AddLeaveTypeMo
       }
     }
 
+    const allocatedDays = Number(formData.allocatedDays);
+    if (Number.isNaN(allocatedDays)) {
+      nextErrors.allocatedDays = 'Allocated days must be a valid number';
+    } else if (allocatedDays < 0) {
+      nextErrors.allocatedDays = 'Allocated days cannot be negative';
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -87,9 +95,11 @@ export function AddLeaveTypeModal({ isOpen, onClose, onSuccess }: AddLeaveTypeMo
         name: string;
         code?: string;
         description?: string;
+        allocatedDays: number;
         isActive?: boolean;
       } = {
         name: formData.name.trim(),
+        allocatedDays: Number(formData.allocatedDays),
         isActive: formData.isActive,
       };
 
@@ -110,7 +120,7 @@ export function AddLeaveTypeModal({ isOpen, onClose, onSuccess }: AddLeaveTypeMo
 
   const handleClose = () => {
     if (loading) return;
-    setFormData({ name: '', code: '', description: '', isActive: true });
+    setFormData({ name: '', code: '', description: '', allocatedDays: '0', isActive: true });
     setErrors({});
     onClose();
   };
@@ -169,6 +179,24 @@ export function AddLeaveTypeModal({ isOpen, onClose, onSuccess }: AddLeaveTypeMo
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Optional description of the leave type..."
             />
+          </div>
+
+          <div>
+            <Label htmlFor="allocatedDays">
+              Allocated Days <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              id="allocatedDays"
+              name="allocatedDays"
+              value={formData.allocatedDays}
+              onChange={handleInputChange}
+              disabled={loading}
+              min={0}
+              step="0.5"
+              placeholder="e.g., 12"
+            />
+            {errors.allocatedDays && <p className="mt-1 text-sm text-red-600">{errors.allocatedDays}</p>}
           </div>
 
           <div className="flex items-center">

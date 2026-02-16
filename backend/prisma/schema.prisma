@@ -294,6 +294,11 @@ enum LeaveStatus {
   CANCELLED
 }
 
+enum HalfDaySession {
+  FIRST_HALF
+  SECOND_HALF
+}
+
 model AttendanceDay {
   id               String           @id @default(uuid())
   companyId        String
@@ -381,6 +386,7 @@ model LeaveType {
   name        String   @db.VarChar(100)
   code        String?  @db.VarChar(20)
   description String?
+  allocatedDays Float  @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -404,6 +410,8 @@ model LeaveRequest {
   startDate    DateTime
   endDate      DateTime
   totalDays    Float
+  isHalfDay    Boolean     @default(false)
+  halfDaySession HalfDaySession?
   reason       String
   status       LeaveStatus @default(PENDING)
   createdById  String?
