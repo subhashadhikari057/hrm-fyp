@@ -6,6 +6,7 @@
     "department-module",
     "designation-module",
     "workshift-module",
-    "attendance-module"
+    "attendance-module",
+    "project-kanban-roadmap"
   ]
 }
