@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { RichTextEditor } from './RichTextEditor';
+import { richTextHasMeaningfulContent, sanitizeRichTextHtml } from '../../lib/rich-text';
 
 interface PolicyFormModalProps {
   open: boolean;
@@ -41,7 +43,7 @@ export function PolicyFormModal({
   const handleSubmit = async () => {
     const payload = {
       ...(mode === 'create' ? { title: title.trim() } : { title: title.trim() || undefined }),
-      content: content.trim(),
+      content: sanitizeRichTextHtml(content),
       ...(mode === 'update' ? { version: version.trim() } : {}),
       effectiveFrom: effectiveFrom || undefined,
     };
@@ -52,7 +54,7 @@ export function PolicyFormModal({
   const isCreateInvalid = mode === 'create' && !title.trim();
   const isUpdateVersionInvalid =
     mode === 'update' && !/^\d+(\.\d+)*$/.test(version.trim());
-  const isInvalid = isCreateInvalid || !content.trim() || isUpdateVersionInvalid;
+  const isInvalid = isCreateInvalid || !richTextHasMeaningfulContent(content) || isUpdateVersionInvalid;
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !loading && onOpenChange(nextOpen)}>
@@ -97,12 +99,10 @@ export function PolicyFormModal({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Policy Content</label>
-            <textarea
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={10}
+              onChange={setContent}
               placeholder="Write policy content..."
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               disabled={loading}
             />
           </div>

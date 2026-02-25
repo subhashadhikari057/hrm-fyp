@@ -3,6 +3,7 @@
 import type { PendingPolicy } from '../../lib/api/policy';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { RichTextContent } from './RichTextContent';
 
 interface PolicyAcceptanceModalProps {
   open: boolean;
@@ -43,7 +44,7 @@ export function PolicyAcceptanceModal({
             </div>
 
             <div className="max-h-[45vh] overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800">{policy.content}</pre>
+              <RichTextContent html={policy.content} />
             </div>
 
             <div className="flex justify-end">

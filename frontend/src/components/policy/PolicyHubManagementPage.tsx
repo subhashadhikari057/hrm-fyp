@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { policyApi, type Policy } from '../../lib/api/policy';
 import { PolicyFormModal } from './PolicyFormModal';
+import { RichTextContent } from './RichTextContent';
 
 function formatDate(value?: string | null) {
   if (!value) return '-';
@@ -147,9 +148,7 @@ export default function PolicyHubManagementPage() {
                   </p>
                 </div>
                 <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800">
-                    {activePolicy.versions[0]?.content || '-'}
-                  </pre>
+                  <RichTextContent html={activePolicy.versions[0]?.content || ''} />
                 </div>
               </div>
             )}
