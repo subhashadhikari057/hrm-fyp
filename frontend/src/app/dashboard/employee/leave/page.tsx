@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { PageHeader } from '../../../../components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
@@ -47,7 +47,7 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
   );
 }
 
-export default function EmployeeLeavePage() {
+function EmployeeLeavePageContent() {
   const searchParams = useSearchParams();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -346,5 +346,21 @@ export default function EmployeeLeavePage() {
         onSubmit={handleCreate}
       />
     </DashboardLayout>
+  );
+}
+
+export default function EmployeeLeavePage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex min-h-[240px] items-center justify-center text-sm text-gray-600">
+            Loading leave page...
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <EmployeeLeavePageContent />
+    </Suspense>
   );
 }

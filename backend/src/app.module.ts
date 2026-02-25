@@ -15,6 +15,7 @@ import { AttendanceRegularizationModule } from './modules/attendance-regularizat
 import { LeaveModule } from './modules/leave/leave.module';
 import { ComplaintModule } from './modules/complaint/complaint.module';
 import { PolicyModule } from './modules/policy/policy.module';
+import { ProjectModule } from './modules/project/project.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PolicyModule } from './modules/policy/policy.module';
     LeaveModule,
     ComplaintModule,
     PolicyModule,
+    ProjectModule,
   ],
   controllers: [AppController],
   providers: [AppService],
