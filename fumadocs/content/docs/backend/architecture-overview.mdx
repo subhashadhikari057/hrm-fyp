@@ -1,0 +1,138 @@
+---
+title: Backend Architecture Overview
+---
+
+# Backend Architecture Overview
+
+## Overview
+
+The backend is a NestJS monolith organized as feature modules around the main HR domains. It uses Prisma with PostgreSQL, JWT authentication with cookie-based sessions, role-based guards, and company-scoped authorization rules.
+
+The root module is defined in `backend/src/app.module.ts` and currently wires these business modules:
+
+- `auth`
+- `company`
+- `user`
+- `department`
+- `designation`
+- `workshift`
+- `employee`
+- `attendance`
+- `attendance-regularization`
+- `leave`
+- `complaint`
+- `policy`
+- `project`
+
+## Core stack
+
+- **Framework**: NestJS 11
+- **Language**: TypeScript
+- **ORM**: Prisma
+- **Database**: PostgreSQL
+- **Auth**: JWT access + refresh tokens in HttpOnly cookies
+- **API docs**: Swagger is enabled in the backend app
+- **Scheduling**: `@nestjs/schedule` for timed attendance jobs
+- **Files**: Multer disk storage with static upload serving
+
+## Data model
+
+The main schema lives in `backend/prisma/schema.prisma`. The database is multi-tenant by company, with most business tables carrying `companyId` and being filtered by role + company scope.
+
+Major model groups:
+
+- Identity and access: `User`, `RefreshToken`, `Company`
+- Org structure: `Department`, `Designation`, `WorkShift`
+- Workforce: `Employee`
+- Attendance: `AttendanceDay`, `AttendanceLog`, `AttendanceRegularization`
+- Leave: `LeaveType`, `LeaveRequest`
+- Employee relations: `Complaint`, `ComplaintNote`
+- Policy hub: `Policy`, `PolicyVersion`, `PolicyAcceptance`
+- Project management: `Project`, `ProjectMember`, `ProjectTask`, `ProjectTaskComment`
+
+## Authorization model
+
+The system uses five backend roles:
+
+- `super_admin`
+- `company_admin`
+- `hr_manager`
+- `manager`
+- `employee`
+
+General behavior:
+
+- `super_admin` works at platform scope and is not tied to a company.
+- Company-level roles operate only inside their own `companyId`.
+- Most modules enforce both role checks and company ownership checks.
+- Employee-facing endpoints typically expose only self-service data or member-scoped project access.
+
+## API conventions
+
+Most endpoints follow one of these patterns:
+
+```json
+{ "message": "Success message", "data": {} }
+```
+
+```json
+{
+  "message": "List retrieved successfully",
+  "data": [],
+  "meta": {
+    "total": 0,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 0,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+Common patterns across modules:
+
+- DTO validation through `class-validator`
+- Pagination with `page` and `limit`
+- Search and filter DTOs per module
+- Role decorators + JWT guard
+- Company ownership validation before reads or writes
+
+## Cross-cutting behavior
+
+### Authentication
+
+- Access token is stored in an `access_token` cookie.
+- Refresh token is stored in a `refresh_token` cookie.
+- Refresh tokens are hashed and stored in the database.
+- Frontend retries expired requests by calling `/auth/refresh`.
+
+### Multi-tenancy
+
+- Most services accept the authenticated user and derive company scope from `user.companyId`.
+- Cross-company access is blocked at service level, not only in the controller.
+
+### File uploads
+
+- Employee profile images and company logos use disk storage.
+- Uploaded assets are served from the backend `/uploads` path.
+
+### Time-sensitive workflows
+
+- Attendance logic uses day-boundary calculations and work shifts.
+- Attendance absent marking is scheduled through a cron job.
+- Leave and attendance modules are connected so approved leave can write attendance rows.
+
+## Module relationships
+
+- `employee` depends on `company`, `department`, `designation`, and `workshift` data being valid.
+- `attendance` depends on employee and shift configuration.
+- `attendance-regularization` depends on `attendance` for applying corrections.
+- `leave` writes `AttendanceDay` rows during approval.
+- `complaint` relies on the employee profile linked to the authenticated user.
+- `policy` tracks acceptance against employee records.
+- `project` depends on employees as members, assignees, and comment authors.
+
+## Current documentation map
+
+This docs section is organized by backend feature module. Start with the auth and company docs if you want to understand system access and tenant setup first, then move into employee, attendance, leave, and the newer collaboration modules.

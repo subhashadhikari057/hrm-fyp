@@ -1,0 +1,139 @@
+---
+title: Complaint Module
+---
+
+# Complaint Module
+
+## Overview
+
+The Complaint module allows employees to raise workplace complaints and gives company admins or HR managers a structured workflow to review, track, comment on, and close them.
+
+## Key models and enums
+
+- `Complaint`
+- `ComplaintNote`
+- `Employee`
+
+Important enums:
+
+- `ComplaintStatus`: `OPEN`, `IN_PROGRESS`, `CLOSED`
+- `ComplaintPriority`: `LOW`, `MEDIUM`, `HIGH`
+
+## Features
+
+- Employee self-submission of complaints
+- Company-scoped complaint listing for admin and HR
+- Status transitions from open to in-progress to closed
+- Internal/public note thread on each complaint
+- Complaint details with employee and author metadata
+
+## Endpoints
+
+Base path: `/complaints`
+
+### Employee and manager endpoints
+
+#### 1. Create complaint
+
+- **POST** `/complaints`
+- **Roles**: `employee`, `manager`
+
+Example request:
+
+```json
+{
+  "title": "Unresolved overtime compensation",
+  "description": "My overtime from last month is still not reflected.",
+  "priority": "HIGH"
+}
+```
+
+#### 2. List my complaints
+
+- **GET** `/complaints/me`
+- **Roles**: `employee`, `manager`
+
+Supports pagination and status-based filtering.
+
+#### 3. Get my complaint by id
+
+- **GET** `/complaints/me/:id`
+- **Roles**: `employee`, `manager`
+
+### Company admin and HR endpoints
+
+#### 4. Admin complaint list
+
+- **GET** `/complaints/admin`
+- **Roles**: `company_admin`, `hr_manager`
+
+Supported filters include:
+
+- `status`
+- `priority`
+- `employeeId`
+- `search`
+- `dateFrom`
+- `dateTo`
+- `page`
+- `limit`
+
+#### 5. Admin complaint detail
+
+- **GET** `/complaints/admin/:id`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 6. Mark complaint in progress
+
+- **PATCH** `/complaints/admin/:id/in-progress`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "note": "Case has been assigned to HR review."
+}
+```
+
+#### 7. Resolve and close complaint
+
+- **PATCH** `/complaints/admin/:id/resolve`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "note": "Reviewed attendance and payroll records. Issue resolved."
+}
+```
+
+#### 8. Add complaint note
+
+- **POST** `/complaints/admin/:id/notes`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "note": "Followed up with the reporting manager."
+}
+```
+
+## Business rules
+
+- Complaint submission is self-service only and requires the current user to have an employee profile.
+- Title length is limited.
+- Priority defaults to `MEDIUM` when not provided.
+- Only company admin and HR manager roles can perform admin workflow actions.
+- Only `OPEN` complaints can move to `IN_PROGRESS`.
+- Resolving a complaint moves it directly to `CLOSED`.
+- Closed complaints cannot be resolved again.
+
+## Notes and timeline behavior
+
+- Complaint detail includes notes and note author metadata.
+- Status changes can optionally add a note.
+- Resolving always writes a closing note so the final action is audit-visible.

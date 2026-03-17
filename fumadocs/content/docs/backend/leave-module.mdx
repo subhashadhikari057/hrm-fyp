@@ -1,0 +1,202 @@
+---
+title: Leave Module
+---
+
+# Leave Module
+
+## Overview
+
+The Leave module manages company leave policies and employee leave requests. It supports leave type configuration, self-service request submission, admin review, half-day handling, balance checks, overlap prevention, and attendance synchronization after approval.
+
+## Key models and enums
+
+- `LeaveType`
+- `LeaveRequest`
+- `AttendanceDay`
+- `Employee`
+
+Important enums:
+
+- `LeaveStatus`: `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`
+- `HalfDaySession`: `FIRST_HALF`, `SECOND_HALF`
+
+## Features
+
+- Company-scoped leave type management
+- Employee and on-behalf leave request creation
+- Leave balance calculations by leave type
+- Half-day leave support
+- Review workflow for admin, HR, and manager roles
+- Attendance records updated automatically when leave is approved
+
+## Endpoints
+
+Base path: `/leave`
+
+### Leave type endpoints
+
+#### 1. Create leave type
+
+- **POST** `/leave/types`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "name": "Annual Leave",
+  "code": "AL",
+  "description": "Paid yearly leave",
+  "allocatedDays": 18,
+  "isActive": true
+}
+```
+
+#### 2. List leave types
+
+- **GET** `/leave/types`
+- **Roles**: `company_admin`, `hr_manager`, `manager`, `employee`
+
+Supports search, active flag, sorting, page, and limit.
+
+#### 3. Get leave type by id
+
+- **GET** `/leave/types/:id`
+- **Roles**: `company_admin`, `hr_manager`, `manager`, `employee`
+
+#### 4. Update leave type
+
+- **PATCH** `/leave/types/:id`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 5. Delete leave type
+
+- **DELETE** `/leave/types/:id`
+- **Roles**: `company_admin`, `hr_manager`
+
+Deletion is blocked if any leave request exists for that type.
+
+### Leave request endpoints
+
+#### 6. Create leave request
+
+- **POST** `/leave/requests`
+- **Roles**: `employee`, `company_admin`, `hr_manager`, `manager`
+
+Example request:
+
+```json
+{
+  "leaveTypeId": "uuid",
+  "startDate": "2026-04-10",
+  "endDate": "2026-04-12",
+  "reason": "Family function",
+  "employeeId": "uuid"
+}
+```
+
+Half-day example:
+
+```json
+{
+  "leaveTypeId": "uuid",
+  "startDate": "2026-04-10",
+  "endDate": "2026-04-10",
+  "reason": "Medical appointment",
+  "isHalfDay": true,
+  "halfDaySession": "FIRST_HALF"
+}
+```
+
+#### 7. List my leave requests
+
+- **GET** `/leave/requests/me`
+- **Role**: `employee`
+
+#### 8. Get my leave stats
+
+- **GET** `/leave/requests/me/stats`
+- **Role**: `employee`
+
+Returns per-leave-type allocated, used, pending, and remaining values.
+
+#### 9. Get my leave request by id
+
+- **GET** `/leave/requests/me/:id`
+- **Role**: `employee`
+
+#### 10. Cancel my leave request
+
+- **PATCH** `/leave/requests/me/:id/cancel`
+- **Role**: `employee`
+
+Only pending requests can be cancelled.
+
+### Review endpoints
+
+#### 11. Admin list leave requests
+
+- **GET** `/leave/requests/admin`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Supported filters include:
+
+- `status`
+- `employeeId`
+- `departmentId`
+- `leaveTypeId`
+- `dateFrom`
+- `dateTo`
+- `page`
+- `limit`
+
+#### 12. Admin get leave request by id
+
+- **GET** `/leave/requests/admin/:id`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+#### 13. Approve leave request
+
+- **PATCH** `/leave/requests/admin/:id/approve`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+#### 14. Reject leave request
+
+- **PATCH** `/leave/requests/admin/:id/reject`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Example review payload:
+
+```json
+{
+  "reviewNote": "Approved by HR after manager confirmation."
+}
+```
+
+## Business rules
+
+- Leave type name and code must be unique inside a company.
+- Leave type must belong to the same company and be active before use.
+- Start date cannot be after end date.
+- Past leave requests are rejected.
+- Saturdays are excluded from leave day calculation.
+- A date range that only contains Saturdays is invalid.
+- Half-day leave must be for a single date and requires `halfDaySession`.
+- Overlapping pending or approved leave requests are blocked.
+- Requested leave must fit inside the remaining leave balance.
+- Only pending requests can be cancelled, approved, or rejected.
+
+## Attendance synchronization
+
+Approving leave updates attendance by creating or updating `AttendanceDay` rows with:
+
+- `status = ON_LEAVE`
+- `source = ADMIN`
+- zero late, overtime, and total work minutes
+
+Approval also validates that conflicting attendance does not already exist for the requested dates.
+
+## Notes
+
+- The service normalizes date calculations using Kathmandu day boundaries.
+- Leave balance is derived from `allocatedDays` on each leave type rather than a separate accrual engine.

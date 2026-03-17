@@ -1,0 +1,149 @@
+---
+title: Attendance Regularization Module
+---
+
+# Attendance Regularization Module
+
+## Overview
+
+The Attendance Regularization module handles correction requests for attendance mistakes such as missed check-in, missed check-out, and full-day edits. It introduces a review flow so attendance changes are approved instead of being silently overwritten.
+
+## Key models and enums
+
+- `AttendanceRegularization`
+- `AttendanceDay`
+- `Employee`
+
+Important enums:
+
+- `RegularizationRequestType`: `MISSED_CHECKIN`, `MISSED_CHECKOUT`, `WRONG_TIME`, `FULL_DAY_EDIT`
+- `RegularizationStatus`: `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`
+
+## Features
+
+- Employee self-submission for attendance fixes
+- Company-level submission on behalf of employees
+- Review queue for admin, HR, and manager roles
+- Approval and rejection workflow with review notes
+- Before/after snapshots for auditability
+- Integration with `AttendanceService` to apply approved corrections
+
+## Endpoints
+
+Base path: `/attendance/regularizations`
+
+### Submission and self-service
+
+#### 1. Create regularization request
+
+- **POST** `/attendance/regularizations`
+- **Roles**: `employee`, `company_admin`, `hr_manager`, `manager`
+
+Example request:
+
+```json
+{
+  "date": "2026-03-18",
+  "requestType": "MISSED_CHECKOUT",
+  "requestedCheckOutTime": "17:45",
+  "reason": "Forgot to check out before leaving",
+  "employeeId": "uuid"
+}
+```
+
+Notes:
+
+- `employeeId` is optional and is only meaningful for company-level submission on behalf of someone else.
+- Required requested times depend on `requestType`.
+
+#### 2. List my regularizations
+
+- **GET** `/attendance/regularizations/me`
+- **Role**: `employee`
+
+Supports filters such as status, date range, page, and limit.
+
+#### 3. Get my regularization by id
+
+- **GET** `/attendance/regularizations/me/:id`
+- **Role**: `employee`
+
+#### 4. Cancel my pending regularization
+
+- **PATCH** `/attendance/regularizations/me/:id/cancel`
+- **Role**: `employee`
+
+Only pending requests can be cancelled.
+
+### Review endpoints
+
+#### 5. Admin review list
+
+- **GET** `/attendance/regularizations/admin`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Supported filters:
+
+- `status`
+- `employeeId`
+- `departmentId`
+- `dateFrom`
+- `dateTo`
+- `page`
+- `limit`
+
+#### 6. Admin get one regularization
+
+- **GET** `/attendance/regularizations/admin/:id`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+#### 7. Approve regularization
+
+- **PATCH** `/attendance/regularizations/admin/:id/approve`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Example request:
+
+```json
+{
+  "reviewNote": "Approved after checking entry log."
+}
+```
+
+#### 8. Reject regularization
+
+- **PATCH** `/attendance/regularizations/admin/:id/reject`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Example request:
+
+```json
+{
+  "reviewNote": "Request does not match access control records."
+}
+```
+
+## Business rules
+
+- Only same-day requests are accepted; past and future dates are rejected.
+- Only one pending regularization is allowed per employee per date.
+- Time inputs must be valid `HH:mm` or `HH:mm:ss` values.
+- Requested check-out must be later than requested check-in.
+- Required fields depend on request type:
+  - `MISSED_CHECKIN` requires requested check-in
+  - `MISSED_CHECKOUT` requires requested check-out
+  - `WRONG_TIME` requires both
+  - `FULL_DAY_EDIT` requires both
+- Only pending requests can be cancelled, approved, or rejected.
+
+## Audit behavior
+
+When a request is approved, the module stores:
+
+- `beforeSnapshot`
+- `afterSnapshot`
+- `reviewedBy`
+- `reviewedAt`
+- `reviewNote`
+
+This allows the system to preserve the attendance state before the correction was applied.

@@ -1,0 +1,175 @@
+---
+title: Employee Module
+---
+
+# Employee Module
+
+## Overview
+
+The Employee module manages the main HR profile for each worker inside a company. It creates the linked application user account, stores employment details, validates organizational relationships, and exposes both admin-facing and self-service employee endpoints.
+
+## Key models
+
+- `Employee`
+- `User`
+- `Company`
+- `Department`
+- `Designation`
+- `WorkShift`
+
+Important enums:
+
+- `EmployeeStatus`: `active`, `on_leave`, `terminated`
+- `EmploymentType`: `full_time`, `part_time`, `contract`, `intern`
+- `Gender`: `male`, `female`, `other`
+
+## Features
+
+- Create employee and linked auth user in one transaction
+- Auto-generate employee codes when one is not supplied
+- Update employee profile and linked user identity fields
+- Filter employees by structure, status, dates, and salary range
+- Return employee stats for company dashboards
+- Support self-profile retrieval for logged-in employees
+- Soft delete and hard delete behavior for company admins
+
+## Endpoints
+
+Base path: `/employees`
+
+### Admin and HR endpoints
+
+#### 1. Create employee
+
+- **POST** `/employees`
+- **Roles**: `company_admin`, `hr_manager`
+- **Consumes**: `multipart/form-data`
+- **File field**: `image`
+
+Core request fields include:
+
+```json
+{
+  "email": "employee@example.com",
+  "password": "SecurePass123",
+  "firstName": "Asha",
+  "lastName": "Sharma",
+  "departmentId": "uuid",
+  "designationId": "uuid",
+  "workShiftId": "uuid",
+  "employmentType": "full_time",
+  "joinDate": "2026-01-15",
+  "baseSalary": 50000
+}
+```
+
+Behavior:
+
+- Creates a `User` and an `Employee` together.
+- Uses the authenticated user's company.
+- Generates `employeeCode` if not supplied.
+- Stores uploaded image path when provided.
+
+#### 2. List employees
+
+- **GET** `/employees`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Supported filters include:
+
+- `search`
+- `status`
+- `departmentId`
+- `designationId`
+- `workShiftId`
+- `employmentType`
+- `minSalary`
+- `maxSalary`
+- `joinDateFrom`
+- `joinDateTo`
+- `page`
+- `limit`
+- `sortBy`
+- `sortOrder`
+
+Response follows `{ message, data, meta }`.
+
+#### 3. Employee stats
+
+- **GET** `/employees/stats`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Returns company-level employee counts and status breakdowns for dashboards.
+
+#### 4. Get employee by id
+
+- **GET** `/employees/:id`
+- **Roles**: `company_admin`, `hr_manager`, `manager`
+
+Returns a single employee with related user and organizational details.
+
+#### 5. Update employee
+
+- **PATCH** `/employees/:id`
+- **Roles**: `company_admin`, `hr_manager`
+- **Consumes**: `multipart/form-data`
+- **File field**: `image`
+
+Updates employee profile fields and syncs linked `User` fields such as:
+
+- `fullName`
+- `phone`
+- `avatarUrl`
+
+#### 6. Update employee status
+
+- **PATCH** `/employees/:id/status`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "status": "terminated"
+}
+```
+
+Special behavior:
+
+- Termination also deactivates the linked `User` account.
+
+#### 7. Delete employee
+
+- **DELETE** `/employees/:id?hardDelete=true|false`
+- **Role**: `company_admin`
+
+Behavior:
+
+- `hardDelete=false` soft deletes by marking employee as terminated.
+- `hardDelete=true` removes the employee row and uploaded image.
+
+### Employee self-service endpoint
+
+#### 8. Get my employee profile
+
+- **GET** `/employees/me`
+- **Role**: `employee`
+
+Returns the employee profile linked to the authenticated user.
+
+## Business rules
+
+- Company must exist and be active before an employee can be created.
+- Suspended or archived companies cannot create employees.
+- `maxEmployees` is enforced against active employees.
+- Email must be globally unique.
+- `employeeCode` must be unique per company.
+- Department, designation, and work shift must belong to the same company.
+- Department, designation, and work shift must be active if supplied.
+- Employee code format is restricted to uppercase letters, numbers, underscores, and hyphens.
+- Soft deletion and termination deactivate the linked user account.
+
+## Notes
+
+- Employee images are stored under the uploads directory and linked to both `Employee.imageUrl` and `User.avatarUrl`.
+- This module is the central dependency for leave, attendance, complaints, policies, and projects.

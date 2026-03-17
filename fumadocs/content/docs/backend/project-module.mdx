@@ -1,0 +1,200 @@
+---
+title: Project Module
+---
+
+# Project Module
+
+## Overview
+
+The Project module adds a lightweight internal project and task management system to the HR platform. It supports project creation, member management, kanban-style task status tracking, and task comments for collaboration between admins, HR managers, employees, and managers.
+
+## Key models and enums
+
+- `Project`
+- `ProjectMember`
+- `ProjectTask`
+- `ProjectTaskComment`
+- `Employee`
+
+Important enums:
+
+- `ProjectStatus`: `ACTIVE`, `COMPLETED`, `ARCHIVED`
+- `ProjectTaskStatus`: `TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`
+- `ProjectTaskPriority`
+
+## Features
+
+- Create and update company projects
+- Add and remove project members
+- Enforce member-scoped visibility for employees and managers
+- Create tasks with assignee, priority, and due date
+- Move task status through a fixed kanban workflow
+- Add paginated task comments
+- Return task summary counts on project detail
+
+## Endpoints
+
+Base path: `/projects`
+
+### Admin and HR project management
+
+#### 1. Create project
+
+- **POST** `/projects/admin`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 2. List projects
+
+- **GET** `/projects/admin`
+- **Roles**: `company_admin`, `hr_manager`
+
+Supports `status`, `search`, `page`, and `limit`.
+
+#### 3. Get project detail
+
+- **GET** `/projects/admin/:projectId`
+- **Roles**: `company_admin`, `hr_manager`
+
+Includes project members and a `taskSummary` grouped by task status.
+
+#### 4. Update project
+
+- **PATCH** `/projects/admin/:projectId`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 5. Update project status
+
+- **PATCH** `/projects/admin/:projectId/status`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "status": "COMPLETED"
+}
+```
+
+#### 6. Add project members
+
+- **POST** `/projects/admin/:projectId/members`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "employeeIds": ["uuid-1", "uuid-2"]
+}
+```
+
+Response includes counts for added vs skipped members.
+
+#### 7. Remove project member
+
+- **DELETE** `/projects/admin/:projectId/members/:employeeId`
+- **Roles**: `company_admin`, `hr_manager`
+
+### Admin and HR task management
+
+#### 8. Create task
+
+- **POST** `/projects/admin/:projectId/tasks`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "title": "Prepare onboarding checklist",
+  "description": "Create the first version of the checklist.",
+  "priority": "HIGH",
+  "assigneeEmployeeId": "uuid",
+  "dueDate": "2026-04-05"
+}
+```
+
+#### 9. List project tasks
+
+- **GET** `/projects/admin/:projectId/tasks`
+- **Roles**: `company_admin`, `hr_manager`
+
+Supports filters such as `status`, `priority`, `assigneeEmployeeId`, search, date range, page, and limit.
+
+#### 10. Get task detail
+
+- **GET** `/projects/admin/tasks/:taskId`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 11. Update task
+
+- **PATCH** `/projects/admin/tasks/:taskId`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 12. Update task status
+
+- **PATCH** `/projects/admin/tasks/:taskId/status`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 13. List task comments
+
+- **GET** `/projects/admin/tasks/:taskId/comments`
+- **Roles**: `company_admin`, `hr_manager`
+
+#### 14. Add task comment
+
+- **POST** `/projects/admin/tasks/:taskId/comments`
+- **Roles**: `company_admin`, `hr_manager`
+
+### Employee and manager member scope
+
+#### 15. List my projects
+
+- **GET** `/projects/me`
+- **Roles**: `employee`, `manager`
+
+Only returns projects where the employee is a member.
+
+#### 16. List tasks in one of my projects
+
+- **GET** `/projects/me/:projectId/tasks`
+- **Roles**: `employee`, `manager`
+
+#### 17. Get my task detail
+
+- **GET** `/projects/me/tasks/:taskId`
+- **Roles**: `employee`, `manager`
+
+#### 18. Update my assigned task status
+
+- **PATCH** `/projects/me/tasks/:taskId/status`
+- **Roles**: `employee`, `manager`
+
+Employees and managers can only update status for tasks assigned to themselves.
+
+#### 19. List my task comments
+
+- **GET** `/projects/me/tasks/:taskId/comments`
+- **Roles**: `employee`, `manager`
+
+#### 20. Add comment to my task
+
+- **POST** `/projects/me/tasks/:taskId/comments`
+- **Roles**: `employee`, `manager`
+
+## Business rules
+
+- Company must be active before a new project can be created.
+- Project start date must not be after end date.
+- `COMPLETED` and `ARCHIVED` projects are read-only.
+- Members must belong to the same company and cannot be terminated.
+- Duplicate member additions are skipped rather than failing the whole request.
+- Member removal is blocked if the employee still owns non-done tasks in that project.
+- Task assignee must already be a member of the project.
+- Employees and managers can view only projects where they are members.
+- Employees and managers can change status only on tasks assigned to themselves.
+
+## Notes
+
+- Comment lists are paginated and ordered oldest first.
+- This module intentionally implements a lightweight V1 scope; for planning context see the separate roadmap document.
