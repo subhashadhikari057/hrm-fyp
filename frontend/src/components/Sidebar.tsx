@@ -179,8 +179,8 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
               ],
             },
             { name: 'Projects', href: '/dashboard/companyadmin/projects', icon: IconBriefcase },
-            { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase },
             { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat },
+            { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase },
           ],
         },
       ],
@@ -207,8 +207,8 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           ],
         },
         { name: 'Projects', href: '/dashboard/hrmanager/projects', icon: IconBriefcase },
-        { name: 'Policy Hub', href: '/dashboard/hrmanager/policies', icon: IconBriefcase },
         { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat },
+        { name: 'Policy Hub', href: '/dashboard/hrmanager/policies', icon: IconBriefcase },
       ],
     },
   ],
@@ -240,8 +240,8 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           ],
         },
         { name: 'Projects', href: '/dashboard/employee/projects', icon: IconBriefcase },
-        { name: 'Policy', href: '/dashboard/employee/policy', icon: IconBriefcase },
         { name: 'Complaints', href: '/dashboard/employee/complaints', icon: IconChat },
+        { name: 'Policy', href: '/dashboard/employee/policy', icon: IconBriefcase },
       ],
     },
   ],
@@ -401,25 +401,30 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-40 h-screen border-r border-slate-200 bg-slate-50/95 backdrop-blur transition-transform duration-300 ease-in-out ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${isCollapsed ? 'w-16' : 'w-64'}`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-<div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 shrink-0">            {!isCollapsed ? (
+          <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4 shrink-0">
+            {!isCollapsed ? (
               <>
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <img
                     src="/logo/logo2.png"
                     alt="Karyasetu logo"
-                    className="h-30 w-30 object-contain"
+                    className="h-16 w-auto max-w-[220px] object-contain"
                   />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">Karyasetu</p>
+                    <p className="truncate text-xs text-slate-500">HR workspace</p>
+                  </div>
                 </div>
 
                 <button
                   onClick={toggleSidebar}
-                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="hidden lg:flex rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 flex-shrink-0"
                   aria-label="Collapse sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -432,7 +437,7 @@ export default function Sidebar() {
                 <div className="flex items-center justify-center flex-1" />
                 <button
                   onClick={toggleSidebar}
-                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="hidden lg:flex rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 flex-shrink-0"
                   aria-label="Expand sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,7 +450,7 @@ export default function Sidebar() {
             {/* Close mobile */}
             <button
               onClick={closeMobileMenu}
-              className="ml-auto lg:hidden p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="ml-auto rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 lg:hidden flex-shrink-0"
               aria-label="Close menu"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,11 +460,11 @@ export default function Sidebar() {
           </div>
 
           {/* Menu */}
-          <nav className={`flex-1 px-2 sm:px-3 lg:px-4 py-3 sm:py-4 space-y-4 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          <nav className={`flex-1 space-y-5 overflow-y-auto px-2 py-4 sm:px-3 lg:px-4 ${isCollapsed ? 'px-2' : ''}`}>
             {groups.map((group) => (
               <div key={group.title} className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
+                  <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     {group.title}
                   </div>
                 )}
@@ -475,12 +480,12 @@ export default function Sidebar() {
                   return (
                     <div key={item.name} className="space-y-1">
                       <div
-                        className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors ${
-                          isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5'
+                        className={`w-full flex items-center rounded-xl text-sm font-medium transition-all ${
+                          isCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5'
                         } ${
                           isActive(item.href) || childActive
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-blue-100 text-blue-800 shadow-sm ring-1 ring-blue-200'
+                            : 'text-slate-700 hover:bg-white hover:text-slate-900'
                         }`}
                         title={isCollapsed ? item.name : undefined}
                       >
@@ -500,7 +505,7 @@ export default function Sidebar() {
                               e.stopPropagation();
                               toggleSubmenu(item.href);
                             }}
-                            className="ml-2 p-1 rounded hover:bg-black/5 transition-colors"
+                            className="ml-2 rounded-md p-1 transition-colors hover:bg-black/5"
                             aria-label={expanded ? 'Collapse submenu' : 'Expand submenu'}
                           >
                             <svg
@@ -517,18 +522,18 @@ export default function Sidebar() {
 
                       {/* Submenu */}
                       {!isCollapsed && hasChildren && expanded && (
-                        <div className="ml-2 pl-3 border-l border-gray-200 space-y-1">
+                        <div className="ml-4 space-y-1 border-l border-slate-200 pl-3">
                           {item.children!.map((child) => (
                             <button
                               key={child.name}
                               onClick={() => handleNavigation(child.href)}
-                              className={`w-full flex items-center rounded-lg text-sm transition-colors px-3 py-2 ${
+                              className={`w-full flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
                                 isActive(child.href)
                                   ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-600 hover:bg-gray-100'
+                                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              <span className="mr-2.5 flex-shrink-0 opacity-80">{child.icon}</span>
+                              <span className="mr-2.5 flex-shrink-0 opacity-70">{child.icon}</span>
                               <span className="truncate">{child.name}</span>
                             </button>
                           ))}
@@ -543,11 +548,11 @@ export default function Sidebar() {
 
           {/* User */}
           {user && (
-            <div className={`border-t border-gray-200 ${isCollapsed ? 'px-2 py-3' : 'px-3 py-4'}`}>
+            <div className={`border-t border-slate-200 ${isCollapsed ? 'px-2 py-3' : 'px-3 py-4'}`}>
               <div className="relative">
                 <button
                   onClick={() => setShowProfileMenu((prev) => !prev)}
-                  className={`w-full flex items-center rounded-lg transition-colors hover:bg-gray-100 ${
+                  className={`w-full flex items-center rounded-xl border border-transparent transition-colors hover:border-slate-200 hover:bg-white ${
                     isCollapsed ? 'justify-center px-2 py-2' : 'px-3 py-2.5'
                   }`}
                 >
@@ -555,10 +560,10 @@ export default function Sidebar() {
                     <img
                       src={avatarUrl}
                       alt={user.name || user.email}
-                      className="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#5974E6] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[#5974E6] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
                       {getInitials(user.email)}
                     </div>
                   )}
@@ -566,14 +571,14 @@ export default function Sidebar() {
                   {!isCollapsed && (
                     <>
                       <div className="ml-3 text-left min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-sm font-medium text-slate-900 truncate">
                           {user.name || user.email.split('@')[0]}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">{roleLabels[user.role]}</div>
+                        <div className="text-xs text-slate-500 truncate">{roleLabels[user.role]}</div>
                       </div>
 
                       <svg
-                        className={`w-4 h-4 text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 text-slate-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -590,15 +595,15 @@ export default function Sidebar() {
                     <div
                       className={`absolute z-20 ${
                         isCollapsed ? 'left-14 bottom-0' : 'left-0 bottom-12 w-full'
-                      } bg-white rounded-lg shadow-lg border border-gray-200`}
+                      } rounded-xl border border-slate-200 bg-white shadow-lg`}
                     >
                       <div className="py-1">
                         {!isCollapsed && (
-                          <div className="px-4 py-2 border-b border-gray-200">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                          <div className="border-b border-slate-200 px-4 py-2">
+                            <p className="text-sm font-medium text-slate-900 truncate">
                               {user.name || user.email.split('@')[0]}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
                           </div>
                         )}
 
@@ -608,7 +613,7 @@ export default function Sidebar() {
                             setShowProfileMenu(false);
                             closeMobileMenu();
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                         >
                           Profile
                         </button>
@@ -619,15 +624,15 @@ export default function Sidebar() {
                             setShowProfileMenu(false);
                             closeMobileMenu();
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                         >
                           Settings
                         </button>
 
-                        <div className="border-t border-gray-200">
+                        <div className="border-t border-slate-200">
                           <button
                             onClick={handleLogout}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
                           >
                             Logout
                           </button>

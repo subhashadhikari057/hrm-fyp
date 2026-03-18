@@ -139,6 +139,13 @@ export interface ProjectMembersMutationResponse {
   };
 }
 
+export interface ProjectDeleteResponse {
+  message: string;
+  data: {
+    id: string;
+  };
+}
+
 export interface ProjectListParams {
   status?: ProjectStatus;
   search?: string;
@@ -273,6 +280,20 @@ export const projectsApi = {
       headers: getAuthHeaders(),
       credentials: 'include',
       body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return response.json();
+  },
+
+  async deleteAdminProject(projectId: string): Promise<ProjectDeleteResponse> {
+    const response = await apiFetch(`${API_BASE_URL}/projects/admin/${projectId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {

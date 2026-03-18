@@ -8,6 +8,7 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import Sidebar, { getMenuItemsForRole } from './Sidebar';
 import { policyApi, type PendingPolicy } from '../lib/api/policy';
 import { PolicyAcceptanceModal } from './policy/PolicyAcceptanceModal';
+import { AppBreadcrumbs, BreadcrumbProvider } from './AppBreadcrumbs';
 import toast from 'react-hot-toast';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -300,7 +301,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main Content */}
         <main className="px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
-          {children}
+          <BreadcrumbProvider>
+            <AppBreadcrumbs />
+            {children}
+          </BreadcrumbProvider>
         </main>
       </div>
 

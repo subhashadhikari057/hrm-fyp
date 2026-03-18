@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { CalendarDays, MessageSquare, UserRound } from 'lucide-react';
 import {
   type ProjectTaskCommentRecord,
   type ProjectTaskRecord,
@@ -16,6 +17,26 @@ import {
 } from '../ui/dialog';
 
 const TASK_STATUSES: ProjectTaskStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+
+function statusLabel(status: ProjectTaskStatus) {
+  switch (status) {
+    case 'IN_PROGRESS':
+      return 'In Progress';
+    default:
+      return status.replace('_', ' ');
+  }
+}
+
+function priorityBadgeClass(priority: string) {
+  switch (priority) {
+    case 'HIGH':
+      return 'border-rose-200 bg-rose-50 text-rose-700';
+    case 'LOW':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    default:
+      return 'border-amber-200 bg-amber-50 text-amber-700';
+  }
+}
 
 interface ProjectTaskDetailModalProps {
   open: boolean;
@@ -62,34 +83,34 @@ export function ProjectTaskDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !loading && onOpenChange(nextOpen)}>
-      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto border-slate-200 bg-[linear-gradient(180deg,#fff_0%,#f8fafc_100%)]">
         <DialogHeader>
-          <DialogTitle>Task Detail</DialogTitle>
+          <DialogTitle className="text-xl text-slate-900">Task Detail</DialogTitle>
         </DialogHeader>
 
         {!task ? (
-          <div className="text-sm text-gray-600">No task selected.</div>
+          <div className="text-sm text-slate-600">No task selected.</div>
         ) : (
           <div className="space-y-6">
-            <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+            <div className="space-y-4 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.8)]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-base font-semibold text-gray-900">{task.title}</p>
-                  <p className="mt-1 text-sm text-gray-600">{task.description || 'No description provided.'}</p>
+                  <p className="text-lg font-semibold text-slate-900">{task.title}</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{task.description || 'No description provided.'}</p>
                 </div>
-                <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${priorityBadgeClass(task.priority)}`}>
                   {task.priority}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 text-sm text-gray-700 md:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Project</p>
-                  <p className="font-medium">{task.project?.name || '-'}</p>
+              <div className="grid grid-cols-1 gap-3 text-sm text-slate-700 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Project</p>
+                  <p className="mt-1 font-medium text-slate-900">{task.project?.name || '-'}</p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Assignee</p>
-                  <p className="font-medium">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-slate-400"><UserRound className="h-3 w-3" />Assignee</p>
+                  <p className="mt-1 font-medium text-slate-900">
                     {task.assigneeEmployee
                       ? `${task.assigneeEmployee.firstName || ''} ${task.assigneeEmployee.lastName || ''}`.trim() ||
                         task.assigneeEmployee.employeeCode ||
@@ -97,18 +118,18 @@ export function ProjectTaskDetailModal({
                       : 'Unassigned'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Due Date</p>
-                  <p className="font-medium">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-slate-400"><CalendarDays className="h-3 w-3" />Due Date</p>
+                  <p className="mt-1 font-medium text-slate-900">
                     {task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-GB') : 'Not set'}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wide text-gray-500">Status</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-400">Status</label>
                 <select
-                  className="block h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="block h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 focus:border-slate-400 focus:outline-none focus:ring-0"
                   value={task.status}
                   disabled={!canUpdateStatus || updatingStatus || !onUpdateStatus}
                   onChange={(e) => {
@@ -120,7 +141,7 @@ export function ProjectTaskDetailModal({
                 >
                   {TASK_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {statusLabel(status)}
                     </option>
                   ))}
                 </select>
@@ -129,18 +150,18 @@ export function ProjectTaskDetailModal({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
-                {loadingComments ? <span className="text-xs text-gray-500">Loading...</span> : null}
+                <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900"><MessageSquare className="h-4 w-4 text-slate-400" />Comments</h3>
+                {loadingComments ? <span className="text-xs text-slate-500">Loading...</span> : null}
               </div>
 
-              <div className="max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="max-h-56 space-y-2 overflow-y-auto rounded-[24px] border border-slate-200 bg-white/80 p-3">
                 {comments.length === 0 ? (
-                  <p className="text-sm text-gray-600">No comments yet.</p>
+                  <p className="text-sm text-slate-600">No comments yet.</p>
                 ) : (
                   comments.map((comment) => (
-                    <div key={comment.id} className="rounded-md border border-gray-200 bg-white p-3">
-                      <p className="text-sm text-gray-800">{comment.comment}</p>
-                      <p className="mt-1 text-xs text-gray-500">
+                    <div key={comment.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-sm leading-6 text-slate-800">{comment.comment}</p>
+                      <p className="mt-2 text-xs text-slate-500">
                         {(comment.authorUser?.fullName || comment.authorUser?.email || 'User')}
                         {' • '}
                         {new Date(comment.createdAt).toLocaleString('en-GB')}
@@ -151,14 +172,14 @@ export function ProjectTaskDetailModal({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Add Comment</label>
+                <label className="text-sm font-medium text-slate-700">Add Comment</label>
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   rows={3}
                   maxLength={2000}
                   placeholder="Write a project update..."
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="block w-full rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-slate-400 focus:outline-none focus:ring-0"
                   disabled={submittingComment || !onAddComment}
                 />
               </div>

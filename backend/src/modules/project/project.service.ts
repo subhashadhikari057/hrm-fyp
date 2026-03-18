@@ -23,6 +23,58 @@ import { UpdateProjectTaskStatusDto } from './dto/update-project-task-status.dto
 export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async attachTaskSummaries<T extends { id: string }>(projects: T[]) {
+    if (projects.length === 0) {
+      return projects.map((project) => ({
+        ...project,
+        taskSummary: {
+          TODO: 0,
+          IN_PROGRESS: 0,
+          REVIEW: 0,
+          DONE: 0,
+        } satisfies Record<ProjectTaskStatus, number>,
+      }));
+    }
+
+    const counts = await this.prisma.projectTask.groupBy({
+      by: ['projectId', 'status'],
+      where: {
+        projectId: { in: projects.map((project) => project.id) },
+      },
+      _count: {
+        status: true,
+      },
+    });
+
+    const summaryMap = new Map<string, Record<ProjectTaskStatus, number>>();
+
+    for (const project of projects) {
+      summaryMap.set(project.id, {
+        TODO: 0,
+        IN_PROGRESS: 0,
+        REVIEW: 0,
+        DONE: 0,
+      });
+    }
+
+    for (const row of counts) {
+      const summary = summaryMap.get(row.projectId);
+      if (summary) {
+        summary[row.status] = row._count.status;
+      }
+    }
+
+    return projects.map((project) => ({
+      ...project,
+      taskSummary: summaryMap.get(project.id) || {
+        TODO: 0,
+        IN_PROGRESS: 0,
+        REVIEW: 0,
+        DONE: 0,
+      },
+    }));
+  }
+
   private ensureAdminOrHr(currentUser: any) {
     const role: UserRole = currentUser.role;
     if (!(role === 'company_admin' || role === 'hr_manager')) {
@@ -316,9 +368,11 @@ export class ProjectService {
       },
     });
 
+    const dataWithSummaries = await this.attachTaskSummaries(data);
+
     return {
       message: 'Projects retrieved successfully',
-      data,
+      data: dataWithSummaries,
       meta: buildPaginationMeta(total, page, limit),
     };
   }
@@ -470,6 +524,27 @@ export class ProjectService {
     return {
       message: `Project status updated to ${dto.status}`,
       data: updated,
+    };
+  }
+
+  async deleteProject(projectId: string, currentUser: any) {
+    this.ensureAdminOrHr(currentUser);
+
+    const project = await this.getProjectForCompany(projectId, currentUser);
+
+    if (project.status !== ProjectStatus.ARCHIVED) {
+      throw new BadRequestException('Only archived projects can be deleted');
+    }
+
+    await this.prisma.project.delete({
+      where: { id: project.id },
+    });
+
+    return {
+      message: 'Project deleted successfully',
+      data: {
+        id: project.id,
+      },
     };
   }
 
@@ -956,9 +1031,11 @@ export class ProjectService {
       },
     });
 
+    const dataWithSummaries = await this.attachTaskSummaries(data);
+
     return {
       message: 'My projects retrieved successfully',
-      data,
+      data: dataWithSummaries,
       meta: buildPaginationMeta(total, page, limit),
     };
   }

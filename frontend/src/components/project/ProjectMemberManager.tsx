@@ -49,9 +49,13 @@ export function ProjectMemberManager({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-gray-200 p-4">
-        <p className="text-sm font-semibold text-gray-900">Add Member</p>
-        <div className="mt-3 flex flex-col gap-2 md:flex-row">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-semibold text-gray-900">Add Member</p>
+            <p className="text-xs text-gray-500">Assign an employee to this project workspace.</p>
+          </div>
+          <div className="flex w-full flex-col gap-2 md:flex-row lg:w-auto lg:min-w-[520px]">
           <select
             className="h-10 flex-1 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={selectedEmployeeId}
@@ -69,31 +73,31 @@ export function ProjectMemberManager({
             variant="blue"
             onClick={handleAddMember}
             disabled={adding || !selectedEmployeeId}
+            className="md:min-w-32"
           >
             {adding ? 'Adding...' : 'Add Member'}
           </Button>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700">Employee</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700">Code</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
-            {members.length === 0 ? (
+      {members.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-center text-sm text-gray-600">
+          No members in this project yet.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-sm text-gray-600">
-                  No members in this project yet.
-                </td>
+                <th className="px-3 py-2 text-left font-semibold text-gray-700">Employee</th>
+                <th className="px-3 py-2 text-left font-semibold text-gray-700">Code</th>
+                <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
+                <th className="px-3 py-2 text-left font-semibold text-gray-700">Action</th>
               </tr>
-            ) : (
-              members.map((member) => {
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {members.map((member) => {
                 const fullName = `${member.employee?.firstName || ''} ${member.employee?.lastName || ''}`.trim();
                 return (
                   <tr key={member.id}>
@@ -112,11 +116,11 @@ export function ProjectMemberManager({
                     </td>
                   </tr>
                 );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

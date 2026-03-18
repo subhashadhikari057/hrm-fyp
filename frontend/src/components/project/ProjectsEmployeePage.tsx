@@ -1,27 +1,22 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { CalendarDays, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import DashboardLayout from '../DashboardLayout';
 import { PageHeader } from '../PageHeader';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { employeeApi } from '../../lib/api/employee';
-import {
-  projectsApi,
-  type ProjectRecord,
-  type ProjectStatus,
-  type ProjectTaskCommentRecord,
-  type ProjectTaskRecord,
-  type ProjectTaskStatus,
-} from '../../lib/api/projects';
-import { ProjectKanbanBoard } from './ProjectKanbanBoard';
-import { ProjectTaskDetailModal } from './ProjectTaskDetailModal';
+import { projectsApi, type ProjectRecord, type ProjectStatus } from '../../lib/api/projects';
 
-const PAGE_LIMIT = 10;
-const MAX_API_LIMIT = 100;
+const PAGE_LIMIT = 12;
+const EMPLOYEE_MAX_PROJECTS = 100;
 
-function projectStatusBadgeClass(status: ProjectStatus): string {
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function statusBadgeClass(status: ProjectStatus): string {
   switch (status) {
     case 'COMPLETED':
       return 'border-emerald-200 bg-emerald-50 text-emerald-700';
@@ -32,42 +27,34 @@ function projectStatusBadgeClass(status: ProjectStatus): string {
   }
 }
 
-export default function ProjectsEmployeePage() {
-  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
+function formatDate(value?: string | null) {
+  return value ? new Date(value).toLocaleDateString('en-GB') : 'Not set';
+}
 
+function getCompletedTasks(project: ProjectRecord) {
+  return project.taskSummary?.DONE || 0;
+}
+
+function getOngoingTasks(project: ProjectRecord) {
+  return (project.taskSummary?.TODO || 0) + (project.taskSummary?.IN_PROGRESS || 0) + (project.taskSummary?.REVIEW || 0);
+}
+
+interface ProjectsEmployeePageProps {
+  detailBasePath?: string;
+}
+
+export default function ProjectsEmployeePage({
+  detailBasePath = '/dashboard/employee/projects',
+}: ProjectsEmployeePageProps) {
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [stats, setStats] = useState({ active: 0, completed: 0, archived: 0 });
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedProject, setSelectedProject] = useState<ProjectRecord | null>(null);
-
-  const [tasks, setTasks] = useState<ProjectTaskRecord[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(false);
-
-  const [taskStatusUpdating, setTaskStatusUpdating] = useState(false);
-
-  const [taskDetailOpen, setTaskDetailOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<ProjectTaskRecord | null>(null);
-  const [taskDetailLoading, setTaskDetailLoading] = useState(false);
-  const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
-  const [taskComments, setTaskComments] = useState<ProjectTaskCommentRecord[]>([]);
-  const [taskCommentSaving, setTaskCommentSaving] = useState(false);
-
-  const projectWritable = selectedProject?.status === 'ACTIVE';
-
-  const canMoveTask = (task: ProjectTaskRecord) => {
-    if (!projectWritable) return false;
-    if (!currentEmployeeId) return false;
-    return task.assigneeEmployeeId === currentEmployeeId;
-  };
-
-  const loadStats = async () => {
+  const loadProjectStats = async () => {
     try {
       const [activeRes, completedRes, archivedRes] = await Promise.all([
         projectsApi.listMyProjects({ status: 'ACTIVE', page: 1, limit: 1 }),
@@ -85,121 +72,44 @@ export default function ProjectsEmployeePage() {
     }
   };
 
-  const loadMyProfile = async () => {
-    try {
-      const response = await employeeApi.getMyProfile();
-      setCurrentEmployeeId(response.data.id);
-    } catch {
-      setCurrentEmployeeId(null);
-    }
-  };
-
-  const loadProjectTasks = async (projectId: string) => {
-    setTasksLoading(true);
-    try {
-      const response = await projectsApi.listMyProjectTasks(projectId, {
-        page: 1,
-        limit: MAX_API_LIMIT,
-      });
-      const taskList = response.data || [];
-      setTasks(taskList);
-
-      if (selectedTask && !taskList.some((task) => task.id === selectedTask.id)) {
-        setTaskDetailOpen(false);
-        setSelectedTask(null);
-        setTaskComments([]);
-      }
-    } catch (error: any) {
-      setTasks([]);
-      toast.error(error?.message || 'Failed to load project tasks');
-    } finally {
-      setTasksLoading(false);
-    }
-  };
-
   const loadProjects = async () => {
     setProjectsLoading(true);
     setProjectsError(null);
 
     try {
+      if (statusFilter === 'ALL') {
+        const [activeResponse, completedResponse] = await Promise.all([
+          projectsApi.listMyProjects({ status: 'ACTIVE', page: 1, limit: EMPLOYEE_MAX_PROJECTS }),
+          projectsApi.listMyProjects({ status: 'COMPLETED', page: 1, limit: EMPLOYEE_MAX_PROJECTS }),
+        ]);
+
+        const combinedProjects = [...(activeResponse.data || []), ...(completedResponse.data || [])].sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+
+        const totalVisibleProjects = combinedProjects.length;
+        const computedTotalPages = Math.max(1, Math.ceil(totalVisibleProjects / PAGE_LIMIT));
+        const startIndex = (page - 1) * PAGE_LIMIT;
+
+        setProjects(combinedProjects.slice(startIndex, startIndex + PAGE_LIMIT));
+        setTotalPages(computedTotalPages);
+        return;
+      }
+
       const response = await projectsApi.listMyProjects({
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        status: statusFilter,
         page,
         limit: PAGE_LIMIT,
       });
 
-      const list = response.data || [];
-      setProjects(list);
+      setProjects(response.data || []);
       setTotalPages(response.meta?.totalPages || 1);
-
-      if (list.length === 0) {
-        setSelectedProject(null);
-        setSelectedProjectId(null);
-        setTasks([]);
-        return;
-      }
-
-      if (!selectedProjectId) {
-        const first = list[0];
-        setSelectedProjectId(first.id);
-        setSelectedProject(first);
-        await loadProjectTasks(first.id);
-        return;
-      }
-
-      const current = list.find((project) => project.id === selectedProjectId);
-      if (current) {
-        setSelectedProject(current);
-      } else {
-        const first = list[0];
-        setSelectedProjectId(first.id);
-        setSelectedProject(first);
-        await loadProjectTasks(first.id);
-      }
-    } catch (error: any) {
-      setProjectsError(error?.message || 'Failed to load my projects');
+    } catch (error: unknown) {
+      setProjectsError(getErrorMessage(error, 'Failed to load my projects'));
       setProjects([]);
       setTotalPages(1);
     } finally {
       setProjectsLoading(false);
-    }
-  };
-
-  const loadTaskDetail = async (task: ProjectTaskRecord) => {
-    setTaskDetailOpen(true);
-    setTaskDetailLoading(true);
-    setTaskCommentsLoading(true);
-
-    try {
-      const [taskRes, commentsRes] = await Promise.all([
-        projectsApi.getMyTaskById(task.id),
-        projectsApi.listMyTaskComments(task.id, { page: 1, limit: MAX_API_LIMIT }),
-      ]);
-
-      setSelectedTask(taskRes.data);
-      setTaskComments(commentsRes.data || []);
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to load task details');
-      setSelectedTask(task);
-      setTaskComments([]);
-    } finally {
-      setTaskDetailLoading(false);
-      setTaskCommentsLoading(false);
-    }
-  };
-
-  const refreshTaskComments = async (taskId: string) => {
-    setTaskCommentsLoading(true);
-    try {
-      const response = await projectsApi.listMyTaskComments(taskId, {
-        page: 1,
-        limit: MAX_API_LIMIT,
-      });
-      setTaskComments(response.data || []);
-    } catch {
-      setTaskComments([]);
-    } finally {
-      setTaskCommentsLoading(false);
     }
   };
 
@@ -209,95 +119,15 @@ export default function ProjectsEmployeePage() {
   }, [statusFilter, page]);
 
   useEffect(() => {
-    loadStats();
-    loadMyProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void loadProjectStats();
   }, []);
-
-  const handleSelectProject = async (project: ProjectRecord) => {
-    setSelectedProjectId(project.id);
-    setSelectedProject(project);
-    await loadProjectTasks(project.id);
-  };
-
-  const handleMoveTask = async (task: ProjectTaskRecord, status: ProjectTaskStatus) => {
-    if (!canMoveTask(task)) {
-      toast.error('You can only update status for tasks assigned to you');
-      return;
-    }
-
-    setTaskStatusUpdating(true);
-    try {
-      await projectsApi.updateMyTaskStatus(task.id, status);
-
-      setTasks((prev) =>
-        prev.map((item) => (item.id === task.id ? { ...item, status } : item)),
-      );
-
-      setSelectedTask((prev) => (prev && prev.id === task.id ? { ...prev, status } : prev));
-
-      toast.success('Task status updated');
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to update task status');
-      if (selectedProjectId) {
-        await loadProjectTasks(selectedProjectId);
-      }
-    } finally {
-      setTaskStatusUpdating(false);
-    }
-  };
-
-  const handleTaskStatusFromModal = async (status: ProjectTaskStatus) => {
-    if (!selectedTask) return;
-    await handleMoveTask(selectedTask, status);
-  };
-
-  const handleAddTaskComment = async (comment: string) => {
-    if (!selectedTask) return;
-
-    setTaskCommentSaving(true);
-    try {
-      await projectsApi.addMyTaskComment(selectedTask.id, comment);
-      toast.success('Comment added');
-
-      setTasks((prev) =>
-        prev.map((item) =>
-          item.id === selectedTask.id
-            ? {
-                ...item,
-                _count: {
-                  comments: (item._count?.comments || 0) + 1,
-                },
-              }
-            : item,
-        ),
-      );
-
-      setSelectedTask((prev) =>
-        prev
-          ? {
-              ...prev,
-              _count: {
-                comments: (prev._count?.comments || 0) + 1,
-              },
-            }
-          : prev,
-      );
-
-      await refreshTaskComments(selectedTask.id);
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to add comment');
-    } finally {
-      setTaskCommentSaving(false);
-    }
-  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <PageHeader
           title="My Projects"
-          description="View your projects, track tasks, and update status for tasks assigned to you."
+          description="Open a project workspace to view the board, task stats, and your assigned work."
         />
 
         <Card>
@@ -317,157 +147,102 @@ export default function ProjectsEmployeePage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <Card className="xl:col-span-1">
-            <CardHeader className="flex flex-col gap-3">
-              <CardTitle>My Project List</CardTitle>
+        <Card>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <CardTitle>Project List</CardTitle>
+            <div className="flex flex-col gap-2 sm:items-end">
               <select
-                className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="h-10 min-w-52 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value as ProjectStatus | 'ALL');
                   setPage(1);
                 }}
               >
-                <option value="ALL">All statuses</option>
+                <option value="ALL">All visible</option>
                 <option value="ACTIVE">Active</option>
                 <option value="COMPLETED">Completed</option>
-                <option value="ARCHIVED">Archived</option>
               </select>
-            </CardHeader>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {projectsError ? <p className="text-sm text-red-600">{projectsError}</p> : null}
 
-            <CardContent className="space-y-3">
-              {projectsError ? <p className="text-sm text-red-600">{projectsError}</p> : null}
-
-              {projectsLoading ? (
-                <p className="text-sm text-gray-600">Loading projects...</p>
-              ) : projects.length === 0 ? (
-                <p className="text-sm text-gray-600">No projects assigned yet.</p>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Name</th>
-                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
-                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {projects.map((project) => (
-                        <tr
-                          key={project.id}
-                          className={
-                            selectedProjectId === project.id ? 'bg-blue-50/70' : 'hover:bg-gray-50'
-                          }
-                        >
-                          <td className="px-3 py-2 text-gray-900">
-                            <p className="line-clamp-1 font-medium">{project.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {project._count?.tasks || 0} tasks
-                            </p>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span
-                              className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${projectStatusBadgeClass(
-                                project.status,
-                              )}`}
-                            >
-                              {project.status}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <Button
-                              size="sm"
-                              variant={selectedProjectId === project.id ? 'blue' : 'outline'}
-                              onClick={() => handleSelectProject(project)}
-                            >
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>
-                  Page {page} of {totalPages}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((prev) => prev + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
+            {projectsLoading ? (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-8 text-sm text-gray-600">
+                Loading projects...
               </div>
-            </CardContent>
-          </Card>
+            ) : projects.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-sm text-gray-600">
+                No projects assigned yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                {projects.map((project) => (
+                  <Link
+                    key={project.id}
+                    href={`${detailBasePath}/${project.id}`}
+                    className="block rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-900">{project.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                          {project.description || 'No description available.'}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${statusBadgeClass(project.status)}`}
+                      >
+                        {project.status}
+                      </span>
+                    </div>
 
-          <Card className="xl:col-span-2">
-            <CardHeader>
-              {!selectedProject ? (
-                <CardTitle>Project Tasks</CardTitle>
-              ) : (
-                <div className="space-y-1">
-                  <CardTitle>{selectedProject.name}</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    {selectedProject.description || 'No description available.'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    You can update status only for tasks assigned to you.
-                  </p>
-                </div>
-              )}
-            </CardHeader>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-600">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
+                        <Lock className="h-3.5 w-3.5" />
+                        Assigned tasks only
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                        {getCompletedTasks(project)} completed
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
+                        {getOngoingTasks(project)} ongoing
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        {formatDate(project.endDate)}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
 
-            <CardContent>
-              {!selectedProject ? (
-                <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600">
-                  Select a project from the left panel to view tasks.
-                </div>
-              ) : (
-                <ProjectKanbanBoard
-                  tasks={tasks}
-                  loading={tasksLoading}
-                  canUpdateStatus={!taskStatusUpdating}
-                  canMoveTask={canMoveTask}
-                  onMoveTask={handleMoveTask}
-                  onOpenTask={loadTaskDetail}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 text-sm text-gray-600">
+              <span className="whitespace-nowrap">Projects page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((prev) => prev + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <ProjectTaskDetailModal
-        open={taskDetailOpen}
-        onOpenChange={setTaskDetailOpen}
-        task={selectedTask}
-        comments={taskComments}
-        loading={taskDetailLoading}
-        loadingComments={taskCommentsLoading}
-        submittingComment={taskCommentSaving}
-        updatingStatus={taskStatusUpdating}
-        canUpdateStatus={!!(selectedTask && canMoveTask(selectedTask))}
-        onUpdateStatus={handleTaskStatusFromModal}
-        onAddComment={projectWritable ? handleAddTaskComment : undefined}
-      />
     </DashboardLayout>
   );
 }

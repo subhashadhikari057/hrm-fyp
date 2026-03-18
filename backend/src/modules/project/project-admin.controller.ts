@@ -81,6 +81,13 @@ export class ProjectAdminController {
     return this.projectService.updateProjectStatus(projectId, dto, req.user);
   }
 
+  @Delete(':projectId')
+  @Roles('company_admin', 'hr_manager')
+  @ApiOperation({ summary: 'Delete archived project' })
+  async deleteProject(@Param('projectId') projectId: string, @Request() req: any) {
+    return this.projectService.deleteProject(projectId, req.user);
+  }
+
   @Post(':projectId/members')
   @Roles('company_admin', 'hr_manager')
   @HttpCode(HttpStatus.CREATED)
