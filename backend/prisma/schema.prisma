@@ -43,6 +43,13 @@ enum Gender {
   other
 }
 
+enum CompensationChangeType {
+  initial
+  increment
+  decrement
+  adjustment
+}
+
 model Company {
   id            String         @id @default(uuid())
   name          String         @db.VarChar(150)
@@ -75,6 +82,7 @@ model Company {
   projects      Project[]
   projectTasks  ProjectTask[]
   projectTaskComments ProjectTaskComment[]
+  compensationHistories EmployeeCompensationHistory[]
 
   @@index([name])
   @@index([status])
@@ -119,6 +127,7 @@ model User {
   projectTasksCreated   ProjectTask[] @relation("ProjectTaskCreatedBy")
   projectTasksUpdated   ProjectTask[] @relation("ProjectTaskUpdatedBy")
   projectTaskComments   ProjectTaskComment[] @relation("ProjectTaskCommentAuthor")
+  compensationChanges   EmployeeCompensationHistory[] @relation("EmployeeCompensationChangedBy")
 
   @@index([email])
   @@index([role])
@@ -242,6 +251,8 @@ model Employee {
   
   // Payroll starter fields
   baseSalary   Float?
+  allowances   Float?   @default(0)
+  isMarried    Boolean  @default(false)
   
   // Status & audit
   status       EmployeeStatus @default(active)
@@ -257,6 +268,7 @@ model Employee {
   policyAcceptances PolicyAcceptance[]
   projectMemberships ProjectMember[]
   assignedProjectTasks ProjectTask[] @relation("ProjectTaskAssignee")
+  compensationHistory EmployeeCompensationHistory[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -659,4 +671,26 @@ model ProjectTaskComment {
   @@index([taskId, createdAt])
   @@index([companyId, createdAt])
   @@map("project_task_comments")
+}
+
+model EmployeeCompensationHistory {
+  id                  String                 @id @default(uuid())
+  employeeId          String
+  employee            Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId           String
+  company             Company                @relation(fields: [companyId], references: [id])
+  previousBaseSalary  Float?
+  newBaseSalary       Float?
+  previousAllowances  Float?
+  newAllowances       Float?
+  changeType          CompensationChangeType @default(adjustment)
+  effectiveFrom       DateTime               @default(now())
+  changedAt           DateTime               @default(now())
+  changedById         String?
+  changedBy           User?                  @relation("EmployeeCompensationChangedBy", fields: [changedById], references: [id])
+  notes               String?
+
+  @@index([employeeId, changedAt])
+  @@index([companyId, changedAt])
+  @@map("employee_compensation_history")
 }

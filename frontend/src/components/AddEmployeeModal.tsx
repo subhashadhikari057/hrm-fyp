@@ -50,6 +50,8 @@ export function AddEmployeeModal({
         emergencyContactName: '',
         emergencyContactPhone: '',
         baseSalary: '',
+        allowances: '',
+        isMarried: 'false',
         image: null as File | null,
     });
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -218,7 +220,9 @@ export function AddEmployeeModal({
             if (formData.address.trim()) payload.address = formData.address.trim();
             if (formData.emergencyContactName.trim()) payload.emergencyContactName = formData.emergencyContactName.trim();
             if (formData.emergencyContactPhone.trim()) payload.emergencyContactPhone = formData.emergencyContactPhone.trim();
-            if (formData.baseSalary) payload.baseSalary = Number(formData.baseSalary);
+            if (formData.baseSalary !== '') payload.baseSalary = Number(formData.baseSalary);
+            if (formData.allowances !== '') payload.allowances = Number(formData.allowances);
+            payload.isMarried = formData.isMarried === 'true';
             if (formData.image) payload.image = formData.image;
 
             await employeeApi.createEmployee(payload);
@@ -260,6 +264,8 @@ export function AddEmployeeModal({
                 emergencyContactName: '',
                 emergencyContactPhone: '',
                 baseSalary: '',
+                allowances: '',
+                isMarried: 'false',
                 image: null,
             });
             if (imagePreview) {
@@ -628,7 +634,7 @@ export function AddEmployeeModal({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <Label>Base Salary</Label>
                             <Input
@@ -639,6 +645,32 @@ export function AddEmployeeModal({
                                 disabled={loading}
                                 placeholder="50000"
                             />
+                        </div>
+                        <div>
+                            <Label>Allowances</Label>
+                            <Input
+                                type="number"
+                                name="allowances"
+                                value={formData.allowances}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                placeholder="5000"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Marital Status
+                            </label>
+                            <select
+                                name="isMarried"
+                                value={formData.isMarried}
+                                onChange={handleInputChange}
+                                disabled={loading}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            >
+                                <option value="false">Unmarried</option>
+                                <option value="true">Married</option>
+                            </select>
                         </div>
                     </div>
                         </>

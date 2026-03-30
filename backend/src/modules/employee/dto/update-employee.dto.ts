@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsEnum, IsDate, IsNumber, IsEmail } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsEnum, IsDate, IsNumber, IsEmail, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EmploymentType, Gender } from '@prisma/client';
@@ -107,4 +107,16 @@ export class UpdateEmployeeDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsOptional()
   baseSalary?: number;
+
+  @ApiPropertyOptional({ description: 'Monthly allowances', example: 5000.0, type: Number })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  allowances?: number;
+
+  @ApiPropertyOptional({ description: 'Whether employee is married for taxation purposes', example: false })
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  isMarried?: boolean;
 }

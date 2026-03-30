@@ -5,7 +5,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
 import { FilterEmployeesDto } from './dto/filter-employees.dto';
-import { EmployeeStatus } from '@prisma/client';
+import { CompensationChangeType, EmployeeStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
@@ -15,10 +15,82 @@ import { EmployeeCodeGeneratorUtil } from '../../common/utils/employee-code-gene
 export class EmployeeService {
   constructor(private prisma: PrismaService) {}
 
+  private getCompensationChangeType(
+    previousBaseSalary?: number | null,
+    newBaseSalary?: number | null,
+    previousAllowances?: number | null,
+    newAllowances?: number | null,
+    isInitial: boolean = false,
+  ): CompensationChangeType {
+    if (isInitial) {
+      return CompensationChangeType.initial;
+    }
+
+    const previousTotal = Number(previousBaseSalary || 0) + Number(previousAllowances || 0);
+    const newTotal = Number(newBaseSalary || 0) + Number(newAllowances || 0);
+
+    if (newTotal > previousTotal) {
+      return CompensationChangeType.increment;
+    }
+
+    if (newTotal < previousTotal) {
+      return CompensationChangeType.decrement;
+    }
+
+    return CompensationChangeType.adjustment;
+  }
+
+  private async createCompensationHistory(
+    tx: any,
+    params: {
+      employeeId: string;
+      companyId: string;
+      previousBaseSalary?: number | null;
+      newBaseSalary?: number | null;
+      previousAllowances?: number | null;
+      newAllowances?: number | null;
+      changedById?: string;
+      notes?: string;
+      isInitial?: boolean;
+    },
+  ) {
+    return tx.employeeCompensationHistory.create({
+      data: {
+        employeeId: params.employeeId,
+        companyId: params.companyId,
+        previousBaseSalary: params.previousBaseSalary,
+        newBaseSalary: params.newBaseSalary,
+        previousAllowances: params.previousAllowances,
+        newAllowances: params.newAllowances,
+        changeType: this.getCompensationChangeType(
+          params.previousBaseSalary,
+          params.newBaseSalary,
+          params.previousAllowances,
+          params.newAllowances,
+          params.isInitial,
+        ),
+        changedById: params.changedById,
+        notes: params.notes,
+      },
+    });
+  }
+
+  private compensationHistoryInclude() {
+    return {
+      changedBy: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+    };
+  }
+
   /**
    * Create a new employee (User + Employee in transaction)
    */
-  async create(createEmployeeDto: CreateEmployeeDto, companyId: string, imagePath?: string) {
+  async create(createEmployeeDto: CreateEmployeeDto, companyId: string, changedById?: string, imagePath?: string) {
     // Validate company exists and is active
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
@@ -187,6 +259,8 @@ export class EmployeeService {
           emergencyContactName: createEmployeeDto.emergencyContactName,
           emergencyContactPhone: createEmployeeDto.emergencyContactPhone,
           baseSalary: createEmployeeDto.baseSalary,
+          allowances: createEmployeeDto.allowances ?? 0,
+          isMarried: createEmployeeDto.isMarried ?? false,
           status: 'active',
           imageUrl: imagePath,
         },
@@ -223,6 +297,18 @@ export class EmployeeService {
             },
           },
         },
+      });
+
+      await this.createCompensationHistory(tx, {
+        employeeId: employee.id,
+        companyId,
+        previousBaseSalary: null,
+        newBaseSalary: createEmployeeDto.baseSalary,
+        previousAllowances: null,
+        newAllowances: createEmployeeDto.allowances ?? 0,
+        changedById,
+        notes: 'Initial compensation setup',
+        isInitial: true,
       });
 
       return employee;
@@ -346,6 +432,11 @@ export class EmployeeService {
             endTime: true,
           },
         },
+        compensationHistory: {
+          orderBy: { changedAt: 'desc' },
+          take: 20,
+          include: this.compensationHistoryInclude(),
+        },
       },
     });
 
@@ -419,7 +510,7 @@ export class EmployeeService {
   /**
    * Update employee information
    */
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, companyId: string, imagePath?: string) {
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, companyId: string, changedById?: string, imagePath?: string) {
     // Check if employee exists and belongs to company
     const existingEmployee = await this.prisma.employee.findUnique({
       where: { id },
@@ -514,6 +605,8 @@ export class EmployeeService {
     if (updateEmployeeDto.emergencyContactName !== undefined) updateData.emergencyContactName = updateEmployeeDto.emergencyContactName;
     if (updateEmployeeDto.emergencyContactPhone !== undefined) updateData.emergencyContactPhone = updateEmployeeDto.emergencyContactPhone;
     if (updateEmployeeDto.baseSalary !== undefined) updateData.baseSalary = updateEmployeeDto.baseSalary;
+    if (updateEmployeeDto.allowances !== undefined) updateData.allowances = updateEmployeeDto.allowances;
+    if (updateEmployeeDto.isMarried !== undefined) updateData.isMarried = updateEmployeeDto.isMarried;
     if (imagePath !== undefined) updateData.imageUrl = imagePath;
 
     // Build user update data
@@ -543,13 +636,12 @@ export class EmployeeService {
       userUpdateData.avatarUrl = imagePath;
     }
 
-    // Update User if any changes
-    if (Object.keys(userUpdateData).length > 0) {
-      await this.prisma.user.update({
-        where: { id: existingEmployee.userId },
-        data: userUpdateData,
-      });
-    }
+    const previousBaseSalary = existingEmployee.baseSalary;
+    const previousAllowances = existingEmployee.allowances;
+    const nextBaseSalary = updateEmployeeDto.baseSalary !== undefined ? updateEmployeeDto.baseSalary : existingEmployee.baseSalary;
+    const nextAllowances = updateEmployeeDto.allowances !== undefined ? updateEmployeeDto.allowances : existingEmployee.allowances;
+    const compensationChanged =
+      updateEmployeeDto.baseSalary !== undefined || updateEmployeeDto.allowances !== undefined;
 
     // Delete old image if new image is uploaded
     if (imagePath && existingEmployee.imageUrl) {
@@ -562,48 +654,107 @@ export class EmployeeService {
       }
     }
 
-    // Update employee
-    const updatedEmployee = await this.prisma.employee.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            isActive: true,
+    const updatedEmployee = await this.prisma.$transaction(async (tx) => {
+      if (Object.keys(userUpdateData).length > 0) {
+        await tx.user.update({
+          where: { id: existingEmployee.userId },
+          data: userUpdateData,
+        });
+      }
+
+      if (
+        compensationChanged &&
+        (previousBaseSalary !== nextBaseSalary || Number(previousAllowances || 0) !== Number(nextAllowances || 0))
+      ) {
+        await this.createCompensationHistory(tx, {
+          employeeId: id,
+          companyId,
+          previousBaseSalary,
+          newBaseSalary: nextBaseSalary,
+          previousAllowances,
+          newAllowances: nextAllowances,
+          changedById,
+          notes: 'Compensation updated',
+        });
+      }
+
+      return tx.employee.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              isActive: true,
+            },
+          },
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          designation: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          workShift: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              startTime: true,
+              endTime: true,
+            },
           },
         },
-        department: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        designation: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        workShift: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            startTime: true,
-            endTime: true,
-          },
-        },
-      },
+      });
     });
 
     return {
       message: 'Employee updated successfully',
       data: updatedEmployee,
+    };
+  }
+
+  async getCompensationHistory(id: string, companyId: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        companyId: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID "${id}" not found`);
+    }
+
+    if (employee.companyId !== companyId) {
+      throw new ForbiddenException('You can only access employees from your own company');
+    }
+
+    const history = await this.prisma.employeeCompensationHistory.findMany({
+      where: { employeeId: id, companyId },
+      orderBy: [{ effectiveFrom: 'desc' }, { changedAt: 'desc' }],
+      include: this.compensationHistoryInclude(),
+    });
+
+    return {
+      message: 'Employee compensation history retrieved successfully',
+      data: {
+        employee,
+        history,
+      },
     };
   }
 
@@ -902,6 +1053,11 @@ export class EmployeeService {
             endTime: true,
           },
         },
+        compensationHistory: {
+          orderBy: [{ effectiveFrom: 'desc' }, { changedAt: 'desc' }],
+          take: 20,
+          include: this.compensationHistoryInclude(),
+        },
       },
     });
 
@@ -912,6 +1068,40 @@ export class EmployeeService {
     return {
       message: 'Profile retrieved successfully',
       data: employee,
+    };
+  }
+
+  async getMyCompensationHistory(userId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        companyId: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee profile not found');
+    }
+
+    const history = await this.prisma.employeeCompensationHistory.findMany({
+      where: {
+        employeeId: employee.id,
+        companyId: employee.companyId,
+      },
+      orderBy: [{ effectiveFrom: 'desc' }, { changedAt: 'desc' }],
+      include: this.compensationHistoryInclude(),
+    });
+
+    return {
+      message: 'Compensation history retrieved successfully',
+      data: {
+        employee,
+        history,
+      },
     };
   }
 }

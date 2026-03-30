@@ -16,10 +16,16 @@ const roleLabels: Record<string, string> = {
   employee: 'Employee',
 };
 
+function formatCurrency(value: number | null) {
+  if (value === null) return 'N/A';
+  return `NPR ${value.toLocaleString()}`;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const [authUser, setAuthUser] = useState<BackendUser | null>(null);
   const [employeeProfile, setEmployeeProfile] = useState<Employee | null>(null);
+  const [compensationHistory, setCompensationHistory] = useState<Employee['compensationHistory']>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +38,8 @@ export default function ProfilePage() {
         if (meResponse.user.role === 'employee') {
           const profileResponse = await employeeApi.getMyProfile();
           setEmployeeProfile(profileResponse.data);
+          const historyResponse = await employeeApi.getMyCompensationHistory();
+          setCompensationHistory(historyResponse.data.history);
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -224,8 +232,54 @@ export default function ProfilePage() {
                 />
                 <DetailItem
                   label="Base Salary"
-                  value={employeeProfile.baseSalary !== null ? employeeProfile.baseSalary.toString() : 'N/A'}
+                  value={formatCurrency(employeeProfile.baseSalary)}
                 />
+                <DetailItem
+                  label="Allowances"
+                  value={formatCurrency(employeeProfile.allowances)}
+                />
+                <DetailItem
+                  label="Marital Status"
+                  value={employeeProfile.isMarried ? 'Married' : 'Unmarried'}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {employeeProfile ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="text-base font-semibold text-gray-900">Compensation History</h3>
+              <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Effective Date</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Type</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Base Salary</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Allowances</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Changed By</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {compensationHistory && compensationHistory.length > 0 ? (
+                      compensationHistory.map((entry) => (
+                        <tr key={entry.id}>
+                          <td className="px-4 py-3 text-gray-700">{entry.effectiveFrom.split('T')[0]}</td>
+                          <td className="px-4 py-3 capitalize text-gray-700">{entry.changeType.replace('_', ' ')}</td>
+                          <td className="px-4 py-3 text-gray-700">{formatCurrency(entry.newBaseSalary)}</td>
+                          <td className="px-4 py-3 text-gray-700">{formatCurrency(entry.newAllowances)}</td>
+                          <td className="px-4 py-3 text-gray-700">{entry.changedBy?.fullName || entry.changedBy?.email || 'System'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                          No compensation history found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : null}
