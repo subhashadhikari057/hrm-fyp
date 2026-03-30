@@ -50,6 +50,22 @@ enum CompensationChangeType {
   adjustment
 }
 
+enum PayrollPeriodStatus {
+  DRAFT
+  PROCESSED
+  FINALIZED
+}
+
+enum PayslipStatus {
+  GENERATED
+  FINALIZED
+}
+
+enum PayslipLineItemType {
+  EARNING
+  DEDUCTION
+}
+
 model Company {
   id            String         @id @default(uuid())
   name          String         @db.VarChar(150)
@@ -62,6 +78,11 @@ model Company {
   planExpiresAt DateTime?
   maxEmployees  Int?
   status        CompanyStatus  @default(active)
+  enableTaxDeduction Boolean   @default(true)
+  enableEmployeeSsf Boolean    @default(true)
+  enableEmployerSsf Boolean    @default(true)
+  employeeSsfRate  Float       @default(0.11)
+  employerSsfRate  Float       @default(0.20)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   // Relations
@@ -83,6 +104,9 @@ model Company {
   projectTasks  ProjectTask[]
   projectTaskComments ProjectTaskComment[]
   compensationHistories EmployeeCompensationHistory[]
+  payrollPeriods PayrollPeriod[]
+  payslips      Payslip[]
+  payslipLineItems PayslipLineItem[]
 
   @@index([name])
   @@index([status])
@@ -128,6 +152,8 @@ model User {
   projectTasksUpdated   ProjectTask[] @relation("ProjectTaskUpdatedBy")
   projectTaskComments   ProjectTaskComment[] @relation("ProjectTaskCommentAuthor")
   compensationChanges   EmployeeCompensationHistory[] @relation("EmployeeCompensationChangedBy")
+  payrollPeriodsCreated PayrollPeriod[] @relation("PayrollPeriodCreatedBy")
+  payrollPeriodsFinalized PayrollPeriod[] @relation("PayrollPeriodFinalizedBy")
 
   @@index([email])
   @@index([role])
@@ -269,6 +295,7 @@ model Employee {
   projectMemberships ProjectMember[]
   assignedProjectTasks ProjectTask[] @relation("ProjectTaskAssignee")
   compensationHistory EmployeeCompensationHistory[]
+  payslips         Payslip[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -693,4 +720,83 @@ model EmployeeCompensationHistory {
   @@index([employeeId, changedAt])
   @@index([companyId, changedAt])
   @@map("employee_compensation_history")
+}
+
+model PayrollPeriod {
+  id              String              @id @default(uuid())
+  companyId       String
+  company         Company             @relation(fields: [companyId], references: [id])
+  fiscalYearLabel String              @db.VarChar(20)
+  periodYear      Int
+  periodMonth     Int
+  periodLabel     String              @db.VarChar(50)
+  startDate       DateTime
+  endDate         DateTime
+  status          PayrollPeriodStatus @default(DRAFT)
+  createdById     String?
+  createdBy       User?               @relation("PayrollPeriodCreatedBy", fields: [createdById], references: [id])
+  processedAt     DateTime?
+  finalizedAt     DateTime?
+  finalizedById   String?
+  finalizedBy     User?               @relation("PayrollPeriodFinalizedBy", fields: [finalizedById], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  payslips        Payslip[]
+
+  @@unique([companyId, periodYear, periodMonth])
+  @@index([companyId, fiscalYearLabel])
+  @@index([companyId, status])
+  @@map("payroll_periods")
+}
+
+model Payslip {
+  id                     String        @id @default(uuid())
+  payrollPeriodId        String
+  payrollPeriod          PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  companyId              String
+  company                Company       @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  status                 PayslipStatus @default(GENERATED)
+  basicSalary            Float         @default(0)
+  allowances             Float         @default(0)
+  grossSalary            Float         @default(0)
+  ssfEmployeeContribution Float        @default(0)
+  ssfEmployerContribution Float        @default(0)
+  totalSsfContribution    Float        @default(0)
+  projectedAnnualIncome  Float         @default(0)
+  taxableAnnualIncome    Float         @default(0)
+  annualTaxLiability     Float         @default(0)
+  taxPaidToDate          Float         @default(0)
+  monthlyTds             Float         @default(0)
+  netSalary              Float         @default(0)
+  isMarried              Boolean       @default(false)
+  generatedAt            DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  lineItems              PayslipLineItem[]
+
+  @@unique([payrollPeriodId, employeeId])
+  @@index([companyId, employeeId])
+  @@index([companyId, status])
+  @@map("payslips")
+}
+
+model PayslipLineItem {
+  id         String              @id @default(uuid())
+  payslipId  String
+  payslip    Payslip             @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company             @relation(fields: [companyId], references: [id])
+  type       PayslipLineItemType
+  code       String              @db.VarChar(50)
+  title      String              @db.VarChar(120)
+  amount     Float
+  sortOrder  Int                 @default(0)
+  createdAt  DateTime            @default(now())
+
+  @@index([payslipId, sortOrder])
+  @@index([companyId, type])
+  @@map("payslip_line_items")
 }

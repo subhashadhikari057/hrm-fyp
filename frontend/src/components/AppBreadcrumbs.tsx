@@ -41,6 +41,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   leave: 'Leave Requests',
   'leave-usages': 'Leave Usages',
   projects: 'Projects',
+  payroll: 'Payroll',
   policies: 'Policy Hub',
   policy: 'Policy',
   complaints: 'Complaints',

@@ -67,6 +67,11 @@ export class CompanyService {
           planExpiresAt: createDto.planExpiresAt || null,
           maxEmployees: createDto.maxEmployees,
           status: 'active',
+          enableTaxDeduction: true,
+          enableEmployeeSsf: true,
+          enableEmployerSsf: true,
+          employeeSsfRate: 0.11,
+          employerSsfRate: 0.2,
         },
       });
 
