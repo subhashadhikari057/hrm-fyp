@@ -17,6 +17,11 @@ export interface PayrollPeriodRecord {
   id: string;
   companyId: string;
   fiscalYearLabel: string;
+  bsPeriodYear?: number | null;
+  bsPeriodMonth?: number | null;
+  bsPeriodMonthLabel?: string | null;
+  bsStartDate?: string | null;
+  bsEndDate?: string | null;
   periodYear: number;
   periodMonth: number;
   periodLabel: string;
@@ -45,6 +50,27 @@ export interface PayslipLineItemRecord {
   createdAt: string;
 }
 
+export interface PayslipTaxBreakdownRow {
+  label: string;
+  lowerBound: number;
+  upperBound: number | null;
+  taxableAmount: number;
+  rate: number;
+  taxAmount: number;
+}
+
+export interface PayslipTdsComputation {
+  annualTaxLiability: number;
+  taxPaidToDate: number;
+  remainingTax: number;
+  remainingPeriods: number;
+  uncappedMonthlyTds: number;
+  cappedMonthlyTds: number;
+  employeeSsfRate: number;
+  employerSsfRate: number;
+  taxEnabled: boolean;
+}
+
 export interface PayslipRecord {
   id: string;
   payrollPeriodId: string;
@@ -62,6 +88,8 @@ export interface PayslipRecord {
   annualTaxLiability: number;
   taxPaidToDate: number;
   monthlyTds: number;
+  taxBreakdown?: PayslipTaxBreakdownRow[] | null;
+  tdsComputation?: PayslipTdsComputation | null;
   netSalary: number;
   isMarried: boolean;
   generatedAt: string;
@@ -170,6 +198,11 @@ export interface PayrollGenerateResponse {
 
 export interface CreatePayrollPeriodPayload {
   fiscalYearLabel: string;
+  bsPeriodYear?: number;
+  bsPeriodMonth?: number;
+  bsPeriodMonthLabel?: string;
+  bsStartDate?: string;
+  bsEndDate?: string;
   periodYear: number;
   periodMonth: number;
   periodLabel?: string;

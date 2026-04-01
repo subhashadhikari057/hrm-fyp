@@ -727,6 +727,11 @@ model PayrollPeriod {
   companyId       String
   company         Company             @relation(fields: [companyId], references: [id])
   fiscalYearLabel String              @db.VarChar(20)
+  bsPeriodYear    Int?
+  bsPeriodMonth   Int?
+  bsPeriodMonthLabel String?          @db.VarChar(30)
+  bsStartDate     String?             @db.VarChar(20)
+  bsEndDate       String?             @db.VarChar(20)
   periodYear      Int
   periodMonth     Int
   periodLabel     String              @db.VarChar(50)
@@ -770,6 +775,8 @@ model Payslip {
   annualTaxLiability     Float         @default(0)
   taxPaidToDate          Float         @default(0)
   monthlyTds             Float         @default(0)
+  taxBreakdown           Json?
+  tdsComputation         Json?
   netSalary              Float         @default(0)
   isMarried              Boolean       @default(false)
   generatedAt            DateTime      @default(now())

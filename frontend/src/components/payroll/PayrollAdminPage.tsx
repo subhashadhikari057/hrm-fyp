@@ -37,6 +37,14 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-GB');
 }
 
+function formatDisplayRange(period: PayrollPeriodRecord) {
+  if (period.bsStartDate && period.bsEndDate) {
+    return `${period.bsStartDate} - ${period.bsEndDate}`;
+  }
+
+  return `${formatDate(period.startDate)} - ${formatDate(period.endDate)}`;
+}
+
 interface PayrollAdminPageProps {
   detailBasePath?: string;
 }
@@ -209,13 +217,16 @@ export default function PayrollAdminPage({ detailBasePath = '/dashboard/companya
                       <div>
                         <h3 className="text-base font-semibold text-gray-900">{period.periodLabel}</h3>
                         <p className="mt-1 text-sm text-gray-600">Fiscal Year {period.fiscalYearLabel}</p>
+                        {period.bsPeriodMonthLabel && period.bsPeriodYear ? (
+                          <p className="mt-1 text-xs text-gray-500">{period.bsPeriodMonthLabel} {period.bsPeriodYear}</p>
+                        ) : null}
                       </div>
                       <span className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${periodStatusClass(period.status)}`}>
                         {period.status}
                       </span>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-600">
-                      <span className="rounded-full bg-gray-100 px-2.5 py-1">{formatDate(period.startDate)} - {formatDate(period.endDate)}</span>
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1">{formatDisplayRange(period)}</span>
                       <span className="rounded-full bg-gray-100 px-2.5 py-1">{period._count?.payslips || 0} payslips</span>
                     </div>
                   </Link>

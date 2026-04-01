@@ -7,6 +7,35 @@ export class CreatePayrollPeriodDto {
   @IsString()
   fiscalYearLabel!: string;
 
+  @ApiPropertyOptional({ description: 'Nepali period year (BS)', example: 2082 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  bsPeriodYear?: number;
+
+  @ApiPropertyOptional({ description: 'Nepali period month (1-12)', example: 12 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  bsPeriodMonth?: number;
+
+  @ApiPropertyOptional({ description: 'Nepali period month label', example: 'Chaitra' })
+  @IsOptional()
+  @IsString()
+  bsPeriodMonthLabel?: string;
+
+  @ApiPropertyOptional({ description: 'Nepali start date (BS)', example: '2082-12-01' })
+  @IsOptional()
+  @IsString()
+  bsStartDate?: string;
+
+  @ApiPropertyOptional({ description: 'Nepali end date (BS)', example: '2082-12-30' })
+  @IsOptional()
+  @IsString()
+  bsEndDate?: string;
+
   @ApiProperty({ description: 'Gregorian period year', example: 2024 })
   @Type(() => Number)
   @IsInt()

@@ -40,6 +40,15 @@ type MonthlyCompensation = {
   allowances: number;
 };
 
+type TaxBreakdownRow = {
+  label: string;
+  lowerBound: number;
+  upperBound: number | null;
+  taxableAmount: number;
+  rate: number;
+  taxAmount: number;
+};
+
 type EmployeeForPayroll = Prisma.EmployeeGetPayload<{
   include: {
     user: true;
@@ -164,18 +173,18 @@ export class PayrollService {
   private getTaxSlabs(isMarried: boolean) {
     return isMarried
       ? [
-          { limit: 600_000, rate: 0.01 },
-          { limit: 800_000, rate: 0.1 },
-          { limit: 1_100_000, rate: 0.2 },
-          { limit: 2_000_000, rate: 0.3 },
-          { limit: Number.POSITIVE_INFINITY, rate: 0.36 },
+          { limit: 600_000, rate: 0.01, label: '1st Slab' },
+          { limit: 800_000, rate: 0.1, label: '2nd Slab' },
+          { limit: 1_100_000, rate: 0.2, label: '3rd Slab' },
+          { limit: 2_000_000, rate: 0.3, label: '4th Slab' },
+          { limit: Number.POSITIVE_INFINITY, rate: 0.36, label: '5th Slab' },
         ]
       : [
-          { limit: 500_000, rate: 0.01 },
-          { limit: 700_000, rate: 0.1 },
-          { limit: 1_000_000, rate: 0.2 },
-          { limit: 2_000_000, rate: 0.3 },
-          { limit: Number.POSITIVE_INFINITY, rate: 0.36 },
+          { limit: 500_000, rate: 0.01, label: '1st Slab' },
+          { limit: 700_000, rate: 0.1, label: '2nd Slab' },
+          { limit: 1_000_000, rate: 0.2, label: '3rd Slab' },
+          { limit: 2_000_000, rate: 0.3, label: '4th Slab' },
+          { limit: Number.POSITIVE_INFINITY, rate: 0.36, label: '5th Slab' },
         ];
   }
 
@@ -185,17 +194,30 @@ export class PayrollService {
     let remaining = safeIncome;
     let lowerBound = 0;
     let totalTax = 0;
+    const breakdown: TaxBreakdownRow[] = [];
 
     for (const slab of slabs) {
       if (remaining <= 0) break;
 
       const taxableAtThisRate = Math.min(remaining, slab.limit - lowerBound);
-      totalTax += taxableAtThisRate * slab.rate;
+      const slabTax = taxableAtThisRate * slab.rate;
+      totalTax += slabTax;
+      breakdown.push({
+        label: slab.label,
+        lowerBound,
+        upperBound: Number.isFinite(slab.limit) ? slab.limit : null,
+        taxableAmount: this.roundCurrency(taxableAtThisRate),
+        rate: slab.rate,
+        taxAmount: this.roundCurrency(slabTax),
+      });
       remaining -= taxableAtThisRate;
       lowerBound = slab.limit;
     }
 
-    return this.roundCurrency(totalTax);
+    return {
+      annualTax: this.roundCurrency(totalTax),
+      breakdown,
+    };
   }
 
   private resolveCompensationTimeline(employee: EmployeeForPayroll, periodYear: number, periodMonth: number) {
@@ -333,9 +355,10 @@ export class PayrollService {
       compensationTimeline.reduce((sum, month) => sum + month.baseSalary * employeeSsfRate, 0),
     );
     const taxableAnnualIncome = this.roundCurrency(projectedAnnualIncome - projectedAnnualSsf);
-    const annualTaxLiability = period.company.enableTaxDeduction
+    const annualTaxResult = period.company.enableTaxDeduction
       ? this.calculateAnnualTax(taxableAnnualIncome, employee.isMarried)
-      : 0;
+      : { annualTax: 0, breakdown: [] as TaxBreakdownRow[] };
+    const annualTaxLiability = annualTaxResult.annualTax;
     const taxPaidToDate = this.roundCurrency(
       await this.getTaxPaidToDate(employee.id, period.companyId, period.periodYear, period.periodMonth),
     );
@@ -360,6 +383,7 @@ export class PayrollService {
     const maxDeductibleTds = Math.max(0, grossSalary - ssfEmployeeContribution);
     const monthlyTds = this.roundCurrency(Math.min(uncappedMonthlyTds, maxDeductibleTds));
     const netSalary = this.roundCurrency(grossSalary - ssfEmployeeContribution - monthlyTds);
+    const remainingTax = this.roundCurrency(Math.max(0, annualTaxLiability - taxPaidToDate));
 
     return {
       basicSalary,
@@ -373,6 +397,18 @@ export class PayrollService {
       annualTaxLiability,
       taxPaidToDate,
       monthlyTds,
+      taxBreakdown: annualTaxResult.breakdown,
+      tdsComputation: {
+        annualTaxLiability,
+        taxPaidToDate,
+        remainingTax,
+        remainingPeriods,
+        uncappedMonthlyTds,
+        cappedMonthlyTds: monthlyTds,
+        employeeSsfRate,
+        employerSsfRate,
+        taxEnabled: period.company.enableTaxDeduction,
+      },
       netSalary,
       isMarried: employee.isMarried,
       lineItems: this.buildLineItems({
@@ -408,6 +444,11 @@ export class PayrollService {
       data: {
         companyId: currentUser.companyId!,
         fiscalYearLabel: dto.fiscalYearLabel.trim(),
+        bsPeriodYear: dto.bsPeriodYear,
+        bsPeriodMonth: dto.bsPeriodMonth,
+        bsPeriodMonthLabel: dto.bsPeriodMonthLabel?.trim(),
+        bsStartDate: dto.bsStartDate?.trim(),
+        bsEndDate: dto.bsEndDate?.trim(),
         periodYear: dto.periodYear,
         periodMonth: dto.periodMonth,
         periodLabel: this.buildPeriodLabel(dto.periodYear, dto.periodMonth, dto.periodLabel),
@@ -649,6 +690,8 @@ export class PayrollService {
             annualTaxLiability: snapshot.annualTaxLiability,
             taxPaidToDate: snapshot.taxPaidToDate,
             monthlyTds: snapshot.monthlyTds,
+            taxBreakdown: snapshot.taxBreakdown,
+            tdsComputation: snapshot.tdsComputation,
             netSalary: snapshot.netSalary,
             isMarried: snapshot.isMarried,
             lineItems: {

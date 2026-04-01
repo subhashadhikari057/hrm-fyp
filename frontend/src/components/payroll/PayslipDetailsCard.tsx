@@ -11,6 +11,10 @@ function formatDate(value?: string | null) {
   return value ? new Date(value).toLocaleDateString('en-GB') : 'Not set';
 }
 
+function formatPercent(value: number) {
+  return `${(value * 100).toFixed(2).replace(/\.00$/, '')}%`;
+}
+
 interface PayslipDetailsCardProps {
   payslip: PayslipRecord;
 }
@@ -127,6 +131,71 @@ export function PayslipDetailsCard({ payslip }: PayslipDetailsCardProps) {
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">Status</p>
             <p className="mt-2 text-sm font-semibold text-gray-900">{payslip.status}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tax Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Annual Tax</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{formatCurrency(payslip.annualTaxLiability)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Tax Paid Till Date</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{formatCurrency(payslip.tdsComputation?.taxPaidToDate ?? payslip.taxPaidToDate)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Remaining Tax</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{formatCurrency(payslip.tdsComputation?.remainingTax ?? 0)}</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-amber-700">Monthly TDS Used</p>
+              <p className="mt-2 text-sm font-semibold text-amber-900">{formatCurrency(payslip.tdsComputation?.cappedMonthlyTds ?? payslip.monthlyTds)}</p>
+            </div>
+          </div>
+
+          {payslip.taxBreakdown && payslip.taxBreakdown.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Slab</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Range</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Taxable Amount</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Rate</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600">Tax</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {payslip.taxBreakdown.map((row, index) => (
+                    <tr key={`${row.label}-${index}`}>
+                      <td className="px-4 py-3 text-gray-700">{row.label}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {row.upperBound === null
+                          ? `Above NPR ${row.lowerBound.toLocaleString()}`
+                          : `NPR ${row.lowerBound.toLocaleString()} - NPR ${row.upperBound.toLocaleString()}`}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{formatCurrency(row.taxableAmount)}</td>
+                      <td className="px-4 py-3 text-gray-700">{formatPercent(row.rate)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{formatCurrency(row.taxAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-sm text-gray-600">
+              No tax breakdown available for this payslip.
+            </div>
+          )}
+
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            Monthly TDS is calculated from the remaining annual tax after previous deductions and distributed by the payroll engine across the active fiscal payroll cycle.
           </div>
         </CardContent>
       </Card>

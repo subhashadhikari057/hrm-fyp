@@ -29,6 +29,14 @@ function formatDate(value?: string | null) {
   return value ? new Date(value).toLocaleDateString('en-GB') : 'Not set';
 }
 
+function formatPeriodRange(period: PayrollPeriodDetailRecord) {
+  if (period.bsStartDate && period.bsEndDate) {
+    return `${period.bsStartDate} - ${period.bsEndDate}`;
+  }
+
+  return `${formatDate(period.startDate)} - ${formatDate(period.endDate)}`;
+}
+
 function statusClass(status: string) {
   switch (status) {
     case 'FINALIZED':
@@ -222,7 +230,8 @@ export default function PayrollPeriodDetailPage({ periodId, basePath }: PayrollP
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div><p className="text-xs uppercase tracking-wide text-gray-500">Fiscal Year</p><p className="mt-2 text-sm font-semibold text-gray-900">{period.fiscalYearLabel}</p></div>
-                <div><p className="text-xs uppercase tracking-wide text-gray-500">Date Range</p><p className="mt-2 text-sm font-semibold text-gray-900">{formatDate(period.startDate)} - {formatDate(period.endDate)}</p></div>
+                <div><p className="text-xs uppercase tracking-wide text-gray-500">Date Range</p><p className="mt-2 text-sm font-semibold text-gray-900">{formatPeriodRange(period)}</p></div>
+                <div><p className="text-xs uppercase tracking-wide text-gray-500">Nepali Month</p><p className="mt-2 text-sm font-semibold text-gray-900">{period.bsPeriodMonthLabel && period.bsPeriodYear ? `${period.bsPeriodMonthLabel} ${period.bsPeriodYear}` : 'Not set'}</p></div>
                 <div><p className="text-xs uppercase tracking-wide text-gray-500">Processed At</p><p className="mt-2 text-sm font-semibold text-gray-900">{formatDate(period.processedAt)}</p></div>
                 <div><p className="text-xs uppercase tracking-wide text-gray-500">Finalized At</p><p className="mt-2 text-sm font-semibold text-gray-900">{formatDate(period.finalizedAt)}</p></div>
               </CardContent>

@@ -108,6 +108,9 @@ export default function EmployeePayslipsPage({ detailBasePath = '/dashboard/empl
                       <div>
                         <h3 className="text-base font-semibold text-gray-900">{payslip.payrollPeriod?.periodLabel || 'Payslip'}</h3>
                         <p className="mt-1 text-sm text-gray-600">Fiscal Year {payslip.payrollPeriod?.fiscalYearLabel || '-'}</p>
+                        {payslip.payrollPeriod?.bsPeriodMonthLabel && payslip.payrollPeriod?.bsPeriodYear ? (
+                          <p className="mt-1 text-xs text-gray-500">{payslip.payrollPeriod.bsPeriodMonthLabel} {payslip.payrollPeriod.bsPeriodYear}</p>
+                        ) : null}
                       </div>
                       <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-700">
                         {payslip.status}
