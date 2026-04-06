@@ -17,6 +17,7 @@ import { ComplaintModule } from './modules/complaint/complaint.module';
 import { PolicyModule } from './modules/policy/policy.module';
 import { ProjectModule } from './modules/project/project.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     PolicyModule,
     ProjectModule,
     PayrollModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

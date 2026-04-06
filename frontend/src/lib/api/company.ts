@@ -17,6 +17,16 @@ export interface Company {
   country?: string | null;
   planExpiresAt?: string | null;
   maxEmployees?: number | null;
+  subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+  subscriptionAssignedAt?: string | null;
+  subscriptionPlan?: {
+    id: string;
+    name: string;
+    code: string;
+    maxEmployees?: number | null;
+    features?: string[] | null;
+    isActive: boolean;
+  } | null;
   adminName?: string | null;
   status: 'active' | 'suspended' | 'archived';
   userCount: number;
@@ -55,6 +65,10 @@ export interface CreateCompanyWithAdminRequest {
   country?: string;
   planExpiresAt?: string;
   maxEmployees: number;
+  subscriptionPlanId?: string;
+  subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+  subscriptionBillingType?: 'trial' | 'monthly' | 'yearly';
+  trialDays?: number;
   logo?: File;
 }
 
@@ -80,6 +94,8 @@ export interface UpdateCompanyRequest {
   country?: string;
   planExpiresAt?: string;
   maxEmployees?: number;
+  subscriptionPlanId?: string;
+  subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
   logo?: File;
 }
 
@@ -156,6 +172,10 @@ export const companyApi = {
     if (companyData.country) formData.append('country', companyData.country);
     if (companyData.planExpiresAt) formData.append('planExpiresAt', companyData.planExpiresAt);
     formData.append('maxEmployees', String(companyData.maxEmployees));
+    if (companyData.subscriptionPlanId) formData.append('subscriptionPlanId', companyData.subscriptionPlanId);
+    if (companyData.subscriptionStatus) formData.append('subscriptionStatus', companyData.subscriptionStatus);
+    if (companyData.subscriptionBillingType) formData.append('subscriptionBillingType', companyData.subscriptionBillingType);
+    if (companyData.trialDays !== undefined) formData.append('trialDays', String(companyData.trialDays));
     if (companyData.logo) formData.append('logo', companyData.logo);
 
     const response = await apiFetch(`${API_BASE_URL}/companies`, {
@@ -187,6 +207,8 @@ export const companyApi = {
     if (companyData.country) formData.append('country', companyData.country);
     if (companyData.planExpiresAt) formData.append('planExpiresAt', companyData.planExpiresAt);
     if (companyData.maxEmployees) formData.append('maxEmployees', String(companyData.maxEmployees));
+    if (companyData.subscriptionPlanId) formData.append('subscriptionPlanId', companyData.subscriptionPlanId);
+    if (companyData.subscriptionStatus) formData.append('subscriptionStatus', companyData.subscriptionStatus);
     if (companyData.logo) formData.append('logo', companyData.logo);
 
     const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}`, {
@@ -220,6 +242,28 @@ export const companyApi = {
       await handleApiError(response);
     }
 
+    return response.json();
+  },
+
+  async assignSubscription(
+    companyId: string,
+    payload: {
+      subscriptionPlanId?: string;
+      planExpiresAt?: string;
+      maxEmployees?: number;
+      subscriptionStatus: 'trial' | 'active' | 'expired' | 'cancelled';
+    },
+  ): Promise<CompanyResponse> {
+    const response = await apiFetch(`${API_BASE_URL}/companies/${companyId}/subscription`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        ...payload,
+        planExpiresAt: payload.planExpiresAt ? new Date(payload.planExpiresAt).toISOString() : undefined,
+      }),
+    });
+    if (!response.ok) await handleApiError(response);
     return response.json();
   },
 

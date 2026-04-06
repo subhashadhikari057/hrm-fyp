@@ -94,6 +94,13 @@ export class EmployeeService {
     // Validate company exists and is active
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
+      include: {
+        subscriptionPlan: {
+          select: {
+            maxEmployees: true,
+          },
+        },
+      },
     });
 
     if (!company) {
@@ -104,8 +111,13 @@ export class EmployeeService {
       throw new BadRequestException('Cannot create employees for a suspended or archived company');
     }
 
+    if (company.subscriptionStatus === 'expired' || (company.planExpiresAt && company.planExpiresAt < new Date())) {
+      throw new BadRequestException('Company subscription has expired. Please renew the subscription to add employees.');
+    }
+
     // Check maxEmployees limit (count only active employees)
-    if (company.maxEmployees) {
+    const employeeLimit = company.maxEmployees ?? company.subscriptionPlan?.maxEmployees ?? null;
+    if (employeeLimit) {
       const currentActiveEmployeeCount = await this.prisma.employee.count({
         where: {
           companyId,
@@ -113,9 +125,9 @@ export class EmployeeService {
         },
       });
 
-      if (currentActiveEmployeeCount >= company.maxEmployees) {
+      if (currentActiveEmployeeCount >= employeeLimit) {
         throw new BadRequestException(
-          `Company has reached the maximum employee limit of ${company.maxEmployees}. Currently has ${currentActiveEmployeeCount} active employees.`,
+          `Company has reached the maximum employee limit of ${employeeLimit}. Currently has ${currentActiveEmployeeCount} active employees.`,
         );
       }
     }

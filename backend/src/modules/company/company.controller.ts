@@ -6,6 +6,7 @@ import { CompanyService } from './company.service';
 import { CreateCompanyWithAdminDto } from './dto/create-company-with-admin.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { AssignCompanySubscriptionDto } from './dto/assign-company-subscription.dto';
 import { FilterCompaniesDto } from './dto/filter-companies.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -225,6 +226,14 @@ export class CompanyController {
   @ApiResponse({ status: 404, description: 'Company not found' })
   async updateStatus(@Param('id') id: string, @Body() updateDto: UpdateCompanyStatusDto) {
     return this.companyService.updateStatus(id, updateDto);
+  }
+
+  @Patch(':id/subscription')
+  @Roles('super_admin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Assign or update company subscription (Super Admin only)' })
+  async assignSubscription(@Param('id') id: string, @Body() updateDto: AssignCompanySubscriptionDto) {
+    return this.companyService.update(id, updateDto as any);
   }
 
   @Patch(':id')

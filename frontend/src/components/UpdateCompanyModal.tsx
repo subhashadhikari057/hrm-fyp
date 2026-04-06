@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { companyApi, type Company, type UpdateCompanyRequest } from '../lib/api/company';
+import { subscriptionApi, type SubscriptionPlan } from '../lib/api/subscription';
 import { API_BASE_URL } from '../lib/api/types';
 import toast from 'react-hot-toast';
 import {
@@ -28,6 +29,7 @@ export function UpdateCompanyModal({
     companyId,
     onSuccess,
 }: UpdateCompanyModalProps) {
+    const [companyRecord, setCompanyRecord] = useState<Company | null>(null);
     const [formData, setFormData] = useState<UpdateCompanyRequest>({
         name: '',
         code: '',
@@ -42,11 +44,13 @@ export function UpdateCompanyModal({
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [fetchingCompany, setFetchingCompany] = useState(false);
+    const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
     // Fetch company data when modal opens
     useEffect(() => {
         if (isOpen && companyId) {
             fetchCompanyData();
+            fetchSubscriptionPlans();
         } else {
             resetForm();
         }
@@ -59,6 +63,7 @@ export function UpdateCompanyModal({
         try {
             const response = await companyApi.getCompanyById(companyId);
             const company = response.data;
+            setCompanyRecord(company);
 
             setFormData({
                 name: company.name || '',
@@ -71,6 +76,8 @@ export function UpdateCompanyModal({
                     ? new Date(company.planExpiresAt).toISOString().split('T')[0]
                     : '',
                 maxEmployees: company.maxEmployees || undefined,
+                subscriptionPlanId: company.subscriptionPlan?.id || '',
+                subscriptionStatus: company.subscriptionStatus || 'active',
             });
             setLogoFile(null);
             setLogoPreview(company.logoUrl ? `${API_BASE_URL}/uploads/${company.logoUrl}` : null);
@@ -79,6 +86,15 @@ export function UpdateCompanyModal({
             onClose();
         } finally {
             setFetchingCompany(false);
+        }
+    };
+
+    const fetchSubscriptionPlans = async () => {
+        try {
+            const response = await subscriptionApi.getPlans();
+            setPlans(response.data || []);
+        } catch {
+            setPlans([]);
         }
     };
 
@@ -92,13 +108,16 @@ export function UpdateCompanyModal({
             country: '',
             planExpiresAt: '',
             maxEmployees: undefined,
+            subscriptionPlanId: '',
+            subscriptionStatus: 'active',
         });
         setLogoFile(null);
         setLogoPreview(null);
+        setCompanyRecord(null);
     };
 
     const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -160,6 +179,8 @@ export function UpdateCompanyModal({
             if (formData.maxEmployees !== undefined && formData.maxEmployees > 0) {
                 updateData.maxEmployees = formData.maxEmployees;
             }
+            if ((formData as any).subscriptionPlanId) updateData.subscriptionPlanId = (formData as any).subscriptionPlanId;
+            if ((formData as any).subscriptionStatus) updateData.subscriptionStatus = (formData as any).subscriptionStatus;
             if (logoFile) updateData.logo = logoFile;
 
             await companyApi.updateCompany(companyId, updateData);
@@ -176,7 +197,7 @@ export function UpdateCompanyModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent>
+            <DialogContent className="max-h-[80vh] max-w-xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Update Company</DialogTitle>
                 </DialogHeader>
@@ -187,6 +208,23 @@ export function UpdateCompanyModal({
                             </div>
                         ) : (
                             <div className="space-y-6">
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p className="text-sm font-medium text-gray-900">Current Subscription</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                        <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200">
+                                            Plan: {companyRecord?.subscriptionPlan
+                                                ? `${companyRecord.subscriptionPlan.name} (${companyRecord.subscriptionPlan.code})`
+                                                : 'No plan assigned'}
+                                        </span>
+                                        <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200 capitalize">
+                                            Status: {companyRecord?.subscriptionStatus || 'active'}
+                                        </span>
+                                        <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200">
+                                            Expiry: {formData.planExpiresAt || 'Not set'}
+                                        </span>
+                                    </div>
+                                </div>
+
                                 {/* Logo Upload */}
                                 <div>
                                     <Label htmlFor="logo">Company Logo</Label>
@@ -224,6 +262,7 @@ export function UpdateCompanyModal({
                                 </div>
 
                                 {/* Company Name */}
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <Label htmlFor="name">
                                         Company Name <span className="text-red-500">*</span>
@@ -260,8 +299,10 @@ export function UpdateCompanyModal({
                                         2-10 uppercase alphanumeric characters
                                     </p>
                                 </div>
+                                </div>
 
                                 {/* Industry */}
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <Label htmlFor="industry">Industry</Label>
                                     <Input
@@ -285,6 +326,7 @@ export function UpdateCompanyModal({
                                         onChange={handleInputChange}
                                         placeholder="Street address"
                                     />
+                                </div>
                                 </div>
 
                                 {/* City & Country */}
@@ -336,6 +378,46 @@ export function UpdateCompanyModal({
                                             min="1"
                                             placeholder="100"
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="subscriptionPlanId">Subscription Plan</Label>
+                                        <select
+                                            id="subscriptionPlanId"
+                                            name="subscriptionPlanId"
+                                            value={(formData as any).subscriptionPlanId || ''}
+                                            onChange={handleInputChange}
+                                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                                        >
+                                            <option value="">No plan assigned</option>
+                                            {plans.map((plan) => (
+                                                <option key={plan.id} value={plan.id}>
+                                                    {plan.name} ({plan.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {(formData as any).subscriptionPlanId ? (
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                Selected plan: {plans.find((plan) => plan.id === (formData as any).subscriptionPlanId)?.name || companyRecord?.subscriptionPlan?.name || 'Assigned plan'}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="subscriptionStatus">Subscription Status</Label>
+                                        <select
+                                            id="subscriptionStatus"
+                                            name="subscriptionStatus"
+                                            value={(formData as any).subscriptionStatus || 'active'}
+                                            onChange={handleInputChange}
+                                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                                        >
+                                            <option value="trial">Trial</option>
+                                            <option value="active">Active</option>
+                                            <option value="expired">Expired</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

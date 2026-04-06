@@ -1,6 +1,7 @@
-import { IsString, IsOptional, MaxLength, Matches, IsInt, IsDate } from 'class-validator';
+import { IsString, IsOptional, MaxLength, Matches, IsInt, IsDate, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { SubscriptionStatus } from '@prisma/client';
 
 export class UpdateCompanyDto {
   @ApiPropertyOptional({
@@ -74,5 +75,14 @@ export class UpdateCompanyDto {
   @IsInt()
   @IsOptional()
   maxEmployees?: number;
-}
 
+  @ApiPropertyOptional({ example: 'subscription-plan-id' })
+  @IsString()
+  @IsOptional()
+  subscriptionPlanId?: string;
+
+  @ApiPropertyOptional({ enum: SubscriptionStatus })
+  @IsEnum(SubscriptionStatus)
+  @IsOptional()
+  subscriptionStatus?: SubscriptionStatus;
+}

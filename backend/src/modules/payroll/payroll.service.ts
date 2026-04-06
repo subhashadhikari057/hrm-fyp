@@ -101,6 +101,29 @@ export class PayrollService {
     }
   }
 
+  private async ensurePayrollFeatureEnabled(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        subscriptionStatus: true,
+        planExpiresAt: true,
+        subscriptionPlan: {
+          select: { features: true },
+        },
+      },
+    });
+
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus === 'expired' || (company.planExpiresAt && company.planExpiresAt < new Date())) {
+      throw new BadRequestException('Company subscription has expired');
+    }
+
+    const features = Array.isArray(company.subscriptionPlan?.features) ? company.subscriptionPlan.features : [];
+    if (features.length > 0 && !features.includes('payroll')) {
+      throw new ForbiddenException('Payroll feature is not enabled for the current subscription plan');
+    }
+  }
+
   private roundCurrency(value: number) {
     return Number(value.toFixed(2));
   }
@@ -424,6 +447,7 @@ export class PayrollService {
 
   async createPayrollPeriod(dto: CreatePayrollPeriodDto, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
     const { startDate, endDate } = this.validatePeriodDates(dto);
 
     const existing = await this.prisma.payrollPeriod.findUnique({
@@ -466,6 +490,7 @@ export class PayrollService {
 
   async getPayrollSettings(currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const company = await this.prisma.company.findUnique({
       where: { id: currentUser.companyId! },
@@ -490,6 +515,7 @@ export class PayrollService {
 
   async updatePayrollSettings(dto: UpdatePayrollSettingsDto, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const updated = await this.prisma.company.update({
       where: { id: currentUser.companyId! },
@@ -519,6 +545,7 @@ export class PayrollService {
 
   async findAllPeriods(filter: FilterPayrollPeriodsDto, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
     const { page, limit, skip, take } = getPagination(filter.page, filter.limit);
 
     const where: Prisma.PayrollPeriodWhereInput = {
@@ -555,6 +582,7 @@ export class PayrollService {
 
   async findPeriodById(periodId: string, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const period = await this.prisma.payrollPeriod.findFirst({
       where: {
@@ -618,6 +646,7 @@ export class PayrollService {
 
   async generatePayslips(periodId: string, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const period = await this.prisma.payrollPeriod.findFirst({
       where: { id: periodId, companyId: currentUser.companyId! },
@@ -741,6 +770,7 @@ export class PayrollService {
 
   async finalizePeriod(periodId: string, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const period = await this.prisma.payrollPeriod.findFirst({
       where: { id: periodId, companyId: currentUser.companyId! },
@@ -789,6 +819,7 @@ export class PayrollService {
 
   async findAdminPayslips(filter: FilterPayslipsDto, currentUser: CurrentUser) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
     const { page, limit, skip, take } = getPagination(filter.page, filter.limit);
 
     const where: Prisma.PayslipWhereInput = {
@@ -841,6 +872,7 @@ export class PayrollService {
 
   async getAdminPayrollSummary(currentUser: CurrentUser, fiscalYearLabel?: string) {
     this.ensureAdminScope(currentUser);
+    await this.ensurePayrollFeatureEnabled(currentUser.companyId!);
 
     const where: Prisma.PayslipWhereInput = {
       companyId: currentUser.companyId!,

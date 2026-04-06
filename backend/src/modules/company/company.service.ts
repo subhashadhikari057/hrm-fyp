@@ -54,6 +54,24 @@ export class CompanyService {
 
     // Use Prisma transaction to ensure both company and admin are created together
     const result = await this.prisma.$transaction(async (tx) => {
+      const subscriptionAssignedAt = createDto.subscriptionPlanId ? new Date() : null;
+      let planExpiresAt = createDto.planExpiresAt || null;
+
+      if (subscriptionAssignedAt && createDto.subscriptionBillingType) {
+        const computedExpiry = new Date(subscriptionAssignedAt);
+
+        if (createDto.subscriptionBillingType === 'monthly') {
+          computedExpiry.setMonth(computedExpiry.getMonth() + 1);
+          planExpiresAt = computedExpiry;
+        } else if (createDto.subscriptionBillingType === 'yearly') {
+          computedExpiry.setFullYear(computedExpiry.getFullYear() + 1);
+          planExpiresAt = computedExpiry;
+        } else if (createDto.subscriptionBillingType === 'trial' && createDto.trialDays) {
+          computedExpiry.setDate(computedExpiry.getDate() + createDto.trialDays);
+          planExpiresAt = computedExpiry;
+        }
+      }
+
       // Create company
       const company = await tx.company.create({
         data: {
@@ -64,8 +82,11 @@ export class CompanyService {
           address: createDto.address,
           city: createDto.city,
           country: createDto.country,
-          planExpiresAt: createDto.planExpiresAt || null,
+          planExpiresAt,
           maxEmployees: createDto.maxEmployees,
+          subscriptionPlanId: createDto.subscriptionPlanId || null,
+          subscriptionStatus: createDto.subscriptionStatus || (createDto.subscriptionBillingType === 'trial' ? 'trial' : 'active'),
+          subscriptionAssignedAt,
           status: 'active',
           enableTaxDeduction: true,
           enableEmployeeSsf: true,
@@ -114,6 +135,9 @@ export class CompanyService {
           country: result.company.country,
           planExpiresAt: result.company.planExpiresAt,
           maxEmployees: result.company.maxEmployees,
+          subscriptionPlanId: result.company.subscriptionPlanId,
+          subscriptionStatus: result.company.subscriptionStatus,
+          subscriptionAssignedAt: result.company.subscriptionAssignedAt,
           status: result.company.status,
           createdAt: result.company.createdAt,
         },
@@ -156,6 +180,11 @@ export class CompanyService {
           country: true,
           planExpiresAt: true,
           maxEmployees: true,
+          subscriptionStatus: true,
+          subscriptionAssignedAt: true,
+          subscriptionPlan: {
+            select: { id: true, name: true, code: true, maxEmployees: true, features: true, isActive: true },
+          },
           status: true,
           createdAt: true,
           updatedAt: true,
@@ -186,6 +215,9 @@ export class CompanyService {
         country: company.country,
         planExpiresAt: company.planExpiresAt,
         maxEmployees: company.maxEmployees,
+        subscriptionStatus: company.subscriptionStatus,
+        subscriptionAssignedAt: company.subscriptionAssignedAt,
+        subscriptionPlan: company.subscriptionPlan,
         status: company.status,
         userCount: company._count.users,
         createdAt: company.createdAt,
@@ -212,6 +244,11 @@ export class CompanyService {
         country: true,
         planExpiresAt: true,
         maxEmployees: true,
+        subscriptionStatus: true,
+        subscriptionAssignedAt: true,
+        subscriptionPlan: {
+          select: { id: true, name: true, code: true, maxEmployees: true, features: true, isActive: true },
+        },
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -254,6 +291,9 @@ export class CompanyService {
         country: company.country,
         planExpiresAt: company.planExpiresAt,
         maxEmployees: company.maxEmployees,
+        subscriptionStatus: company.subscriptionStatus,
+        subscriptionAssignedAt: company.subscriptionAssignedAt,
+        subscriptionPlan: company.subscriptionPlan,
         status: company.status,
         userCount: company._count.users,
         adminName: admin?.fullName || admin?.email || null,
@@ -318,6 +358,11 @@ export class CompanyService {
       updateData.planExpiresAt = updateDto.planExpiresAt || null;
     }
     if (updateDto.maxEmployees !== undefined) updateData.maxEmployees = updateDto.maxEmployees;
+    if (updateDto.subscriptionPlanId !== undefined) {
+      updateData.subscriptionPlanId = updateDto.subscriptionPlanId || null;
+      updateData.subscriptionAssignedAt = updateDto.subscriptionPlanId ? new Date() : null;
+    }
+    if (updateDto.subscriptionStatus !== undefined) updateData.subscriptionStatus = updateDto.subscriptionStatus;
 
     // Update company
     const updatedCompany = await this.prisma.company.update({
@@ -334,6 +379,11 @@ export class CompanyService {
         country: true,
         planExpiresAt: true,
         maxEmployees: true,
+        subscriptionStatus: true,
+        subscriptionAssignedAt: true,
+        subscriptionPlan: {
+          select: { id: true, name: true, code: true, maxEmployees: true, features: true, isActive: true },
+        },
         status: true,
         updatedAt: true,
       },

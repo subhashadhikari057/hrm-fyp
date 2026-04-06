@@ -7,7 +7,9 @@ import {
   CalendarDays,
   Clock,
   Hash,
+  Layers3,
   MapPin,
+  ShieldCheck,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -192,6 +194,24 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
                 </div>
                 <div className="grid grid-cols-[160px_1fr] items-center gap-4 py-3">
                   <div className="flex items-center gap-2 text-gray-500">
+                    <Layers3 className="h-4 w-4" />
+                    <span>Subscription Plan</span>
+                  </div>
+                  <div className="text-gray-900 text-right truncate">
+                    {company.subscriptionPlan ? `${company.subscriptionPlan.name} (${company.subscriptionPlan.code})` : 'N/A'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-center gap-4 py-3">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Subscription Status</span>
+                  </div>
+                  <div className="text-gray-900 text-right capitalize">
+                    {company.subscriptionStatus || 'N/A'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-center gap-4 py-3">
+                  <div className="flex items-center gap-2 text-gray-500">
                     <MapPin className="h-4 w-4" />
                     <span>Address</span>
                   </div>
@@ -252,7 +272,6 @@ export function ViewCompanyModal({ isOpen, onClose, companyId }: ViewCompanyModa
     </Dialog>
   );
 }
-
 
 
 

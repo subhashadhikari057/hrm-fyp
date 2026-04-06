@@ -122,6 +122,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Company Admin', href: '/dashboard/superadmin/company-admins', icon: IconBriefcase },
           ],
         },
+        { name: 'Subscription Plans', href: '/dashboard/superadmin/subscription-plans', icon: IconBriefcase },
       ],
     },
   ],
