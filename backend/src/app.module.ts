@@ -13,6 +13,11 @@ import { WorkShiftModule } from './modules/workshift/workshift.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AttendanceRegularizationModule } from './modules/attendance-regularization/attendance-regularization.module';
 import { LeaveModule } from './modules/leave/leave.module';
+import { ComplaintModule } from './modules/complaint/complaint.module';
+import { PolicyModule } from './modules/policy/policy.module';
+import { ProjectModule } from './modules/project/project.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -28,6 +33,11 @@ import { LeaveModule } from './modules/leave/leave.module';
     AttendanceModule,
     AttendanceRegularizationModule,
     LeaveModule,
+    ComplaintModule,
+    PolicyModule,
+    ProjectModule,
+    PayrollModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

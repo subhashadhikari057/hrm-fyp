@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { companyApi, type CreateCompanyWithAdminRequest } from '../lib/api/company';
+import { subscriptionApi, type SubscriptionPlan } from '../lib/api/subscription';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,10 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
     country: '',
     maxEmployees: undefined,
     planExpiresAt: '',
+    subscriptionPlanId: '',
+    subscriptionStatus: 'active',
+    subscriptionBillingType: 'monthly',
+    trialDays: undefined,
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -47,8 +52,46 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const calculateExpiryDate = (billingType: string, trialDays?: number) => {
+    const now = new Date();
+    const expiry = new Date(now);
+
+    if (billingType === 'monthly') {
+      expiry.setMonth(expiry.getMonth() + 1);
+      return expiry.toISOString().split('T')[0];
+    }
+
+    if (billingType === 'yearly') {
+      expiry.setFullYear(expiry.getFullYear() + 1);
+      return expiry.toISOString().split('T')[0];
+    }
+
+    if (billingType === 'trial' && trialDays) {
+      expiry.setDate(expiry.getDate() + trialDays);
+      return expiry.toISOString().split('T')[0];
+    }
+
+    return '';
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadPlans = async () => {
+      try {
+        const response = await subscriptionApi.getPlans();
+        setPlans((response.data || []).filter((plan) => plan.isActive));
+      } catch {
+        setPlans([]);
+      }
+    };
+
+    void loadPlans();
+  }, [isOpen]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'file') {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -61,16 +104,34 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
         reader.readAsDataURL(file);
       }
     } else if (type === 'number') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value ? parseInt(value, 10) : undefined,
-      }));
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          [name]: value ? parseInt(value, 10) : undefined,
+        };
+
+        if (name === 'trialDays') {
+          next.planExpiresAt = calculateExpiryDate('trial', value ? parseInt(value, 10) : undefined);
+          next.subscriptionStatus = 'trial';
+        }
+
+        return next;
+      });
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: name === 'companyCode' ? value.toUpperCase() : value,
-      }));
-    }
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          [name]: name === 'companyCode' ? value.toUpperCase() : value,
+        };
+
+        if (name === 'subscriptionBillingType') {
+          next.subscriptionStatus = value === 'trial' ? 'trial' : 'active';
+          next.planExpiresAt = calculateExpiryDate(value, prev.trialDays);
+        }
+
+        return next;
+      });
+      }
 
     if (errors[name]) {
       setErrors((prev) => {
@@ -135,6 +196,22 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
         submitData.planExpiresAt = formData.planExpiresAt;
       }
 
+      if (formData.subscriptionPlanId) {
+        submitData.subscriptionPlanId = formData.subscriptionPlanId;
+      }
+
+      if (formData.subscriptionStatus) {
+        submitData.subscriptionStatus = formData.subscriptionStatus;
+      }
+
+      if ((formData as any).subscriptionBillingType) {
+        submitData.subscriptionBillingType = (formData as any).subscriptionBillingType;
+      }
+
+      if ((formData as any).trialDays) {
+        submitData.trialDays = (formData as any).trialDays;
+      }
+
       if (logoFile) {
         submitData.logo = logoFile;
       }
@@ -156,6 +233,10 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
     if (!formData.address?.trim()) nextErrors.address = 'Address is required';
     if (!formData.city?.trim()) nextErrors.city = 'City is required';
     if (!formData.maxEmployees) nextErrors.maxEmployees = 'Max employees is required';
+    if (!formData.subscriptionPlanId) nextErrors.subscriptionPlanId = 'Subscription plan is required';
+    if ((formData as any).subscriptionBillingType === 'trial' && !(formData as any).trialDays) {
+      nextErrors.trialDays = 'Trial days are required for trial billing';
+    }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -193,6 +274,10 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
       country: '',
       maxEmployees: undefined,
       planExpiresAt: '',
+      subscriptionPlanId: '',
+      subscriptionStatus: 'active',
+      subscriptionBillingType: 'monthly',
+      trialDays: undefined,
     });
     setLogoFile(null);
     setLogoPreview(null);
@@ -204,12 +289,12 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add New Company</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
@@ -223,7 +308,7 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
 
           {step === 1 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5">
                 <Label htmlFor="companyName">
                   Company Name <span className="text-red-500">*</span>
                 </Label>
@@ -270,7 +355,7 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
                 {errors.industry && <p className="mt-1 text-sm text-red-600">{errors.industry}</p>}
               </div>
 
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5">
                 <Label htmlFor="address">
                   Address <span className="text-red-500">*</span>
                 </Label>
@@ -325,12 +410,89 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
                   onChange={handleChange}
                   min="1"
                   required
+                  readOnly={!!formData.subscriptionPlanId}
                   className={errors.maxEmployees ? 'border-red-500 focus-visible:ring-red-500' : undefined}
                 />
                 {errors.maxEmployees && (
                   <p className="mt-1 text-sm text-red-600">{errors.maxEmployees}</p>
                 )}
+                {formData.subscriptionPlanId ? (
+                  <p className="text-xs text-muted-foreground">Filled automatically from the selected plan.</p>
+                ) : null}
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="subscriptionPlanId">
+                  Subscription Plan <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="subscriptionPlanId"
+                  name="subscriptionPlanId"
+                  value={formData.subscriptionPlanId || ''}
+                  onChange={(e) => {
+                    const selectedPlan = plans.find((plan) => plan.id === e.target.value);
+                    setFormData((prev) => ({
+                      ...prev,
+                      subscriptionPlanId: e.target.value,
+                      maxEmployees: selectedPlan?.maxEmployees || prev.maxEmployees,
+                      subscriptionStatus: (prev as any).subscriptionBillingType === 'trial' ? 'trial' : 'active',
+                      planExpiresAt: calculateExpiryDate(
+                        (prev as any).subscriptionBillingType || 'monthly',
+                        (prev as any).trialDays,
+                      ),
+                    }));
+                    if (errors.subscriptionPlanId) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.subscriptionPlanId;
+                        return next;
+                      });
+                    }
+                  }}
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ${errors.subscriptionPlanId ? 'border-red-500' : 'border-input'}`}
+                >
+                  <option value="">Select subscription plan</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} ({plan.code})
+                    </option>
+                  ))}
+                </select>
+                {errors.subscriptionPlanId && <p className="mt-1 text-sm text-red-600">{errors.subscriptionPlanId}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="subscriptionBillingType">Billing Type</Label>
+                <select
+                  id="subscriptionBillingType"
+                  name="subscriptionBillingType"
+                  value={(formData as any).subscriptionBillingType || 'monthly'}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="trial">Trial</option>
+                </select>
+              </div>
+
+              {(formData as any).subscriptionBillingType === 'trial' ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="trialDays">
+                    Trial Days <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    id="trialDays"
+                    name="trialDays"
+                    value={(formData as any).trialDays || ''}
+                    onChange={handleChange}
+                    min="1"
+                    className={errors.trialDays ? 'border-red-500 focus-visible:ring-red-500' : undefined}
+                  />
+                  {errors.trialDays && <p className="mt-1 text-sm text-red-600">{errors.trialDays}</p>}
+                </div>
+              ) : null}
 
               <div className="space-y-1.5">
                 <Label htmlFor="planExpiresAt">Plan Expires At</Label>
@@ -340,40 +502,20 @@ export function AddCompanyModal({ isOpen, onClose, onSuccess }: AddCompanyModalP
                   name="planExpiresAt"
                   value={formData.planExpiresAt}
                   onChange={handleChange}
+                  readOnly
                 />
               </div>
 
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor="logo">Company Logo</Label>
-                <div className="flex items-center gap-4">
-                  {logoPreview ? (
-                    <img
-                      src={logoPreview}
-                      alt="Logo preview"
-                      className="w-20 h-20 rounded-lg object-cover border-2 border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <Input
-                      type="file"
-                      id="logo"
-                      name="logo"
-                      accept="image/*"
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="file"
+                  id="logo"
+                  name="logo"
+                  accept="image/*"
+                  onChange={handleChange}
+                />
+                {logoPreview ? <p className="text-xs text-muted-foreground">Logo selected.</p> : null}
               </div>
             </div>
           ) : (

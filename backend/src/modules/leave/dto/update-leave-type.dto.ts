@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateLeaveTypeDto {
   @ApiPropertyOptional({
@@ -25,6 +26,16 @@ export class UpdateLeaveTypeDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Allocated leave days for this leave type (per employee)',
+    example: 12,
+  })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @IsOptional()
+  allocatedDays?: number;
 
   @ApiPropertyOptional({
     description: 'Whether the leave type is active',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -75,12 +75,17 @@ export function DataTable<T extends Record<string, any>>({
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('table');
+  const onFilterChangeRef = useRef(onFilterChange);
 
   useEffect(() => {
-    if (serverSide && onFilterChange) {
-      onFilterChange(activeFilters);
+    onFilterChangeRef.current = onFilterChange;
+  }, [onFilterChange]);
+
+  useEffect(() => {
+    if (serverSide) {
+      onFilterChangeRef.current?.(activeFilters);
     }
-  }, [activeFilters, onFilterChange, serverSide]);
+  }, [activeFilters, serverSide]);
 
   // Filter data based on search query and filters
   const filteredData = useMemo(() => {

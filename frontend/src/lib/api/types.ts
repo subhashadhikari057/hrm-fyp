@@ -31,6 +31,15 @@ export interface BackendUser {
     id: string;
     status: string;
     name: string;
+    planExpiresAt?: string | null;
+    subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+    subscriptionPlan?: {
+      id: string;
+      name: string;
+      code: string;
+      isActive: boolean;
+      features?: string[] | null;
+    } | null;
   } | null;
 }
 

@@ -1,0 +1,126 @@
+---
+title: Policy Module
+---
+
+# Policy Module
+
+## Overview
+
+The Policy module acts as a company policy hub. It allows admins and HR managers to publish policy content, version updates over time, expose the current active version to employees, and record employee acceptance against specific policy versions.
+
+## Key models
+
+- `Policy`
+- `PolicyVersion`
+- `PolicyAcceptance`
+- `Employee`
+
+## Features
+
+- Create company policy records
+- Store versioned policy content
+- Keep one active policy at a time per company
+- Return current active policy to employees and managers
+- Detect pending acceptance
+- Record employee acceptance against a specific version
+
+## Endpoints
+
+Base path: `/policy`
+
+### Admin and HR endpoints
+
+#### 1. List policies
+
+- **GET** `/policy`
+- **Roles**: `company_admin`, `hr_manager`
+
+Returns company policies with version history metadata.
+
+#### 2. Create policy
+
+- **POST** `/policy`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "title": "Code of Conduct",
+  "content": "<p>All employees must follow the code of conduct.</p>",
+  "effectiveFrom": "2026-04-01"
+}
+```
+
+Behavior:
+
+- Creates a new policy record.
+- Creates its first `PolicyVersion` as `1.0.0`.
+- Deactivates any currently active policy for the company.
+
+#### 3. Update policy
+
+- **PATCH** `/policy/:id`
+- **Roles**: `company_admin`, `hr_manager`
+
+Example request:
+
+```json
+{
+  "title": "Code of Conduct",
+  "content": "<p>Updated policy content.</p>",
+  "version": "1.1.0",
+  "effectiveFrom": "2026-05-01"
+}
+```
+
+Behavior:
+
+- Adds a new `PolicyVersion` to the existing policy.
+- Reactivates that policy as the current active policy.
+- Deactivates any other active policy in the same company.
+
+### Shared read endpoints
+
+#### 4. Get current active policy
+
+- **GET** `/policy/current`
+- **Roles**: `company_admin`, `hr_manager`, `employee`, `manager`
+
+Returns the active policy with its latest version.
+
+### Employee and manager acceptance flow
+
+#### 5. Get pending policy acceptance
+
+- **GET** `/policy/pending`
+- **Roles**: `employee`, `manager`
+
+Returns current policy data if the employee still needs to accept the latest version.
+
+#### 6. Accept current policy
+
+- **POST** `/policy/accept`
+- **Roles**: `employee`, `manager`
+
+Example request:
+
+```json
+{
+  "policyVersionId": "uuid"
+}
+```
+
+## Business rules
+
+- Only company admin and HR manager can create or update policies.
+- Version values must match dotted numeric format such as `1.0.1`.
+- Duplicate version numbers are rejected for the same policy.
+- Acceptance is recorded per employee and per policy version.
+- Accepting an already accepted version updates the acceptance timestamp through upsert behavior.
+
+## Notes
+
+- The module uses a single-active-policy pattern per company.
+- Acceptance is version-aware, which means employees may need to accept the same policy again after a new version is published.
+- `GET /policy/pending` returns `data: null` for roles that are not part of the acceptance flow.

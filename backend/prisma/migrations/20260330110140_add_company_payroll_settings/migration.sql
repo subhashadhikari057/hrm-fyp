@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "companies" ADD COLUMN     "employeeSsfRate" DOUBLE PRECISION NOT NULL DEFAULT 0.11,
+ADD COLUMN     "employerSsfRate" DOUBLE PRECISION NOT NULL DEFAULT 0.20,
+ADD COLUMN     "enableEmployeeSsf" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "enableEmployerSsf" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "enableTaxDeduction" BOOLEAN NOT NULL DEFAULT true;

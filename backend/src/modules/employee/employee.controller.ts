@@ -86,6 +86,8 @@ export class EmployeeController {
         emergencyContactName: { type: 'string', example: 'Jane Doe' },
         emergencyContactPhone: { type: 'string', example: '+1234567891' },
         baseSalary: { type: 'number', example: 50000.00 },
+        allowances: { type: 'number', example: 5000.0 },
+        isMarried: { type: 'boolean', example: false },
         image: {
           type: 'string',
           format: 'binary',
@@ -135,7 +137,7 @@ export class EmployeeController {
     const imageFilePath = image ? image.path : undefined;
 
     try {
-      return await this.employeeService.create(createEmployeeDto, companyId, imagePath);
+      return await this.employeeService.create(createEmployeeDto, companyId, req.user.id, imagePath);
     } catch (error) {
       // If validation or transaction fails, delete the uploaded file
       if (imageFilePath) {
@@ -276,6 +278,25 @@ export class EmployeeController {
     return this.employeeService.getMyProfile(req.user.id);
   }
 
+  @Get('me/compensation-history')
+  @Roles(UserRole.employee)
+  @ApiOperation({ summary: 'Get your own compensation history (Employee only)' })
+  async getMyCompensationHistory(@Request() req: any) {
+    return this.employeeService.getMyCompensationHistory(req.user.id);
+  }
+
+  @Get(':id/compensation-history')
+  @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager)
+  @ApiOperation({ summary: 'Get employee compensation history (Company Admin / HR Manager / Manager only)' })
+  @ApiParam({ name: 'id', description: 'Employee ID', example: 'uuid' })
+  async getCompensationHistory(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
+    }
+    return this.employeeService.getCompensationHistory(id, companyId);
+  }
+
   @Get(':id')
   @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager)
   @ApiOperation({ summary: 'Get employee by ID (Company Admin / HR Manager / Manager only)' })
@@ -342,6 +363,8 @@ export class EmployeeController {
         emergencyContactName: { type: 'string', example: 'Jane Doe' },
         emergencyContactPhone: { type: 'string', example: '+1234567891' },
         baseSalary: { type: 'number', example: 50000.00 },
+        allowances: { type: 'number', example: 5000.0 },
+        isMarried: { type: 'boolean', example: true },
         image: {
           type: 'string',
           format: 'binary',
@@ -389,7 +412,7 @@ export class EmployeeController {
     const imageFilePath = image ? image.path : undefined;
 
     try {
-      return await this.employeeService.update(id, updateEmployeeDto, companyId, imagePath);
+      return await this.employeeService.update(id, updateEmployeeDto, companyId, req.user.id, imagePath);
     } catch (error) {
       // If validation fails, delete the uploaded file
       if (imageFilePath) {

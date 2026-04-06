@@ -5,10 +5,12 @@ import DashboardLayout from '../../../../components/DashboardLayout';
 import { PageHeader } from '../../../../components/PageHeader';
 import AttendanceCalendar from '../../../../components/AttendanceCalendar';
 import { attendanceApi, type AttendanceDay } from '../../../../lib/api/attendance';
+import { leaveApi, type LeaveRequest } from '../../../../lib/api/leave';
 
 export default function EmployeeAttendancePage() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [attendance, setAttendance] = useState<AttendanceDay[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,13 +25,23 @@ export default function EmployeeAttendancePage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await attendanceApi.getMyAttendance({
-          dateFrom: monthRange.start.toISOString(),
-          dateTo: monthRange.end.toISOString(),
-          page: 1,
-          limit: 100,
-        });
-        setAttendance(response.data || []);
+        const [attendanceResponse, pendingLeaveResponse] = await Promise.all([
+          attendanceApi.getMyAttendance({
+            dateFrom: monthRange.start.toISOString(),
+            dateTo: monthRange.end.toISOString(),
+            page: 1,
+            limit: 100,
+          }),
+          leaveApi.listMy({
+            status: 'PENDING',
+            dateFrom: monthRange.start.toISOString(),
+            dateTo: monthRange.end.toISOString(),
+            page: 1,
+            limit: 100,
+          }),
+        ]);
+        setAttendance(attendanceResponse.data || []);
+        setPendingLeaves(pendingLeaveResponse.data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load attendance');
       } finally {
@@ -52,6 +64,7 @@ export default function EmployeeAttendancePage() {
           currentMonth={currentMonth}
           onMonthChange={setCurrentMonth}
           attendance={attendance}
+          pendingLeaves={pendingLeaves}
           loading={loading}
           error={error}
         />

@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { PageHeader } from '../../../../components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
-import { Input } from '../../../../components/ui/input';
+import EmployeeLeaveRequestModal from '../../../../components/EmployeeLeaveRequestModal';
+import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { leaveApi, type LeaveRequest, type LeaveStatus, type LeaveType } from '../../../../lib/api/leave';
+import { leaveApi, type HalfDaySession, type LeaveRequest, type LeaveStatsItem, type LeaveStatus, type LeaveType } from '../../../../lib/api/leave';
 
 const STATUS_BADGES: Record<LeaveStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-700',
@@ -20,6 +21,14 @@ const toKtmIsoDate = (dateStr: string) => {
   if (!dateStr) return '';
   return new Date(`${dateStr}T00:00:00+05:45`).toISOString();
 };
+
+const getTodayKtmDateInput = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kathmandu',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 
 const formatDate = (value?: string | null) => {
   if (!value) return '-';
@@ -38,21 +47,27 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
   );
 }
 
-export default function EmployeeLeavePage() {
+function EmployeeLeavePageContent() {
+  const searchParams = useSearchParams();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [leaveStats, setLeaveStats] = useState<LeaveStatsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | 'ALL'>('ALL');
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string>('');
+  const [addRequestModalOpen, setAddRequestModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
   const [formTypeId, setFormTypeId] = useState('');
-  const [formStartDate, setFormStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [formEndDate, setFormEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [formStartDate, setFormStartDate] = useState(() => getTodayKtmDateInput());
+  const [formEndDate, setFormEndDate] = useState(() => getTodayKtmDateInput());
   const [formReason, setFormReason] = useState('');
+  const [formIsHalfDay, setFormIsHalfDay] = useState(false);
+  const [formHalfDaySession, setFormHalfDaySession] = useState<HalfDaySession>('FIRST_HALF');
 
   const filtered = useMemo(() => {
     if (statusFilter === 'ALL') return requests;
@@ -65,6 +80,7 @@ export default function EmployeeLeavePage() {
     try {
       const res = await leaveApi.listMy({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
+        leaveTypeId: leaveTypeFilter || undefined,
         page,
         limit,
       });
@@ -84,22 +100,47 @@ export default function EmployeeLeavePage() {
       if (!formTypeId && res.data?.length) {
         setFormTypeId(res.data[0].id);
       }
-    } catch (err) {
-      console.error('Failed to load leave types', err);
+    } catch (err: any) {
+      setLeaveTypes([]);
+      setFormTypeId('');
+      setError(err?.message || 'Failed to load leave types');
+    }
+  };
+
+  const loadLeaveStats = async () => {
+    try {
+      const res = await leaveApi.getMyStats();
+      setLeaveStats(res.data || []);
+    } catch {
+      setLeaveStats([]);
     }
   };
 
   useEffect(() => {
     loadLeaveTypes();
+    loadLeaveStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    const status = searchParams.get('status');
+    const leaveTypeId = searchParams.get('leaveTypeId');
+
+    if (status && ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].includes(status)) {
+      setStatusFilter(status as LeaveStatus | 'ALL');
+    }
+    if (leaveTypeId) {
+      setLeaveTypeFilter(leaveTypeId);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     loadRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, page, limit]);
+  }, [statusFilter, leaveTypeFilter, page, limit]);
 
   const handleCreate = async () => {
+    const todayKtm = getTodayKtmDateInput();
     if (!formTypeId) {
       toast.error('Leave type is required');
       return;
@@ -116,6 +157,10 @@ export default function EmployeeLeavePage() {
       toast.error('End date must be after start date');
       return;
     }
+    if (formStartDate < todayKtm) {
+      toast.error('Past dates are not allowed for leave requests');
+      return;
+    }
 
     setCreating(true);
     try {
@@ -124,10 +169,16 @@ export default function EmployeeLeavePage() {
         startDate: toKtmIsoDate(formStartDate),
         endDate: toKtmIsoDate(formEndDate),
         reason: formReason.trim(),
+        isHalfDay: formIsHalfDay,
+        halfDaySession: formIsHalfDay ? formHalfDaySession : undefined,
       });
       toast.success('Leave request submitted');
       setFormReason('');
+      setFormIsHalfDay(false);
+      setFormHalfDaySession('FIRST_HALF');
+      setAddRequestModalOpen(false);
       loadRequests();
+      loadLeaveStats();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to submit request');
     } finally {
@@ -140,6 +191,7 @@ export default function EmployeeLeavePage() {
       await leaveApi.cancel(id);
       toast.success('Request cancelled');
       loadRequests();
+      loadLeaveStats();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to cancel');
     }
@@ -148,64 +200,35 @@ export default function EmployeeLeavePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <PageHeader title="My Leave" description="Submit and track your leave requests." />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>New Leave Request</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Leave Type</label>
-                <select
-                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={formTypeId}
-                  onChange={(e) => setFormTypeId(e.target.value)}
-                >
-                  {leaveTypes.length === 0 && <option value="">No leave types</option>}
-                  {leaveTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Start Date</label>
-                <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">End Date</label>
-                <Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Reason</label>
-                <textarea
-                  value={formReason}
-                  onChange={(e) => setFormReason(e.target.value)}
-                  rows={3}
-                  placeholder="Provide a brief reason"
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button onClick={handleCreate} disabled={creating}>
-                {creating ? 'Submitting...' : 'Submit Request'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="My Leave"
+          description="Submit and track your leave requests."
+          actions={
+            <Button variant="blue" onClick={() => setAddRequestModalOpen(true)}>
+              Add Leave Request
+            </Button>
+          }
+        />
 
         <Card>
           <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <CardTitle>My Requests</CardTitle>
             <div className="flex gap-3">
+              <select
+                className="w-56 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={leaveTypeFilter}
+                onChange={(e) => {
+                  setLeaveTypeFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">All leave types</option>
+                {leaveTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
               <select
                 className="w-48 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 value={statusFilter}
@@ -259,7 +282,7 @@ export default function EmployeeLeavePage() {
                           </td>
                           <td className="px-3 py-2">
                             {r.status === 'PENDING' ? (
-                              <Button variant="outline" size="sm" onClick={() => handleCancel(r.id)}>
+                              <Button variant="red" size="sm" onClick={() => handleCancel(r.id)}>
                                 Cancel
                               </Button>
                             ) : (
@@ -300,6 +323,44 @@ export default function EmployeeLeavePage() {
           </CardContent>
         </Card>
       </div>
+
+      <EmployeeLeaveRequestModal
+        open={addRequestModalOpen}
+        onOpenChange={setAddRequestModalOpen}
+        creating={creating}
+        leaveTypes={leaveTypes}
+        formTypeId={formTypeId}
+        onFormTypeIdChange={setFormTypeId}
+        formStartDate={formStartDate}
+        onFormStartDateChange={setFormStartDate}
+        formEndDate={formEndDate}
+        onFormEndDateChange={setFormEndDate}
+        minDate={getTodayKtmDateInput()}
+        formReason={formReason}
+        onFormReasonChange={setFormReason}
+        formIsHalfDay={formIsHalfDay}
+        onFormIsHalfDayChange={setFormIsHalfDay}
+        formHalfDaySession={formHalfDaySession}
+        onFormHalfDaySessionChange={setFormHalfDaySession}
+        selectedLeaveStats={leaveStats.find((s) => s.leaveTypeId === formTypeId) || null}
+        onSubmit={handleCreate}
+      />
     </DashboardLayout>
+  );
+}
+
+export default function EmployeeLeavePage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex min-h-[240px] items-center justify-center text-sm text-gray-600">
+            Loading leave page...
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <EmployeeLeavePageContent />
+    </Suspense>
   );
 }

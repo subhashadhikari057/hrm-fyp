@@ -1,6 +1,7 @@
 'use client';
 
-import { Employee } from '@/lib/api/employee';
+import { useEffect, useState } from 'react';
+import { Employee, employeeApi, type EmployeeCompensationHistoryRecord } from '@/lib/api/employee';
 import { API_BASE_URL } from '@/lib/api/types';
 import { User, Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, AlertCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,6 +21,23 @@ interface EmployeeViewModalProps {
 }
 
 export default function EmployeeViewModal({ isOpen, onClose, employee }: EmployeeViewModalProps) {
+    const [compensationHistory, setCompensationHistory] = useState<EmployeeCompensationHistoryRecord[]>([]);
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (!isOpen || !employee) return;
+
+            try {
+                const response = await employeeApi.getEmployeeCompensationHistory(employee.id);
+                setCompensationHistory(response.data.history || []);
+            } catch {
+                setCompensationHistory([]);
+            }
+        };
+
+        void loadHistory();
+    }, [employee, isOpen]);
+
     if (!employee) return null;
 
     const formatDate = (dateString: string | null) => {
@@ -29,6 +47,11 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
         } catch {
             return 'Invalid date';
         }
+    };
+
+    const formatCurrency = (value: number | null) => {
+        if (value === null) return 'N/A';
+        return `NPR ${value.toLocaleString()}`;
     };
 
     const getStatusColor = (status: string) => {
@@ -197,20 +220,26 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
                         </div>
 
                         {/* Compensation */}
-                        {employee.baseSalary !== null && (
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4 text-indigo-600" />
-                                    Compensation
-                                </h4>
-                                <div className="space-y-3">
-                                    <DetailItem
-                                        label="Base Salary"
-                                        value={`$${employee.baseSalary.toLocaleString()}`}
-                                    />
-                                </div>
+                        <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-indigo-600" />
+                                Compensation
+                            </h4>
+                            <div className="space-y-3">
+                                <DetailItem
+                                    label="Base Salary"
+                                    value={formatCurrency(employee.baseSalary)}
+                                />
+                                <DetailItem
+                                    label="Allowances"
+                                    value={formatCurrency(employee.allowances)}
+                                />
+                                <DetailItem
+                                    label="Marital Status"
+                                    value={employee.isMarried ? 'Married' : 'Unmarried'}
+                                />
                             </div>
-                        )}
+                        </div>
 
                         {/* Account Information */}
                         {employee.user && (
@@ -232,6 +261,39 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
 
                     {/* System Information */}
                     <div className="mt-8 pt-6 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-indigo-600" />
+                            Compensation History
+                        </h4>
+                        <div className="overflow-x-auto rounded-lg border border-gray-200 mb-6">
+                            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Effective Date</th>
+                                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
+                                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Base Salary</th>
+                                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Allowances</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                    {compensationHistory.length > 0 ? (
+                                        compensationHistory.map((entry) => (
+                                            <tr key={entry.id}>
+                                                <td className="px-3 py-2 text-gray-700">{formatDate(entry.effectiveFrom)}</td>
+                                                <td className="px-3 py-2 capitalize text-gray-700">{entry.changeType.replace('_', ' ')}</td>
+                                                <td className="px-3 py-2 text-gray-700">{formatCurrency(entry.newBaseSalary)}</td>
+                                                <td className="px-3 py-2 text-gray-700">{formatCurrency(entry.newAllowances)}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="px-3 py-5 text-center text-gray-500">No compensation history found.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-indigo-600" />
                             System Information

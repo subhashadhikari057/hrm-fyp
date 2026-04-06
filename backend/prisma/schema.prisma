@@ -24,6 +24,13 @@ enum CompanyStatus {
   archived
 }
 
+enum SubscriptionStatus {
+  trial
+  active
+  expired
+  cancelled
+}
+
 enum EmployeeStatus {
   active
   on_leave
@@ -43,6 +50,29 @@ enum Gender {
   other
 }
 
+enum CompensationChangeType {
+  initial
+  increment
+  decrement
+  adjustment
+}
+
+enum PayrollPeriodStatus {
+  DRAFT
+  PROCESSED
+  FINALIZED
+}
+
+enum PayslipStatus {
+  GENERATED
+  FINALIZED
+}
+
+enum PayslipLineItemType {
+  EARNING
+  DEDUCTION
+}
+
 model Company {
   id            String         @id @default(uuid())
   name          String         @db.VarChar(150)
@@ -54,7 +84,16 @@ model Company {
   country       String?
   planExpiresAt DateTime?
   maxEmployees  Int?
+  subscriptionPlanId String?
+  subscriptionPlan SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+  subscriptionStatus SubscriptionStatus @default(active)
+  subscriptionAssignedAt DateTime?
   status        CompanyStatus  @default(active)
+  enableTaxDeduction Boolean   @default(true)
+  enableEmployeeSsf Boolean    @default(true)
+  enableEmployerSsf Boolean    @default(true)
+  employeeSsfRate  Float       @default(0.11)
+  employerSsfRate  Float       @default(0.20)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   // Relations
@@ -68,12 +107,43 @@ model Company {
   attendanceRegularizations AttendanceRegularization[]
   leaveTypes    LeaveType[]
   leaveRequests LeaveRequest[]
+  complaints    Complaint[]
+  complaintNotes ComplaintNote[]
+  policies      Policy[]
+  policyVersions PolicyVersion[]
+  projects      Project[]
+  projectTasks  ProjectTask[]
+  projectTaskComments ProjectTaskComment[]
+  compensationHistories EmployeeCompensationHistory[]
+  payrollPeriods PayrollPeriod[]
+  payslips      Payslip[]
+  payslipLineItems PayslipLineItem[]
 
   @@index([name])
   @@index([status])
   @@index([industry])
   @@index([country])
+  @@index([subscriptionStatus])
   @@map("companies")
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(120)
+  code          String   @unique @db.VarChar(30)
+  description   String?
+  monthlyPrice  Float    @default(0)
+  yearlyPrice   Float?
+  maxEmployees  Int?
+  features      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  companies     Company[]
+
+  @@index([isActive])
+  @@map("subscription_plans")
 }
 
 model User {
@@ -101,6 +171,20 @@ model User {
   reviewedRegularizations AttendanceRegularization[] @relation("regularizationReviewedBy")
   leaveRequestsCreated  LeaveRequest[] @relation("LeaveRequestCreatedBy")
   leaveRequestsReviewed LeaveRequest[] @relation("LeaveRequestReviewedBy")
+  complaintsCreated     Complaint[] @relation("ComplaintCreatedBy")
+  complaintsUpdated     Complaint[] @relation("ComplaintUpdatedBy")
+  complaintNotes        ComplaintNote[]
+  policiesCreated       Policy[] @relation("PolicyCreatedBy")
+  policyVersionsCreated PolicyVersion[] @relation("PolicyVersionCreatedBy")
+  projectsCreated       Project[] @relation("ProjectCreatedBy")
+  projectsUpdated       Project[] @relation("ProjectUpdatedBy")
+  projectMembersAdded   ProjectMember[] @relation("ProjectMemberAddedBy")
+  projectTasksCreated   ProjectTask[] @relation("ProjectTaskCreatedBy")
+  projectTasksUpdated   ProjectTask[] @relation("ProjectTaskUpdatedBy")
+  projectTaskComments   ProjectTaskComment[] @relation("ProjectTaskCommentAuthor")
+  compensationChanges   EmployeeCompensationHistory[] @relation("EmployeeCompensationChangedBy")
+  payrollPeriodsCreated PayrollPeriod[] @relation("PayrollPeriodCreatedBy")
+  payrollPeriodsFinalized PayrollPeriod[] @relation("PayrollPeriodFinalizedBy")
 
   @@index([email])
   @@index([role])
@@ -224,6 +308,8 @@ model Employee {
   
   // Payroll starter fields
   baseSalary   Float?
+  allowances   Float?   @default(0)
+  isMarried    Boolean  @default(false)
   
   // Status & audit
   status       EmployeeStatus @default(active)
@@ -235,6 +321,12 @@ model Employee {
   attendanceLogs AttendanceLog[]
   attendanceRegularizations AttendanceRegularization[]
   leaveRequests LeaveRequest[]
+  complaints    Complaint[]
+  policyAcceptances PolicyAcceptance[]
+  projectMemberships ProjectMember[]
+  assignedProjectTasks ProjectTask[] @relation("ProjectTaskAssignee")
+  compensationHistory EmployeeCompensationHistory[]
+  payslips         Payslip[]
 
   @@unique([companyId, employeeCode])        // code unique per company
   @@index([companyId])
@@ -292,6 +384,42 @@ enum LeaveStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+enum HalfDaySession {
+  FIRST_HALF
+  SECOND_HALF
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectTaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum ProjectTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 model AttendanceDay {
@@ -381,6 +509,7 @@ model LeaveType {
   name        String   @db.VarChar(100)
   code        String?  @db.VarChar(20)
   description String?
+  allocatedDays Float  @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -404,6 +533,8 @@ model LeaveRequest {
   startDate    DateTime
   endDate      DateTime
   totalDays    Float
+  isHalfDay    Boolean     @default(false)
+  halfDaySession HalfDaySession?
   reason       String
   status       LeaveStatus @default(PENDING)
   createdById  String?
@@ -418,4 +549,292 @@ model LeaveRequest {
   @@index([companyId, employeeId, startDate])
   @@index([companyId, status])
   @@map("leave_requests")
+}
+
+model Complaint {
+  id          String            @id @default(uuid())
+  companyId   String
+  company     Company           @relation(fields: [companyId], references: [id])
+  employeeId  String
+  employee    Employee          @relation(fields: [employeeId], references: [id])
+  title       String            @db.VarChar(200)
+  description String
+  priority    ComplaintPriority @default(MEDIUM)
+  status      ComplaintStatus   @default(OPEN)
+  closedAt    DateTime?
+  createdById String?
+  createdBy   User?             @relation("ComplaintCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?             @relation("ComplaintUpdatedBy", fields: [updatedById], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  notes       ComplaintNote[]
+
+  @@index([companyId, status])
+  @@index([companyId, priority])
+  @@index([companyId, employeeId, createdAt])
+  @@map("complaints")
+}
+
+model ComplaintNote {
+  id           String    @id @default(uuid())
+  complaintId  String
+  complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id])
+  authorUserId String
+  authorUser   User      @relation(fields: [authorUserId], references: [id])
+  note         String
+  createdAt    DateTime  @default(now())
+
+  @@index([complaintId, createdAt])
+  @@index([companyId, createdAt])
+  @@map("complaint_notes")
+}
+
+model Policy {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  title       String   @db.VarChar(200)
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdBy   User?    @relation("PolicyCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions    PolicyVersion[]
+
+  @@index([companyId, isActive])
+  @@index([companyId, createdAt])
+  @@map("policies")
+}
+
+model PolicyVersion {
+  id            String   @id @default(uuid())
+  policyId      String
+  policy        Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  version       String   @db.VarChar(30)
+  content       String
+  effectiveFrom DateTime
+  createdById   String?
+  createdBy     User?    @relation("PolicyVersionCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+
+  acceptances   PolicyAcceptance[]
+
+  @@unique([policyId, version])
+  @@index([companyId, createdAt])
+  @@index([policyId, effectiveFrom])
+  @@map("policy_versions")
+}
+
+model PolicyAcceptance {
+  id              String        @id @default(uuid())
+  employeeId      String
+  employee        Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  policyVersionId String
+  policyVersion   PolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
+  acceptedAt      DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  @@unique([employeeId, policyVersionId])
+  @@index([employeeId, acceptedAt])
+  @@index([policyVersionId, acceptedAt])
+  @@map("policy_acceptances")
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  companyId   String
+  company     Company       @relation(fields: [companyId], references: [id])
+  name        String        @db.VarChar(150)
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      ProjectStatus @default(ACTIVE)
+  createdById String?
+  createdBy   User?         @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?         @relation("ProjectUpdatedBy", fields: [updatedById], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members     ProjectMember[]
+  tasks       ProjectTask[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id         String    @id @default(uuid())
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  addedById  String?
+  addedBy    User?     @relation("ProjectMemberAddedBy", fields: [addedById], references: [id])
+  createdAt  DateTime  @default(now())
+
+  @@unique([projectId, employeeId])
+  @@index([projectId])
+  @@index([employeeId])
+  @@map("project_members")
+}
+
+model ProjectTask {
+  id                 String              @id @default(uuid())
+  projectId          String
+  project            Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  companyId          String
+  company            Company             @relation(fields: [companyId], references: [id])
+  title              String              @db.VarChar(200)
+  description        String?
+  status             ProjectTaskStatus   @default(TODO)
+  priority           ProjectTaskPriority @default(MEDIUM)
+  dueDate            DateTime?
+  assigneeEmployeeId String?
+  assigneeEmployee   Employee?           @relation("ProjectTaskAssignee", fields: [assigneeEmployeeId], references: [id])
+  createdById        String?
+  createdBy          User?               @relation("ProjectTaskCreatedBy", fields: [createdById], references: [id])
+  updatedById        String?
+  updatedBy          User?               @relation("ProjectTaskUpdatedBy", fields: [updatedById], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  comments           ProjectTaskComment[]
+
+  @@index([projectId, status, updatedAt])
+  @@index([companyId, assigneeEmployeeId])
+  @@index([dueDate])
+  @@map("project_tasks")
+}
+
+model ProjectTaskComment {
+  id           String      @id @default(uuid())
+  taskId        String
+  task          ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id])
+  authorUserId  String
+  authorUser    User        @relation("ProjectTaskCommentAuthor", fields: [authorUserId], references: [id])
+  comment       String
+  createdAt     DateTime    @default(now())
+
+  @@index([taskId, createdAt])
+  @@index([companyId, createdAt])
+  @@map("project_task_comments")
+}
+
+model EmployeeCompensationHistory {
+  id                  String                 @id @default(uuid())
+  employeeId          String
+  employee            Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId           String
+  company             Company                @relation(fields: [companyId], references: [id])
+  previousBaseSalary  Float?
+  newBaseSalary       Float?
+  previousAllowances  Float?
+  newAllowances       Float?
+  changeType          CompensationChangeType @default(adjustment)
+  effectiveFrom       DateTime               @default(now())
+  changedAt           DateTime               @default(now())
+  changedById         String?
+  changedBy           User?                  @relation("EmployeeCompensationChangedBy", fields: [changedById], references: [id])
+  notes               String?
+
+  @@index([employeeId, changedAt])
+  @@index([companyId, changedAt])
+  @@map("employee_compensation_history")
+}
+
+model PayrollPeriod {
+  id              String              @id @default(uuid())
+  companyId       String
+  company         Company             @relation(fields: [companyId], references: [id])
+  fiscalYearLabel String              @db.VarChar(20)
+  bsPeriodYear    Int?
+  bsPeriodMonth   Int?
+  bsPeriodMonthLabel String?          @db.VarChar(30)
+  bsStartDate     String?             @db.VarChar(20)
+  bsEndDate       String?             @db.VarChar(20)
+  periodYear      Int
+  periodMonth     Int
+  periodLabel     String              @db.VarChar(50)
+  startDate       DateTime
+  endDate         DateTime
+  status          PayrollPeriodStatus @default(DRAFT)
+  createdById     String?
+  createdBy       User?               @relation("PayrollPeriodCreatedBy", fields: [createdById], references: [id])
+  processedAt     DateTime?
+  finalizedAt     DateTime?
+  finalizedById   String?
+  finalizedBy     User?               @relation("PayrollPeriodFinalizedBy", fields: [finalizedById], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  payslips        Payslip[]
+
+  @@unique([companyId, periodYear, periodMonth])
+  @@index([companyId, fiscalYearLabel])
+  @@index([companyId, status])
+  @@map("payroll_periods")
+}
+
+model Payslip {
+  id                     String        @id @default(uuid())
+  payrollPeriodId        String
+  payrollPeriod          PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  companyId              String
+  company                Company       @relation(fields: [companyId], references: [id])
+  employeeId             String
+  employee               Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  status                 PayslipStatus @default(GENERATED)
+  basicSalary            Float         @default(0)
+  allowances             Float         @default(0)
+  grossSalary            Float         @default(0)
+  ssfEmployeeContribution Float        @default(0)
+  ssfEmployerContribution Float        @default(0)
+  totalSsfContribution    Float        @default(0)
+  projectedAnnualIncome  Float         @default(0)
+  taxableAnnualIncome    Float         @default(0)
+  annualTaxLiability     Float         @default(0)
+  taxPaidToDate          Float         @default(0)
+  monthlyTds             Float         @default(0)
+  taxBreakdown           Json?
+  tdsComputation         Json?
+  netSalary              Float         @default(0)
+  isMarried              Boolean       @default(false)
+  generatedAt            DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  lineItems              PayslipLineItem[]
+
+  @@unique([payrollPeriodId, employeeId])
+  @@index([companyId, employeeId])
+  @@index([companyId, status])
+  @@map("payslips")
+}
+
+model PayslipLineItem {
+  id         String              @id @default(uuid())
+  payslipId  String
+  payslip    Payslip             @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company             @relation(fields: [companyId], references: [id])
+  type       PayslipLineItemType
+  code       String              @db.VarChar(50)
+  title      String              @db.VarChar(120)
+  amount     Float
+  sortOrder  Int                 @default(0)
+  createdAt  DateTime            @default(now())
+
+  @@index([payslipId, sortOrder])
+  @@index([companyId, type])
+  @@map("payslip_line_items")
 }

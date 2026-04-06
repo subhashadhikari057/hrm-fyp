@@ -1,11 +1,19 @@
 {
   "pages": [
+    "architecture-overview",
     "auth-module",
     "user-module",
     "company-module",
     "department-module",
     "designation-module",
     "workshift-module",
-    "attendance-module"
+    "attendance-module",
+    "employee-module",
+    "attendance-regularization-module",
+    "leave-module",
+    "complaint-module",
+    "policy-module",
+    "project-module",
+    "project-kanban-roadmap"
   ]
 }

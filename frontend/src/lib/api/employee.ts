@@ -29,6 +29,8 @@ export interface Employee {
     emergencyContactPhone: string | null;
     imageUrl: string | null;
     baseSalary: number | null;
+    allowances: number | null;
+    isMarried: boolean;
     status: 'active' | 'on_leave' | 'terminated';
     createdAt: string;
     updatedAt: string;
@@ -54,6 +56,26 @@ export interface Employee {
         startTime?: string;
         endTime?: string;
     };
+    compensationHistory?: EmployeeCompensationHistoryRecord[];
+}
+
+export interface EmployeeCompensationHistoryRecord {
+    id: string;
+    employeeId: string;
+    companyId: string;
+    previousBaseSalary: number | null;
+    newBaseSalary: number | null;
+    previousAllowances: number | null;
+    newAllowances: number | null;
+    changeType: 'initial' | 'increment' | 'decrement' | 'adjustment';
+    effectiveFrom: string;
+    changedAt: string;
+    notes: string | null;
+    changedBy?: {
+        id: string;
+        fullName: string | null;
+        email: string;
+    } | null;
 }
 
 export interface EmployeeFilters {
@@ -94,6 +116,8 @@ export interface CreateEmployeeData {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     baseSalary?: number;
+    allowances?: number;
+    isMarried?: boolean;
     image?: File;
 }
 
@@ -117,7 +141,23 @@ export interface UpdateEmployeeData {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     baseSalary?: number;
+    allowances?: number;
+    isMarried?: boolean;
     image?: File;
+}
+
+export interface EmployeeCompensationHistoryResponse {
+    message: string;
+    data: {
+        employee: {
+            id: string;
+            companyId: string;
+            firstName: string;
+            lastName: string;
+            employeeCode: string;
+        };
+        history: EmployeeCompensationHistoryRecord[];
+    };
 }
 
 export interface EmployeeResponse {
@@ -245,6 +285,8 @@ const employeeApi = {
             if (data.emergencyContactName) formData.append('emergencyContactName', data.emergencyContactName);
             if (data.emergencyContactPhone) formData.append('emergencyContactPhone', data.emergencyContactPhone);
             if (data.baseSalary !== undefined) formData.append('baseSalary', data.baseSalary.toString());
+            if (data.allowances !== undefined) formData.append('allowances', data.allowances.toString());
+            if (data.isMarried !== undefined) formData.append('isMarried', String(data.isMarried));
             if (data.image) formData.append('image', data.image);
 
             // For FormData, don't set Content-Type header - browser will set it with boundary
@@ -299,6 +341,8 @@ const employeeApi = {
             if (data.emergencyContactName) formData.append('emergencyContactName', data.emergencyContactName);
             if (data.emergencyContactPhone) formData.append('emergencyContactPhone', data.emergencyContactPhone);
             if (data.baseSalary !== undefined) formData.append('baseSalary', data.baseSalary.toString());
+            if (data.allowances !== undefined) formData.append('allowances', data.allowances.toString());
+            if (data.isMarried !== undefined) formData.append('isMarried', String(data.isMarried));
             if (data.image) formData.append('image', data.image);
 
             // For FormData, don't set Content-Type header
@@ -356,6 +400,48 @@ const employeeApi = {
         try {
             const response = await apiFetch(`${API_BASE_URL}/employees/${id}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw await handleApiError(response);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Response) {
+                throw await handleApiError(error);
+            }
+            throw error;
+        }
+    },
+
+    async getEmployeeCompensationHistory(id: string): Promise<EmployeeCompensationHistoryResponse> {
+        try {
+            const response = await apiFetch(`${API_BASE_URL}/employees/${id}/compensation-history`, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw await handleApiError(response);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Response) {
+                throw await handleApiError(error);
+            }
+            throw error;
+        }
+    },
+
+    async getMyCompensationHistory(): Promise<EmployeeCompensationHistoryResponse> {
+        try {
+            const response = await apiFetch(`${API_BASE_URL}/employees/me/compensation-history`, {
+                method: 'GET',
                 headers: getAuthHeaders(),
                 credentials: 'include',
             });

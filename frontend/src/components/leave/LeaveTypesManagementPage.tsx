@@ -141,6 +141,14 @@ export default function LeaveTypesManagementPage() {
       ),
     },
     {
+      key: 'allocatedDays',
+      header: 'Allocated Days',
+      sortable: false,
+      render: (leaveType) => (
+        <span className="text-gray-700">{leaveType.allocatedDays}</span>
+      ),
+    },
+    {
       key: 'isActive',
       header: 'Status',
       sortable: true,

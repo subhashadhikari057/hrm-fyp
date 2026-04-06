@@ -5,9 +5,9 @@ import DashboardLayout from '../../../../components/DashboardLayout';
 import { PageHeader } from '../../../../components/PageHeader';
 import { regularizationApi, type Regularization, type RegularizationRequestType, type RegularizationStatus } from '../../../../lib/api/regularizations';
 import { Button } from '../../../../components/ui/button';
-import { Input } from '../../../../components/ui/input';
 import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import EmployeeRegularizationRequestModal from '../../../../components/EmployeeRegularizationRequestModal';
 
 const REQUEST_TYPES: { value: RegularizationRequestType; label: string }[] = [
   { value: 'MISSED_CHECKIN', label: 'Missed Check-in' },
@@ -15,6 +15,14 @@ const REQUEST_TYPES: { value: RegularizationRequestType; label: string }[] = [
   { value: 'WRONG_TIME', label: 'Wrong Time' },
   { value: 'FULL_DAY_EDIT', label: 'Full Day Edit' },
 ];
+
+const getTodayKtmDateInput = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kathmandu',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 
 const STATUS_BADGES: Record<RegularizationStatus, string> = {
   PENDING: 'bg-amber-100 text-amber-700',
@@ -52,11 +60,12 @@ export default function EmployeeRegularizationsPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<RegularizationStatus | 'ALL'>('ALL');
+  const [addRequestModalOpen, setAddRequestModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [formDate, setFormDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [formDate, setFormDate] = useState<string>(() => getTodayKtmDateInput());
   const [formCheckIn, setFormCheckIn] = useState<string>('');
   const [formCheckOut, setFormCheckOut] = useState<string>('');
   const [formReason, setFormReason] = useState<string>('');
@@ -91,8 +100,13 @@ export default function EmployeeRegularizationsPage() {
   }, [statusFilter, page, limit]);
 
   const handleCreate = async () => {
+    const todayKtm = getTodayKtmDateInput();
     if (!formReason.trim()) {
       toast.error('Reason is required');
+      return;
+    }
+    if (formDate < todayKtm) {
+      toast.error('Past dates are not allowed for attendance requests');
       return;
     }
     const payload: any = {
@@ -110,6 +124,7 @@ export default function EmployeeRegularizationsPage() {
       setFormReason('');
       setFormCheckIn('');
       setFormCheckOut('');
+      setAddRequestModalOpen(false);
       load();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to submit request');
@@ -134,77 +149,12 @@ export default function EmployeeRegularizationsPage() {
         <PageHeader
           title="Attendance Requests"
           description="Submit and track attendance regularization requests."
+          actions={
+            <Button variant="blue" onClick={() => setAddRequestModalOpen(true)}>
+              Add Attendance Request
+            </Button>
+          }
         />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>New Request</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Date</label>
-                <Input
-                  type="date"
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Request Type</label>
-                <select
-                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={formType}
-                  onChange={(e) => setFormType(e.target.value as RegularizationRequestType)}
-                >
-                  {REQUEST_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Proposed Check-in</label>
-                <Input
-                  type="time"
-                  step="1"
-                  value={formCheckIn}
-                  onChange={(e) => setFormCheckIn(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Proposed Check-out</label>
-                <Input
-                  type="time"
-                  step="1"
-                  value={formCheckOut}
-                  onChange={(e) => setFormCheckOut(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Reason</label>
-              <textarea
-                value={formReason}
-                onChange={(e) => setFormReason(e.target.value)}
-                rows={3}
-                placeholder="Provide a brief reason"
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <Button onClick={handleCreate} disabled={creating}>
-                {creating ? 'Submitting...' : 'Submit Request'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -268,7 +218,7 @@ export default function EmployeeRegularizationsPage() {
                           </td>
                           <td className="px-3 py-2">
                             {r.status === 'PENDING' ? (
-                              <Button variant="outline" size="sm" onClick={() => handleCancel(r.id)}>
+                              <Button variant="red" size="sm" onClick={() => handleCancel(r.id)}>
                                 Cancel
                               </Button>
                             ) : (
@@ -309,6 +259,25 @@ export default function EmployeeRegularizationsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <EmployeeRegularizationRequestModal
+        open={addRequestModalOpen}
+        onOpenChange={setAddRequestModalOpen}
+        creating={creating}
+        requestTypes={REQUEST_TYPES}
+        formDate={formDate}
+        onFormDateChange={setFormDate}
+        minDate={getTodayKtmDateInput()}
+        formType={formType}
+        onFormTypeChange={setFormType}
+        formCheckIn={formCheckIn}
+        onFormCheckInChange={setFormCheckIn}
+        formCheckOut={formCheckOut}
+        onFormCheckOutChange={setFormCheckOut}
+        formReason={formReason}
+        onFormReasonChange={setFormReason}
+        onSubmit={handleCreate}
+      />
     </DashboardLayout>
   );
 }

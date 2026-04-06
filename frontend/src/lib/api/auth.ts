@@ -18,6 +18,15 @@ export interface MeResponse {
   user: BackendUser;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
 export const authApi = {
   /**
    * Login user - sets HttpOnly cookie automatically
@@ -68,6 +77,24 @@ export const authApi = {
       if (response.status === 401) {
         throw new Error('Unauthorized - please login again');
       }
+      await handleApiError(response);
+    }
+
+    return response.json();
+  },
+
+  async changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    const response = await apiFetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
       await handleApiError(response);
     }
 

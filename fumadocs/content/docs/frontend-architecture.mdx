@@ -1,0 +1,87 @@
+---
+title: Frontend Architecture
+---
+
+# Frontend Architecture
+
+## Overview
+
+The frontend is a Next.js App Router application that provides role-based dashboards for `superadmin`, `companyadmin`, `hrmanager`, `manager`, and `employee`. It consumes the backend through typed API wrappers and relies primarily on client-side rendering for authenticated dashboard flows.
+
+## Stack
+
+- **Framework**: Next.js 16
+- **UI**: React 19
+- **Styling**: Tailwind CSS 4
+- **Components**: local UI components with some Radix primitives
+- **Notifications**: `react-hot-toast`
+- **Editor**: Quill for rich text policy editing
+
+## App structure
+
+Main route groups under `frontend/src/app/dashboard`:
+
+- `superadmin`
+- `companyadmin`
+- `hrmanager`
+- `employee`
+- shared pages: `profile`, `settings`
+
+Supporting layers:
+
+- `frontend/src/components` for reusable dashboard and feature components
+- `frontend/src/contexts/AuthContext.tsx` for auth state
+- `frontend/src/contexts/SidebarContext.tsx` for sidebar state
+- `frontend/src/lib/api` for typed backend requests
+
+## Authentication flow
+
+- Login is handled through the backend auth API.
+- Cookies are sent with `credentials: include`.
+- The frontend caches the current user in `sessionStorage`.
+- On `401`, the shared fetch utility attempts `/auth/refresh` and retries once.
+
+Key files:
+
+- `frontend/src/contexts/AuthContext.tsx`
+- `frontend/src/lib/api/types.ts`
+
+## Role routing
+
+Backend roles are mapped to frontend route groups:
+
+- `super_admin` -> `superadmin`
+- `company_admin` -> `companyadmin`
+- `hr_manager` -> `hrmanager`
+- `manager` -> `manager`
+- `employee` -> `employee`
+
+Current dashboard mapping sends `manager` users to the employee dashboard route for now.
+
+## Current implementation status
+
+- `companyadmin` is the most complete dashboard area.
+- `employee` has working attendance, leave, policy, project, and complaint pages.
+- `superadmin` supports companies, users, and company admins.
+- `hrmanager` has partial coverage and still links to some routes that are not implemented.
+
+Known navigation gaps at the time of writing:
+
+- `/dashboard/hrmanager/employees`
+- `/dashboard/hrmanager/departments`
+- `/dashboard/hrmanager/designations`
+- `/dashboard/hrmanager/shifts`
+- `/dashboard/superadmin/logs`
+- `/dashboard/superadmin/reports`
+- `/dashboard/employee/payslips`
+
+## API layer conventions
+
+- All feature APIs live in `frontend/src/lib/api`.
+- They use a shared `apiFetch` helper with refresh-token retry behavior.
+- Most responses follow backend conventions such as `{ message, data }` or `{ message, data, meta }`.
+
+## Notes
+
+- Most dashboard protection is client-side rather than server-side route middleware.
+- Reusable feature UI is implemented mostly in component folders such as `project`, `policy`, `leave`, and `complaint`.

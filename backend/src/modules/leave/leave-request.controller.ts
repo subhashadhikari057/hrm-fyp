@@ -44,6 +44,13 @@ export class LeaveRequestEmployeeController {
     return this.leaveService.findMyRequests(filter, req.user);
   }
 
+  @Get('me/stats')
+  @Roles('employee', 'manager', 'hr_manager', 'company_admin')
+  @ApiOperation({ summary: 'Get my leave allocation and usage stats' })
+  async getMyStats(@Request() req: any) {
+    return this.leaveService.getMyLeaveStats(req.user);
+  }
+
   @Get('me/:id')
   @Roles('employee', 'manager', 'hr_manager', 'company_admin')
   @ApiOperation({ summary: 'Get my leave request by ID' })

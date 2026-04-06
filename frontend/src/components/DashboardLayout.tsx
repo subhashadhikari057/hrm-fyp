@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import Sidebar, { getMenuItemsForRole } from './Sidebar';
+import { policyApi, type PendingPolicy } from '../lib/api/policy';
+import { PolicyAcceptanceModal } from './policy/PolicyAcceptanceModal';
+import { AppBreadcrumbs, BreadcrumbProvider } from './AppBreadcrumbs';
+import toast from 'react-hot-toast';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -15,6 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [todayLabel, setTodayLabel] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [policyCheckLoading, setPolicyCheckLoading] = useState(false);
+  const [pendingPolicy, setPendingPolicy] = useState<PendingPolicy | null>(null);
+  const [acceptingPolicy, setAcceptingPolicy] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +42,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, isLoading, router]);
 
   useEffect(() => {
+    const checkPendingPolicy = async () => {
+      if (!user || !(user.role === 'employee' || user.role === 'manager')) {
+        setPendingPolicy(null);
+        return;
+      }
+
+      setPolicyCheckLoading(true);
+      try {
+        const response = await policyApi.getPendingPolicy();
+        setPendingPolicy(response.data || null);
+      } catch {
+        setPendingPolicy(null);
+      } finally {
+        setPolicyCheckLoading(false);
+      }
+    };
+
+    checkPendingPolicy();
+  }, [user]);
+
+  useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
@@ -47,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   // Get menu items for search
-  const menuItems = user ? getMenuItemsForRole(user.role) : [];
+  const menuItems = user ? getMenuItemsForRole(user.role, user) : [];
 
   // Filter menu items based on search query
   const searchResults = searchQuery.trim()
@@ -114,6 +142,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     } catch (error) {
       console.error('Failed to toggle fullscreen:', error);
+    }
+  };
+
+  const handleAcceptPolicy = async () => {
+    setAcceptingPolicy(true);
+    try {
+      await policyApi.acceptPolicy();
+      setPendingPolicy(null);
+      toast.success('Policy accepted successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to accept policy';
+      toast.error(message);
+    } finally {
+      setAcceptingPolicy(false);
     }
   };
 
@@ -259,9 +301,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main Content */}
         <main className="px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
-          {children}
+          <BreadcrumbProvider>
+            <AppBreadcrumbs />
+            {children}
+          </BreadcrumbProvider>
         </main>
       </div>
+
+      <PolicyAcceptanceModal
+        open={!policyCheckLoading && !!pendingPolicy}
+        policy={pendingPolicy}
+        loading={acceptingPolicy}
+        onAccept={handleAcceptPolicy}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, MaxLength, Matches, IsInt, IsDate } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, MaxLength, Matches, IsInt, IsDate, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SubscriptionStatus } from '@prisma/client';
 
 export class CreateCompanyWithAdminDto {
   @ApiProperty({
@@ -110,4 +111,25 @@ export class CreateCompanyWithAdminDto {
   @IsInt()
   @IsNotEmpty()
   maxEmployees: number;
+
+  @ApiPropertyOptional({ description: 'Assigned subscription plan ID', example: 'subscription-plan-id' })
+  @IsOptional()
+  @IsString()
+  subscriptionPlanId?: string;
+
+  @ApiPropertyOptional({ enum: SubscriptionStatus, description: 'Subscription status', example: SubscriptionStatus.active })
+  @IsOptional()
+  @IsEnum(SubscriptionStatus)
+  subscriptionStatus?: SubscriptionStatus;
+
+  @ApiPropertyOptional({ enum: ['trial', 'monthly', 'yearly'], description: 'Subscription billing type' })
+  @IsOptional()
+  @IsString()
+  subscriptionBillingType?: 'trial' | 'monthly' | 'yearly';
+
+  @ApiPropertyOptional({ description: 'Number of trial days when billing type is trial', example: 30 })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  trialDays?: number;
 }

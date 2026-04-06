@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { superadminApi, type UpdateUserRequest, type BackendUserRole, type User } from '../lib/api/superadmin';
-import { companyApi, type Company } from '../lib/api/company';
 import { API_BASE_URL } from '../lib/api/types';
 import {
   Dialog,
@@ -40,6 +39,7 @@ export function UpdateUserModal({
   title = 'Update User',
   submitLabel = 'Update User',
 }: UpdateUserModalProps) {
+  const [userRecord, setUserRecord] = useState<User | null>(null);
   const [formData, setFormData] = useState<UpdateUserRequest>({
     email: '',
     fullName: '',
@@ -49,17 +49,14 @@ export function UpdateUserModal({
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadingCompanies, setLoadingCompanies] = useState(false);
 
-  // Fetch user data and companies when modal opens
+  // Fetch user data when modal opens
   useEffect(() => {
     if (isOpen && userId) {
       fetchUserData();
-      fetchCompanies();
     }
   }, [isOpen, userId]);
 
@@ -71,6 +68,7 @@ export function UpdateUserModal({
     try {
       const response = await superadminApi.getUserById(userId);
       const user = response.data;
+      setUserRecord(user);
       
       setFormData({
         email: user.email || '',
@@ -90,18 +88,6 @@ export function UpdateUserModal({
       console.error('Error fetching user:', err);
     } finally {
       setLoadingUser(false);
-    }
-  };
-
-  const fetchCompanies = async () => {
-    setLoadingCompanies(true);
-    try {
-      const response = await companyApi.getCompanies();
-      setCompanies(response.data);
-    } catch (err) {
-      console.error('Failed to fetch companies:', err);
-    } finally {
-      setLoadingCompanies(false);
     }
   };
 
@@ -181,16 +167,17 @@ export function UpdateUserModal({
     setAvatarFile(null);
     setAvatarPreview(null);
     setError(null);
+    setUserRecord(null);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -203,7 +190,23 @@ export function UpdateUserModal({
                 <span className="ml-3 text-gray-600">Loading user data...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <p className="text-sm font-medium text-gray-900">Account Overview</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                    <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200">
+                      Role: {USER_ROLES.find((role) => role.value === formData.role)?.label || 'User'}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200">
+                      Status: {formData.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-gray-200">
+                      Company: {userRecord?.company?.name || 'No company'}
+                    </span>
+                  </div>
+                </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Email */}
                 <div className="md:col-span-2">
                   <Label htmlFor="email">Email</Label>
@@ -246,9 +249,7 @@ export function UpdateUserModal({
 
                 {/* Role */}
                 <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                    Role
-                  </label>
+                  <Label htmlFor="role">Role</Label>
                   <select
                     id="role"
                     name="role"
@@ -298,33 +299,36 @@ export function UpdateUserModal({
                 </div>
 
                 {/* Active Status */}
-                <div className="md:col-span-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-700">
-                    Active Account
+                <div className="md:col-span-2 rounded-xl border border-gray-200 bg-white px-4 py-3">
+                  <label htmlFor="isActive" className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      name="isActive"
+                      checked={formData.isActive}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-900">Active Account</span>
+                      <span className="block text-xs text-gray-500">
+                        Disable this to prevent the user from signing in.
+                      </span>
+                    </span>
                   </label>
                 </div>
               </div>
+              </div>
             )}
 
-            {/* Actions */}
-            <div className="pt-6">
-              <DialogFooter>
-                <Button type="button" variant="cancel" onClick={handleClose} disabled={loading || loadingUser}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="blue" disabled={loading || loadingUser}>
-                  {loading ? 'Updating...' : submitLabel}
-                </Button>
-              </DialogFooter>
-            </div>
+            <DialogFooter>
+              <Button type="button" variant="cancel" onClick={handleClose} disabled={loading || loadingUser}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="blue" disabled={loading || loadingUser}>
+                {loading ? 'Updating...' : submitLabel}
+              </Button>
+            </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

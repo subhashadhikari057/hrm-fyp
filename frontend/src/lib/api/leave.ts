@@ -1,6 +1,7 @@
 import { API_BASE_URL, apiFetch, getAuthHeaders, handleApiError } from './types';
 
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type HalfDaySession = 'FIRST_HALF' | 'SECOND_HALF';
 
 export interface LeaveType {
   id: string;
@@ -8,6 +9,7 @@ export interface LeaveType {
   name: string;
   code?: string | null;
   description?: string | null;
+  allocatedDays: number;
   isActive: boolean;
   createdAt: string;
   updatedAt?: string | null;
@@ -21,6 +23,8 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   totalDays: number;
+  isHalfDay?: boolean;
+  halfDaySession?: HalfDaySession | null;
   reason: string;
   status: LeaveStatus;
   createdById?: string | null;
@@ -71,6 +75,22 @@ export interface LeaveRequestListResponse {
     hasNextPage?: boolean;
     hasPreviousPage?: boolean;
   };
+}
+
+export interface LeaveStatsItem {
+  leaveTypeId: string;
+  leaveTypeName: string;
+  leaveTypeCode?: string | null;
+  isActive: boolean;
+  allocatedDays: number;
+  usedDays: number;
+  pendingDays: number;
+  remainingDays: number;
+}
+
+export interface LeaveStatsResponse {
+  message: string;
+  data: LeaveStatsItem[];
 }
 
 export interface FilterLeaveTypesParams {
@@ -137,6 +157,7 @@ export const leaveApi = {
     name: string;
     code?: string;
     description?: string;
+    allocatedDays: number;
     isActive?: boolean;
   }): Promise<LeaveTypeResponse> {
     const response = await apiFetch(`${API_BASE_URL}/leave/types`, {
@@ -155,7 +176,13 @@ export const leaveApi = {
 
   async updateLeaveType(
     id: string,
-    payload: { name?: string; code?: string; description?: string; isActive?: boolean },
+    payload: {
+      name?: string;
+      code?: string;
+      description?: string;
+      allocatedDays?: number;
+      isActive?: boolean;
+    },
   ): Promise<LeaveTypeResponse> {
     const response = await apiFetch(`${API_BASE_URL}/leave/types/${id}`, {
       method: 'PATCH',
@@ -191,6 +218,8 @@ export const leaveApi = {
     endDate: string;
     reason: string;
     employeeId?: string;
+    isHalfDay?: boolean;
+    halfDaySession?: HalfDaySession;
   }): Promise<LeaveRequestResponse> {
     const response = await apiFetch(`${API_BASE_URL}/leave/requests`, {
       method: 'POST',
@@ -208,6 +237,7 @@ export const leaveApi = {
 
   async listMy(params?: {
     status?: LeaveStatus;
+    leaveTypeId?: string;
     dateFrom?: string;
     dateTo?: string;
     page?: number;
@@ -215,6 +245,7 @@ export const leaveApi = {
   }): Promise<LeaveRequestListResponse> {
     const query = new URLSearchParams();
     if (params?.status) query.append('status', params.status);
+    if (params?.leaveTypeId) query.append('leaveTypeId', params.leaveTypeId);
     if (params?.dateFrom) query.append('dateFrom', params.dateFrom);
     if (params?.dateTo) query.append('dateTo', params.dateTo);
     if (params?.page) query.append('page', String(params.page));
@@ -296,6 +327,20 @@ export const leaveApi = {
   async cancel(id: string): Promise<LeaveRequestResponse> {
     const response = await apiFetch(`${API_BASE_URL}/leave/requests/me/${id}/cancel`, {
       method: 'PATCH',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    return response.json();
+  },
+
+  async getMyStats(): Promise<LeaveStatsResponse> {
+    const response = await apiFetch(`${API_BASE_URL}/leave/requests/me/stats`, {
+      method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
     });

@@ -5,17 +5,31 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../lib/api/types';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface MenuItem {
   name: string;
   href: string;
   icon: React.ReactNode;
   children?: MenuItem[];
+  requiredFeature?: string;
 }
 
 interface MenuGroup {
   title: string;
   items: MenuItem[];
+}
+
+interface SidebarUser {
+  role: string;
+  company?: {
+    planExpiresAt?: string | null;
+    subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+    subscriptionPlan?: {
+      isActive: boolean;
+      features?: string[] | null;
+    } | null;
+  } | null;
 }
 
 /** -------------------------------------------------------
@@ -87,6 +101,17 @@ const IconClock = (
   </svg>
 );
 
+const IconChat = (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.94 9.94 0 01-4.255-.949L3 20l1.244-3.728C3.458 15.096 3 13.594 3 12 3 7.582 7.03 4 12 4s9 3.582 9 8z"
+    />
+  </svg>
+);
+
 /** -------------------------------------------------------
  *  ROLE-BASED MENU STRUCTURE (Menu + Submenu)
  *  ----------------------------------------------------- */
@@ -111,6 +136,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Company Admin', href: '/dashboard/superadmin/company-admins', icon: IconBriefcase },
           ],
         },
+        { name: 'Subscription Plans', href: '/dashboard/superadmin/subscription-plans', icon: IconBriefcase },
       ],
     },
   ],
@@ -152,21 +178,27 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
               name: 'Attendance',
               href: '/dashboard/companyadmin/attendance',
               icon: IconCalendar,
+              requiredFeature: 'attendance',
               children: [
-                { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar },
-                { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock },
-                { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock },
+                { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+                { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock, requiredFeature: 'attendance' },
+                { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock, requiredFeature: 'attendance' },
               ],
             },
             {
               name: 'Leave',
               href: '/dashboard/companyadmin/leave-requests',
               icon: IconCalendar,
+              requiredFeature: 'leave',
               children: [
-                { name: 'Leave Requests', href: '/dashboard/companyadmin/leave-requests', icon: IconCalendar },
-                { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock },
+                { name: 'Leave Requests', href: '/dashboard/companyadmin/leave-requests', icon: IconCalendar, requiredFeature: 'leave' },
+                { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock, requiredFeature: 'leave' },
               ],
             },
+            { name: 'Payroll', href: '/dashboard/companyadmin/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
+            { name: 'Projects', href: '/dashboard/companyadmin/projects', icon: IconBriefcase, requiredFeature: 'projects' },
+            { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat, requiredFeature: 'complaints' },
+            { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase, requiredFeature: 'policy' },
           ],
         },
       ],
@@ -177,21 +209,54 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       items: [{ name: 'Dashboard', href: '/dashboard/hrmanager', icon: IconDashboard }],
     },
     {
-      title: 'HR',
+      title: 'Organization',
       items: [
-        { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
-        { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
-        { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
-        { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock },
+        {
+          name: 'People',
+          href: '/dashboard/hrmanager/employees',
+          icon: IconUsers,
+          children: [
+            { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
+          ],
+        },
+        {
+          name: 'Structure',
+          href: '/dashboard/hrmanager/departments',
+          icon: IconCompany,
+          children: [
+            { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
+            { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Operations',
+      items: [
+        {
+          name: 'Attendance',
+          href: '/dashboard/hrmanager/attendance',
+          icon: IconCalendar,
+          requiredFeature: 'attendance',
+          children: [
+            { name: 'Attendance', href: '/dashboard/hrmanager/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'Attendance Requests', href: '/dashboard/hrmanager/regularizations', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock, requiredFeature: 'attendance' },
+          ],
+        },
         {
           name: 'Leave',
           href: '/dashboard/hrmanager/leave-requests',
           icon: IconCalendar,
+          requiredFeature: 'leave',
           children: [
-            { name: 'Leave Requests', href: '/dashboard/hrmanager/leave-requests', icon: IconCalendar },
-            { name: 'Leave Types', href: '/dashboard/hrmanager/leave-types', icon: IconClock },
+            { name: 'Leave Requests', href: '/dashboard/hrmanager/leave-requests', icon: IconCalendar, requiredFeature: 'leave' },
+            { name: 'Leave Types', href: '/dashboard/hrmanager/leave-types', icon: IconClock, requiredFeature: 'leave' },
           ],
         },
+        { name: 'Payroll', href: '/dashboard/hrmanager/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
+        { name: 'Projects', href: '/dashboard/hrmanager/projects', icon: IconBriefcase, requiredFeature: 'projects' },
+        { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat, requiredFeature: 'complaints' },
       ],
     },
   ],
@@ -208,12 +273,26 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           name: 'Attendance',
           href: '/dashboard/employee/attendance',
           icon: IconCalendar,
+          requiredFeature: 'attendance',
           children: [
-            { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar },
-            { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock },
+            { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock, requiredFeature: 'attendance' },
           ],
         },
-        { name: 'My Leave', href: '/dashboard/employee/leave', icon: IconCalendar },
+        {
+          name: 'Leave',
+          href: '/dashboard/employee/leave',
+          icon: IconCalendar,
+          requiredFeature: 'leave',
+          children: [
+            { name: 'Leave Requests', href: '/dashboard/employee/leave', icon: IconCalendar, requiredFeature: 'leave' },
+            { name: 'Leave Usages', href: '/dashboard/employee/leave-usages', icon: IconClock, requiredFeature: 'leave' },
+          ],
+        },
+        { name: 'Payslips', href: '/dashboard/employee/payslips', icon: IconBriefcase, requiredFeature: 'payroll' },
+        { name: 'Projects', href: '/dashboard/employee/projects', icon: IconBriefcase, requiredFeature: 'projects' },
+        { name: 'Complaints', href: '/dashboard/employee/complaints', icon: IconChat, requiredFeature: 'complaints' },
+        { name: 'Policy', href: '/dashboard/employee/policy', icon: IconBriefcase, requiredFeature: 'policy' },
       ],
     },
   ],
@@ -226,9 +305,69 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
   ],
 };
 
+function buildMenuGroupsForUser(user?: SidebarUser | null): MenuGroup[] {
+  if (!user) return [];
+
+  const hasFeatureAccess = (feature?: string) => {
+    if (!feature) return true;
+    if (user.role === 'superadmin') return true;
+
+    const company = user.company;
+    if (!company) return false;
+
+    if (company.subscriptionStatus === 'expired' || company.subscriptionStatus === 'cancelled') {
+      return false;
+    }
+
+    if (company.planExpiresAt && new Date(company.planExpiresAt) < new Date()) {
+      return false;
+    }
+
+    if (company.subscriptionPlan && !company.subscriptionPlan.isActive) {
+      return false;
+    }
+
+    const features = Array.isArray(company.subscriptionPlan?.features)
+      ? company.subscriptionPlan.features
+      : [];
+
+    if (features.length === 0) {
+      return true;
+    }
+
+    return features.includes(feature);
+  };
+
+  const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
+    return items.reduce<MenuItem[]>((acc, item) => {
+      if (!hasFeatureAccess(item.requiredFeature)) {
+        return acc;
+      }
+
+      const nextChildren = item.children ? filterMenuItems(item.children) : undefined;
+      if (item.children && (!nextChildren || nextChildren.length === 0)) {
+        return acc;
+      }
+
+      acc.push({
+        ...item,
+        children: nextChildren,
+      });
+      return acc;
+    }, []);
+  };
+
+  return (roleMenuItems[user.role] || roleMenuItems.employee)
+    .map((group) => ({
+      ...group,
+      items: filterMenuItems(group.items),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 // Export flat menu items for compatibility (if you need it elsewhere)
-export function getMenuItemsForRole(role: string): MenuItem[] {
-  const groups = roleMenuItems[role] || roleMenuItems.employee;
+export function getMenuItemsForRole(role: string, user?: SidebarUser | null): MenuItem[] {
+  const groups = buildMenuGroupsForUser(user ?? { role });
   return groups.flatMap((g) => g.items);
 }
 
@@ -239,6 +378,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Track which submenu is open
   const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
@@ -270,8 +410,7 @@ export default function Sidebar() {
   }, [toggleSidebar]);
 
   const groups: MenuGroup[] = useMemo(() => {
-    if (!user) return [];
-    return roleMenuItems[user.role] || roleMenuItems.employee;
+    return buildMenuGroupsForUser(user);
   }, [user]);
 
   // Flat items used by your old isActive logic (keeps behavior same)
@@ -373,25 +512,30 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-40 h-screen border-r border-slate-200 bg-slate-50/95 backdrop-blur transition-transform duration-300 ease-in-out ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${isCollapsed ? 'w-16' : 'w-64'}`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-<div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 shrink-0">            {!isCollapsed ? (
+          <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4 shrink-0">
+            {!isCollapsed ? (
               <>
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <img
                     src="/logo/logo2.png"
                     alt="Karyasetu logo"
-                    className="h-30 w-30 object-contain"
+                    className="h-16 w-auto max-w-[220px] object-contain"
                   />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">Karyasetu</p>
+                    <p className="truncate text-xs text-slate-500">HR workspace</p>
+                  </div>
                 </div>
 
                 <button
                   onClick={toggleSidebar}
-                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="hidden lg:flex rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 flex-shrink-0"
                   aria-label="Collapse sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,7 +548,7 @@ export default function Sidebar() {
                 <div className="flex items-center justify-center flex-1" />
                 <button
                   onClick={toggleSidebar}
-                  className="hidden lg:flex p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="hidden lg:flex rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 flex-shrink-0"
                   aria-label="Expand sidebar"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,7 +561,7 @@ export default function Sidebar() {
             {/* Close mobile */}
             <button
               onClick={closeMobileMenu}
-              className="ml-auto lg:hidden p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="ml-auto rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 lg:hidden flex-shrink-0"
               aria-label="Close menu"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,11 +571,11 @@ export default function Sidebar() {
           </div>
 
           {/* Menu */}
-          <nav className={`flex-1 px-2 sm:px-3 lg:px-4 py-3 sm:py-4 space-y-4 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          <nav className={`flex-1 space-y-5 overflow-y-auto px-2 py-4 sm:px-3 lg:px-4 ${isCollapsed ? 'px-2' : ''}`}>
             {groups.map((group) => (
               <div key={group.title} className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
+                  <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     {group.title}
                   </div>
                 )}
@@ -447,12 +591,12 @@ export default function Sidebar() {
                   return (
                     <div key={item.name} className="space-y-1">
                       <div
-                        className={`w-full flex items-center rounded-lg text-sm font-medium transition-colors ${
-                          isCollapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5'
+                        className={`w-full flex items-center rounded-xl text-sm font-medium transition-all ${
+                          isCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5'
                         } ${
                           isActive(item.href) || childActive
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-blue-100 text-blue-800 shadow-sm ring-1 ring-blue-200'
+                            : 'text-slate-700 hover:bg-white hover:text-slate-900'
                         }`}
                         title={isCollapsed ? item.name : undefined}
                       >
@@ -472,7 +616,7 @@ export default function Sidebar() {
                               e.stopPropagation();
                               toggleSubmenu(item.href);
                             }}
-                            className="ml-2 p-1 rounded hover:bg-black/5 transition-colors"
+                            className="ml-2 rounded-md p-1 transition-colors hover:bg-black/5"
                             aria-label={expanded ? 'Collapse submenu' : 'Expand submenu'}
                           >
                             <svg
@@ -489,18 +633,18 @@ export default function Sidebar() {
 
                       {/* Submenu */}
                       {!isCollapsed && hasChildren && expanded && (
-                        <div className="ml-2 pl-3 border-l border-gray-200 space-y-1">
+                        <div className="ml-4 space-y-1 border-l border-slate-200 pl-3">
                           {item.children!.map((child) => (
                             <button
                               key={child.name}
                               onClick={() => handleNavigation(child.href)}
-                              className={`w-full flex items-center rounded-lg text-sm transition-colors px-3 py-2 ${
+                              className={`w-full flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
                                 isActive(child.href)
                                   ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-600 hover:bg-gray-100'
+                                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
                               }`}
                             >
-                              <span className="mr-2.5 flex-shrink-0 opacity-80">{child.icon}</span>
+                              <span className="mr-2.5 flex-shrink-0 opacity-70">{child.icon}</span>
                               <span className="truncate">{child.name}</span>
                             </button>
                           ))}
@@ -515,11 +659,11 @@ export default function Sidebar() {
 
           {/* User */}
           {user && (
-            <div className={`border-t border-gray-200 ${isCollapsed ? 'px-2 py-3' : 'px-3 py-4'}`}>
+            <div className={`border-t border-slate-200 ${isCollapsed ? 'px-2 py-3' : 'px-3 py-4'}`}>
               <div className="relative">
                 <button
                   onClick={() => setShowProfileMenu((prev) => !prev)}
-                  className={`w-full flex items-center rounded-lg transition-colors hover:bg-gray-100 ${
+                  className={`w-full flex items-center rounded-xl border border-transparent transition-colors hover:border-slate-200 hover:bg-white ${
                     isCollapsed ? 'justify-center px-2 py-2' : 'px-3 py-2.5'
                   }`}
                 >
@@ -527,10 +671,10 @@ export default function Sidebar() {
                     <img
                       src={avatarUrl}
                       alt={user.name || user.email}
-                      className="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200 flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#5974E6] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[#5974E6] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
                       {getInitials(user.email)}
                     </div>
                   )}
@@ -538,14 +682,14 @@ export default function Sidebar() {
                   {!isCollapsed && (
                     <>
                       <div className="ml-3 text-left min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-sm font-medium text-slate-900 truncate">
                           {user.name || user.email.split('@')[0]}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">{roleLabels[user.role]}</div>
+                        <div className="text-xs text-slate-500 truncate">{roleLabels[user.role]}</div>
                       </div>
 
                       <svg
-                        className={`w-4 h-4 text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 text-slate-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -562,15 +706,15 @@ export default function Sidebar() {
                     <div
                       className={`absolute z-20 ${
                         isCollapsed ? 'left-14 bottom-0' : 'left-0 bottom-12 w-full'
-                      } bg-white rounded-lg shadow-lg border border-gray-200`}
+                      } rounded-xl border border-slate-200 bg-white shadow-lg`}
                     >
                       <div className="py-1">
                         {!isCollapsed && (
-                          <div className="px-4 py-2 border-b border-gray-200">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                          <div className="border-b border-slate-200 px-4 py-2">
+                            <p className="text-sm font-medium text-slate-900 truncate">
                               {user.name || user.email.split('@')[0]}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            <p className="text-xs text-slate-500 truncate">{user.email}</p>
                           </div>
                         )}
 
@@ -580,26 +724,26 @@ export default function Sidebar() {
                             setShowProfileMenu(false);
                             closeMobileMenu();
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                         >
                           Profile
                         </button>
 
                         <button
                           onClick={() => {
-                            router.push('/dashboard/settings');
+                            setIsChangePasswordOpen(true);
                             setShowProfileMenu(false);
                             closeMobileMenu();
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                         >
-                          Settings
+                          Change Password
                         </button>
 
-                        <div className="border-t border-gray-200">
+                        <div className="border-t border-slate-200">
                           <button
                             onClick={handleLogout}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
                           >
                             Logout
                           </button>
@@ -613,6 +757,10 @@ export default function Sidebar() {
           )}
         </div>
       </aside>
+      <ChangePasswordModal
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </>
   );
 }
