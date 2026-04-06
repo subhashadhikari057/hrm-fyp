@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   // Get menu items for search
-  const menuItems = user ? getMenuItemsForRole(user.role) : [];
+  const menuItems = user ? getMenuItemsForRole(user.role, user) : [];
 
   // Filter menu items based on search query
   const searchResults = searchQuery.trim()

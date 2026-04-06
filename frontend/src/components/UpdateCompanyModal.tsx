@@ -81,7 +81,7 @@ export function UpdateCompanyModal({
             });
             setLogoFile(null);
             setLogoPreview(company.logoUrl ? `${API_BASE_URL}/uploads/${company.logoUrl}` : null);
-        } catch (error) {
+        } catch {
             toast.error('Failed to load company data');
             onClose();
         } finally {
@@ -179,17 +179,16 @@ export function UpdateCompanyModal({
             if (formData.maxEmployees !== undefined && formData.maxEmployees > 0) {
                 updateData.maxEmployees = formData.maxEmployees;
             }
-            if ((formData as any).subscriptionPlanId) updateData.subscriptionPlanId = (formData as any).subscriptionPlanId;
-            if ((formData as any).subscriptionStatus) updateData.subscriptionStatus = (formData as any).subscriptionStatus;
+            if (formData.subscriptionPlanId) updateData.subscriptionPlanId = formData.subscriptionPlanId;
+            if (formData.subscriptionStatus) updateData.subscriptionStatus = formData.subscriptionStatus;
             if (logoFile) updateData.logo = logoFile;
 
             await companyApi.updateCompany(companyId, updateData);
 
-            toast.success('Company updated successfully');
             onSuccess();
             onClose();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update company');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to update company');
         } finally {
             setLoading(false);
         }
@@ -197,11 +196,11 @@ export function UpdateCompanyModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-h-[80vh] max-w-xl overflow-y-auto">
+            <DialogContent className="max-w-xl">
                 <DialogHeader>
                     <DialogTitle>Update Company</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="space-y-6">
                         {fetchingCompany ? (
                             <div className="flex justify-center items-center py-12">
                                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
@@ -387,7 +386,7 @@ export function UpdateCompanyModal({
                                         <select
                                             id="subscriptionPlanId"
                                             name="subscriptionPlanId"
-                                            value={(formData as any).subscriptionPlanId || ''}
+                                            value={formData.subscriptionPlanId || ''}
                                             onChange={handleInputChange}
                                             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                                         >
@@ -398,9 +397,9 @@ export function UpdateCompanyModal({
                                                 </option>
                                             ))}
                                         </select>
-                                        {(formData as any).subscriptionPlanId ? (
+                                        {formData.subscriptionPlanId ? (
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Selected plan: {plans.find((plan) => plan.id === (formData as any).subscriptionPlanId)?.name || companyRecord?.subscriptionPlan?.name || 'Assigned plan'}
+                                                Selected plan: {plans.find((plan) => plan.id === formData.subscriptionPlanId)?.name || companyRecord?.subscriptionPlan?.name || 'Assigned plan'}
                                             </p>
                                         ) : null}
                                     </div>
@@ -409,7 +408,7 @@ export function UpdateCompanyModal({
                                         <select
                                             id="subscriptionStatus"
                                             name="subscriptionStatus"
-                                            value={(formData as any).subscriptionStatus || 'active'}
+                                            value={formData.subscriptionStatus || 'active'}
                                             onChange={handleInputChange}
                                             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                                         >
@@ -423,20 +422,18 @@ export function UpdateCompanyModal({
                             </div>
                         )}
 
-                        <div className="pt-6">
-                            <DialogFooter>
-                                <Button type="button" variant="cancel" onClick={onClose} disabled={loading}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    variant="blue"
-                                    disabled={loading || fetchingCompany}
-                                >
-                                    {loading ? 'Updating...' : 'Update Company'}
-                                </Button>
-                            </DialogFooter>
-                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="cancel" onClick={onClose} disabled={loading}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="blue"
+                                disabled={loading || fetchingCompany}
+                            >
+                                {loading ? 'Updating...' : 'Update Company'}
+                            </Button>
+                        </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>

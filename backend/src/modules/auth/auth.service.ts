@@ -168,6 +168,17 @@ export class AuthService {
             id: true,
             status: true,
             name: true,
+            planExpiresAt: true,
+            subscriptionStatus: true,
+            subscriptionPlan: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                isActive: true,
+                features: true,
+              },
+            },
           },
         },
       },
@@ -213,6 +224,7 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       isActive: user.isActive,
       createdAt: user.createdAt,
+      company: user.company,
     };
   }
 
@@ -410,6 +422,17 @@ export class AuthService {
             id: true,
             status: true,
             name: true,
+            planExpiresAt: true,
+            subscriptionStatus: true,
+            subscriptionPlan: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                isActive: true,
+                features: true,
+              },
+            },
           },
         },
       },

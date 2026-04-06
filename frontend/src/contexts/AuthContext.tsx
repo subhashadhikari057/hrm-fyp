@@ -14,6 +14,20 @@ interface User {
   fullName?: string | null;
   companyId?: string | null;
   avatarUrl?: string | null;
+  company?: {
+    id: string;
+    status: string;
+    name: string;
+    planExpiresAt?: string | null;
+    subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+    subscriptionPlan?: {
+      id: string;
+      name: string;
+      code: string;
+      isActive: boolean;
+      features?: string[] | null;
+    } | null;
+  } | null;
 }
 
 interface AuthContextType {
@@ -44,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fullName: backendUser.fullName,
       companyId: backendUser.companyId || undefined,
       avatarUrl: backendUser.avatarUrl || undefined,
+      company: backendUser.company || null,
     };
   };
 
