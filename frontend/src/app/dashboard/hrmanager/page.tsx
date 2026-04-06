@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ClipboardCheck, Clock, Star, UserPlus, Users, UsersRound } from 'lucide-react';
+import { CalendarCheck, ClipboardCheck, Clock, DollarSign, UserPlus, Users, UsersRound } from 'lucide-react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import { StatsGrid } from '../../../components/StatsGrid';
 import { PageHeader } from '../../../components/PageHeader';
@@ -114,12 +114,20 @@ export default function HRManagerDashboard() {
               color: 'green',
             },
             {
-              label: 'Employee Reviews',
-              href: '/dashboard/hrmanager/reviews',
+              label: 'Attendance',
+              href: '/dashboard/hrmanager/attendance',
               icon: (
-                <Star className="h-full w-full" />
+                <CalendarCheck className="h-full w-full" />
               ),
               color: 'purple',
+            },
+            {
+              label: 'Payroll',
+              href: '/dashboard/hrmanager/payroll',
+              icon: (
+                <DollarSign className="h-full w-full" />
+              ),
+              color: 'yellow',
             },
           ]}
         />

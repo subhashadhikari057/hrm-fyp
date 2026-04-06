@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../lib/api/types';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface MenuItem {
   name: string;
@@ -208,12 +209,41 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       items: [{ name: 'Dashboard', href: '/dashboard/hrmanager', icon: IconDashboard }],
     },
     {
-      title: 'HR',
+      title: 'Organization',
       items: [
-        { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
-        { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
-        { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
-        { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock, requiredFeature: 'attendance' },
+        {
+          name: 'People',
+          href: '/dashboard/hrmanager/employees',
+          icon: IconUsers,
+          children: [
+            { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
+          ],
+        },
+        {
+          name: 'Structure',
+          href: '/dashboard/hrmanager/departments',
+          icon: IconCompany,
+          children: [
+            { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
+            { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Operations',
+      items: [
+        {
+          name: 'Attendance',
+          href: '/dashboard/hrmanager/attendance',
+          icon: IconCalendar,
+          requiredFeature: 'attendance',
+          children: [
+            { name: 'Attendance', href: '/dashboard/hrmanager/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'Attendance Requests', href: '/dashboard/hrmanager/regularizations', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock, requiredFeature: 'attendance' },
+          ],
+        },
         {
           name: 'Leave',
           href: '/dashboard/hrmanager/leave-requests',
@@ -227,7 +257,6 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
         { name: 'Payroll', href: '/dashboard/hrmanager/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
         { name: 'Projects', href: '/dashboard/hrmanager/projects', icon: IconBriefcase, requiredFeature: 'projects' },
         { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat, requiredFeature: 'complaints' },
-        { name: 'Policy Hub', href: '/dashboard/hrmanager/policies', icon: IconBriefcase, requiredFeature: 'policy' },
       ],
     },
   ],
@@ -349,6 +378,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Track which submenu is open
   const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
@@ -701,13 +731,13 @@ export default function Sidebar() {
 
                         <button
                           onClick={() => {
-                            router.push('/dashboard/settings');
+                            setIsChangePasswordOpen(true);
                             setShowProfileMenu(false);
                             closeMobileMenu();
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                         >
-                          Settings
+                          Change Password
                         </button>
 
                         <div className="border-t border-slate-200">
@@ -727,6 +757,10 @@ export default function Sidebar() {
           )}
         </div>
       </aside>
+      <ChangePasswordModal
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </>
   );
 }
