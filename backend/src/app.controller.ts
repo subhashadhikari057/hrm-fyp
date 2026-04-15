@@ -29,4 +29,36 @@ export class AppController {
   async getStatus() {
     return this.appService.getStatus();
   }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Get system and database health' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns system and database health status',
+    schema: {
+      example: {
+        status: 'ok',
+        message: 'System is healthy',
+        timestamp: '2026-04-15T12:00:00.000Z',
+        system: {
+          uptimeSeconds: 5123,
+          memory: {
+            rss: 124133376,
+            heapTotal: 69730304,
+            heapUsed: 48753616,
+            external: 3377199,
+          },
+          nodeVersion: 'v22.10.0',
+          platform: 'linux',
+          pid: 1,
+        },
+        database: {
+          connected: true,
+        },
+      },
+    },
+  })
+  async getHealth() {
+    return this.appService.getHealth();
+  }
 }
