@@ -48,6 +48,7 @@ export default function AttendanceSecuritySettingsPage() {
   const rolePath = pathname.split('/')[2] || 'companyadmin';
   useBreadcrumbs([
     { href: `/dashboard/${rolePath}`, label: 'Dashboard' },
+    { href: `/dashboard/${rolePath}/attendance`, label: 'Attendance' },
     { label: 'Attendance Settings' },
   ]);
 

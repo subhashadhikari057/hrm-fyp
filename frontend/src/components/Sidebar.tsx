@@ -124,19 +124,31 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       ],
     },
     {
-      title: 'Administration',
+      title: 'Access Control',
       items: [
-        { name: 'Users', href: '/dashboard/superadmin/users', icon: IconUsers },
         {
-          name: 'Company',
+          name: 'User Management',
+          href: '/dashboard/superadmin/users',
+          icon: IconUsers,
+          children: [
+            { name: 'Users', href: '/dashboard/superadmin/users', icon: IconUsers },
+            { name: 'Company Admins', href: '/dashboard/superadmin/company-admins', icon: IconBriefcase },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Platform',
+      items: [
+        {
+          name: 'Company Management',
           href: '/dashboard/superadmin/companies',
           icon: IconCompany,
           children: [
             { name: 'Companies', href: '/dashboard/superadmin/companies', icon: IconCompany },
-            { name: 'Company Admin', href: '/dashboard/superadmin/company-admins', icon: IconBriefcase },
+            { name: 'Subscription Plans', href: '/dashboard/superadmin/subscription-plans', icon: IconBriefcase },
           ],
         },
-        { name: 'Subscription Plans', href: '/dashboard/superadmin/subscription-plans', icon: IconBriefcase },
       ],
     },
   ],
@@ -149,61 +161,66 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       ],
     },
     {
-      title: 'Organization',
+      title: 'People',
       items: [
         {
-          name: 'People',
+          name: 'Workforce',
           href: '/dashboard/companyadmin/employees',
           icon: IconUsers,
           children: [
-            { name: 'Employee', href: '/dashboard/companyadmin/employees', icon: IconUsers },
+            { name: 'Employees', href: '/dashboard/companyadmin/employees', icon: IconUsers },
             { name: 'Users', href: '/dashboard/companyadmin/users', icon: IconUsers },
+            { name: 'Employee Directory', href: '/dashboard/companyadmin/employee-directory', icon: IconUsers },
           ],
         },
         {
-          name: 'Structure',
+          name: 'Organization Structure',
           href: '/dashboard/companyadmin/departments',
           icon: IconCompany,
           children: [
-            { name: 'Department', href: '/dashboard/companyadmin/departments', icon: IconCompany },
-            { name: 'Designation', href: '/dashboard/companyadmin/designations', icon: IconBriefcase },
+            { name: 'Departments', href: '/dashboard/companyadmin/departments', icon: IconCompany },
+            { name: 'Designations', href: '/dashboard/companyadmin/designations', icon: IconBriefcase },
           ],
         },
       ],
     },
+    {
+      title: 'Operations',
+      items: [
         {
-          title: 'Operations',
-          items: [
-            {
-              name: 'Attendance',
-              href: '/dashboard/companyadmin/attendance',
-              icon: IconCalendar,
-              requiredFeature: 'attendance',
-              children: [
-                { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
-                { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock, requiredFeature: 'attendance' },
-                { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock, requiredFeature: 'attendance' },
-                { name: 'Attendance Security', href: '/dashboard/companyadmin/settings', icon: IconClock, requiredFeature: 'attendance' },
-              ],
-            },
-            {
-              name: 'Leave',
-              href: '/dashboard/companyadmin/leave-requests',
-              icon: IconCalendar,
-              requiredFeature: 'leave',
-              children: [
-                { name: 'Leave Requests', href: '/dashboard/companyadmin/leave-requests', icon: IconCalendar, requiredFeature: 'leave' },
-                { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock, requiredFeature: 'leave' },
-              ],
-            },
-            { name: 'Payroll', href: '/dashboard/companyadmin/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
-            { name: 'Employee Directory', href: '/dashboard/companyadmin/employee-directory', icon: IconUsers },
-            { name: 'Projects', href: '/dashboard/companyadmin/projects', icon: IconBriefcase, requiredFeature: 'projects' },
-            { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat, requiredFeature: 'complaints' },
-            { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase, requiredFeature: 'policy' },
+          name: 'Attendance',
+          href: '/dashboard/companyadmin/attendance',
+          icon: IconCalendar,
+          requiredFeature: 'attendance',
+          children: [
+            { name: 'Attendance Dashboard', href: '/dashboard/companyadmin/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Attendance Settings', href: '/dashboard/companyadmin/settings', icon: IconClock, requiredFeature: 'attendance' },
           ],
         },
+        {
+          name: 'Leave Management',
+          href: '/dashboard/companyadmin/leave-requests',
+          icon: IconCalendar,
+          requiredFeature: 'leave',
+          children: [
+            { name: 'Leave Requests', href: '/dashboard/companyadmin/leave-requests', icon: IconCalendar, requiredFeature: 'leave' },
+            { name: 'Leave Types', href: '/dashboard/companyadmin/leave-types', icon: IconClock, requiredFeature: 'leave' },
+          ],
+        },
+        { name: 'Payroll', href: '/dashboard/companyadmin/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
+        { name: 'Projects', href: '/dashboard/companyadmin/projects', icon: IconBriefcase, requiredFeature: 'projects' },
       ],
+    },
+    {
+      title: 'Communication',
+      items: [
+        { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat, requiredFeature: 'complaints' },
+        { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase, requiredFeature: 'policy' },
+      ],
+    },
+  ],
 
   hrmanager: [
     {
@@ -211,23 +228,24 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
       items: [{ name: 'Dashboard', href: '/dashboard/hrmanager', icon: IconDashboard }],
     },
     {
-      title: 'Organization',
+      title: 'People',
       items: [
         {
-          name: 'People',
+          name: 'Workforce',
           href: '/dashboard/hrmanager/employees',
           icon: IconUsers,
           children: [
-            { name: 'Employee', href: '/dashboard/hrmanager/employees', icon: IconUsers },
+            { name: 'Employees', href: '/dashboard/hrmanager/employees', icon: IconUsers },
+            { name: 'Employee Directory', href: '/dashboard/hrmanager/employee-directory', icon: IconUsers },
           ],
         },
         {
-          name: 'Structure',
+          name: 'Organization Structure',
           href: '/dashboard/hrmanager/departments',
           icon: IconCompany,
           children: [
-            { name: 'Department', href: '/dashboard/hrmanager/departments', icon: IconCompany },
-            { name: 'Designation', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
+            { name: 'Departments', href: '/dashboard/hrmanager/departments', icon: IconCompany },
+            { name: 'Designations', href: '/dashboard/hrmanager/designations', icon: IconBriefcase },
           ],
         },
       ],
@@ -241,14 +259,14 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           icon: IconCalendar,
           requiredFeature: 'attendance',
           children: [
-            { name: 'Attendance', href: '/dashboard/hrmanager/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'Attendance Dashboard', href: '/dashboard/hrmanager/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
             { name: 'Attendance Requests', href: '/dashboard/hrmanager/regularizations', icon: IconClock, requiredFeature: 'attendance' },
             { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock, requiredFeature: 'attendance' },
-            { name: 'Attendance Security', href: '/dashboard/hrmanager/settings', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Attendance Settings', href: '/dashboard/hrmanager/settings', icon: IconClock, requiredFeature: 'attendance' },
           ],
         },
         {
-          name: 'Leave',
+          name: 'Leave Management',
           href: '/dashboard/hrmanager/leave-requests',
           icon: IconCalendar,
           requiredFeature: 'leave',
@@ -258,9 +276,14 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           ],
         },
         { name: 'Payroll', href: '/dashboard/hrmanager/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
-        { name: 'Employee Directory', href: '/dashboard/hrmanager/employee-directory', icon: IconUsers },
         { name: 'Projects', href: '/dashboard/hrmanager/projects', icon: IconBriefcase, requiredFeature: 'projects' },
+      ],
+    },
+    {
+      title: 'Communication',
+      items: [
         { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat, requiredFeature: 'complaints' },
+        { name: 'Policy Hub', href: '/dashboard/hrmanager/policies', icon: IconBriefcase, requiredFeature: 'policy' },
       ],
     },
   ],
@@ -279,7 +302,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           icon: IconCalendar,
           requiredFeature: 'attendance',
           children: [
-            { name: 'Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
+            { name: 'My Attendance', href: '/dashboard/employee/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
             { name: 'Attendance Requests', href: '/dashboard/employee/regularizations', icon: IconClock, requiredFeature: 'attendance' },
           ],
         },
@@ -289,13 +312,24 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           icon: IconCalendar,
           requiredFeature: 'leave',
           children: [
-            { name: 'Leave Requests', href: '/dashboard/employee/leave', icon: IconCalendar, requiredFeature: 'leave' },
-            { name: 'Leave Usages', href: '/dashboard/employee/leave-usages', icon: IconClock, requiredFeature: 'leave' },
+            { name: 'My Leave Requests', href: '/dashboard/employee/leave', icon: IconCalendar, requiredFeature: 'leave' },
+            { name: 'Leave Balance & Usage', href: '/dashboard/employee/leave-usages', icon: IconClock, requiredFeature: 'leave' },
           ],
         },
-        { name: 'Payslips', href: '/dashboard/employee/payslips', icon: IconBriefcase, requiredFeature: 'payroll' },
-        { name: 'Employee Directory', href: '/dashboard/employee/employee-directory', icon: IconUsers },
+        {
+          name: 'Payroll',
+          href: '/dashboard/employee/payslips',
+          icon: IconBriefcase,
+          requiredFeature: 'payroll',
+          children: [{ name: 'My Payslips', href: '/dashboard/employee/payslips', icon: IconBriefcase, requiredFeature: 'payroll' }],
+        },
         { name: 'Projects', href: '/dashboard/employee/projects', icon: IconBriefcase, requiredFeature: 'projects' },
+      ],
+    },
+    {
+      title: 'Workplace',
+      items: [
+        { name: 'Employee Directory', href: '/dashboard/employee/employee-directory', icon: IconUsers },
         { name: 'Complaints', href: '/dashboard/employee/complaints', icon: IconChat, requiredFeature: 'complaints' },
         { name: 'Policy', href: '/dashboard/employee/policy', icon: IconBriefcase, requiredFeature: 'policy' },
       ],
@@ -377,7 +411,10 @@ function buildMenuGroupsForUser(user?: SidebarUser | null): MenuGroup[] {
 // Export flat menu items for compatibility (if you need it elsewhere)
 export function getMenuItemsForRole(role: string, user?: SidebarUser | null): MenuItem[] {
   const groups = buildMenuGroupsForUser(user ?? { role });
-  return groups.flatMap((g) => g.items);
+  const flatten = (items: MenuItem[]): MenuItem[] =>
+    items.flatMap((item) => (item.children?.length ? [item, ...flatten(item.children)] : [item]));
+
+  return groups.flatMap((g) => flatten(g.items));
 }
 
 export default function Sidebar() {
