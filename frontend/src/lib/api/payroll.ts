@@ -99,12 +99,23 @@ export interface PayslipRecord {
     employeeCode: string;
     firstName: string;
     lastName: string;
+    joinDate?: string | null;
     workEmail?: string | null;
     department?: { id: string; name: string } | null;
     designation?: { id: string; name: string } | null;
   };
+  company?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    logoUrl?: string | null;
+    address?: string | null;
+    city?: string | null;
+    country?: string | null;
+  };
   payrollPeriod?: PayrollPeriodRecord;
   lineItems?: PayslipLineItemRecord[];
+  workedDays?: number;
 }
 
 export interface PayrollPeriodDetailRecord extends PayrollPeriodRecord {
