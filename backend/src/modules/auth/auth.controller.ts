@@ -1,5 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, Res, UseGuards, Request, Patch, Req, UnauthorizedException, Logger } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Response, CookieOptions } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiCookieAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateSuperAdminDto } from './dto/create-superadmin.dto';
@@ -9,9 +9,54 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || process.env.JWT_EXPIRES_IN || '30d';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
-const COOKIE_SECURE = process.env.AUTH_COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
-const COOKIE_SAMESITE = (process.env.AUTH_COOKIE_SAMESITE || 'lax') as 'lax' | 'strict' | 'none';
-const COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN;
+
+function normalizeCookieDomain(value?: string): string | undefined {
+  if (!value) return undefined;
+
+  let candidate = value.trim();
+  if (!candidate) return undefined;
+
+  try {
+    if (candidate.includes('://')) {
+      candidate = new URL(candidate).hostname;
+    }
+  } catch {
+    return undefined;
+  }
+
+  candidate = candidate.replace(/\/.*$/, '').replace(/:\d+$/, '');
+
+  const isValid = /^\.*[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(candidate);
+  return isValid ? candidate : undefined;
+}
+
+function normalizeSameSite(value?: string): 'lax' | 'strict' | 'none' {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'strict' || normalized === 'none' || normalized === 'lax') {
+    return normalized;
+  }
+  return 'lax';
+}
+
+function normalizeSecure(value?: string, sameSite?: 'lax' | 'strict' | 'none'): boolean {
+  const normalized = value?.trim().toLowerCase();
+  const explicit =
+    normalized === 'true' || normalized === '1'
+      ? true
+      : normalized === 'false' || normalized === '0'
+      ? false
+      : undefined;
+
+  const secure = explicit ?? process.env.NODE_ENV === 'production';
+  if (sameSite === 'none' && !secure) {
+    return true;
+  }
+  return secure;
+}
+
+const COOKIE_SAMESITE = normalizeSameSite(process.env.AUTH_COOKIE_SAMESITE);
+const COOKIE_DOMAIN = normalizeCookieDomain(process.env.AUTH_COOKIE_DOMAIN);
+const COOKIE_SECURE = normalizeSecure(process.env.AUTH_COOKIE_SECURE, COOKIE_SAMESITE);
 
 function parseExpiryToMs(value: string) {
   const normalized = value.trim();
@@ -36,13 +81,28 @@ function parseExpiryToMs(value: string) {
 }
 
 function buildCookieOptions(maxAge: number) {
-  return {
+  const options: CookieOptions = {
     httpOnly: true,
     secure: COOKIE_SECURE,
     sameSite: COOKIE_SAMESITE,
     maxAge,
     path: '/',
-    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+  };
+
+  if (COOKIE_DOMAIN) {
+    options.domain = COOKIE_DOMAIN;
+  }
+
+  return options;
+}
+
+function getFallbackCookieOptions(maxAge: number): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge,
+    path: '/',
   };
 }
 
@@ -52,6 +112,34 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(private readonly authService: AuthService) {}
+
+  private safeSetCookie(res: Response, name: string, value: string, maxAge: number) {
+    const primaryOptions = buildCookieOptions(maxAge);
+    try {
+      res.cookie(name, value, primaryOptions);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown cookie error';
+      this.logger.warn(
+        `Failed to set cookie "${name}" with configured options. Retrying with fallback options. Error: ${message}`,
+      );
+      res.cookie(name, value, getFallbackCookieOptions(maxAge));
+    }
+  }
+
+  private safeClearCookie(res: Response, name: string) {
+    const primaryOptions = buildCookieOptions(0);
+    try {
+      res.clearCookie(name, primaryOptions);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown cookie error';
+      this.logger.warn(
+        `Failed to clear cookie "${name}" with configured options. Retrying with fallback options. Error: ${message}`,
+      );
+      res.clearCookie(name, getFallbackCookieOptions(0));
+    }
+  }
 
   @Get('super-admin')
   @ApiOperation({ summary: 'Get super admin creation form (HTML page)' })
@@ -354,8 +442,8 @@ export class AuthController {
     const refreshMaxAge = parseExpiryToMs(REFRESH_TOKEN_EXPIRES_IN);
 
     // Set HttpOnly cookies
-    res.cookie('access_token', result.access_token, buildCookieOptions(accessMaxAge));
-    res.cookie('refresh_token', result.refresh_token, buildCookieOptions(refreshMaxAge));
+    this.safeSetCookie(res, 'access_token', result.access_token, accessMaxAge);
+    this.safeSetCookie(res, 'refresh_token', result.refresh_token, refreshMaxAge);
 
     // Return user data without token (token is in cookie)
     return {
@@ -386,8 +474,8 @@ export class AuthController {
     }
 
     // Clear the cookie
-    res.clearCookie('access_token', buildCookieOptions(0));
-    res.clearCookie('refresh_token', buildCookieOptions(0));
+    this.safeClearCookie(res, 'access_token');
+    this.safeClearCookie(res, 'refresh_token');
 
     return {
       message: 'Logged out successfully',
@@ -424,7 +512,7 @@ export class AuthController {
 
     const result = await this.authService.refreshAccessToken(refreshToken);
     const accessMaxAge = parseExpiryToMs(ACCESS_TOKEN_EXPIRES_IN);
-    res.cookie('access_token', result.access_token, buildCookieOptions(accessMaxAge));
+    this.safeSetCookie(res, 'access_token', result.access_token, accessMaxAge);
 
     return {
       message: 'Access token refreshed',
