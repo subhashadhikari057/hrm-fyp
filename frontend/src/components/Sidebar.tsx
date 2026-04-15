@@ -183,6 +183,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
                 { name: 'Attendance', href: '/dashboard/companyadmin/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
                 { name: 'Attendance Requests', href: '/dashboard/companyadmin/regularizations', icon: IconClock, requiredFeature: 'attendance' },
                 { name: 'Shifts', href: '/dashboard/companyadmin/shifts', icon: IconClock, requiredFeature: 'attendance' },
+                { name: 'Attendance Security', href: '/dashboard/companyadmin/settings', icon: IconClock, requiredFeature: 'attendance' },
               ],
             },
             {
@@ -243,6 +244,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
             { name: 'Attendance', href: '/dashboard/hrmanager/attendance', icon: IconCalendar, requiredFeature: 'attendance' },
             { name: 'Attendance Requests', href: '/dashboard/hrmanager/regularizations', icon: IconClock, requiredFeature: 'attendance' },
             { name: 'Shifts', href: '/dashboard/hrmanager/shifts', icon: IconClock, requiredFeature: 'attendance' },
+            { name: 'Attendance Security', href: '/dashboard/hrmanager/settings', icon: IconClock, requiredFeature: 'attendance' },
           ],
         },
         {

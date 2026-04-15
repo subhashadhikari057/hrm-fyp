@@ -57,10 +57,34 @@ export default function EmployeeDashboard() {
     })();
   }, []);
 
+  async function getCurrentLocation() {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      return {};
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+    } catch {
+      return {};
+    }
+  }
+
   async function handleCheckIn() {
     try {
       setIsLoading(true);
-      const res = await attendanceApi.checkIn();
+      const location = await getCurrentLocation();
+      const res = await attendanceApi.checkIn(location);
       setLastAttendance(res.data);
       toast.success(res.message || 'Clocked in');
     } catch (e: any) {
@@ -73,7 +97,8 @@ export default function EmployeeDashboard() {
   async function handleCheckOut() {
     try {
       setIsLoading(true);
-      const res = await attendanceApi.checkOut();
+      const location = await getCurrentLocation();
+      const res = await attendanceApi.checkOut(location);
       setLastAttendance(res.data);
       toast.success(res.message || 'Clocked out');
     } catch (e: any) {

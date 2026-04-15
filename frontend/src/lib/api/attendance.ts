@@ -60,14 +60,28 @@ export interface AttendanceDetailResponse {
   data: AttendanceRecord;
 }
 
+export interface AttendanceSecuritySettings {
+  attendanceIpRestrictionEnabled: boolean;
+  attendanceAllowedIpRanges: string[];
+  attendanceGeoRestrictionEnabled: boolean;
+  officeLatitude: number | null;
+  officeLongitude: number | null;
+  officeRadiusMeters: number | null;
+}
+
+export interface AttendanceSecuritySettingsResponse {
+  message: string;
+  data: AttendanceSecuritySettings;
+}
+
 const attendanceApi = {
-  async checkIn(): Promise<AttendanceResponse> {
+  async checkIn(payload?: { latitude?: number; longitude?: number }): Promise<AttendanceResponse> {
     try {
       const response = await apiFetch(`${API_BASE_URL}/attendance/check-in`, {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'include',
-        body: JSON.stringify({}),
+        body: JSON.stringify(payload || {}),
       });
 
       if (!response.ok) {
@@ -83,13 +97,13 @@ const attendanceApi = {
     }
   },
 
-  async checkOut(): Promise<AttendanceResponse> {
+  async checkOut(payload?: { latitude?: number; longitude?: number }): Promise<AttendanceResponse> {
     try {
       const response = await apiFetch(`${API_BASE_URL}/attendance/check-out`, {
         method: 'POST',
         headers: getAuthHeaders(),
         credentials: 'include',
-        body: JSON.stringify({}),
+        body: JSON.stringify(payload || {}),
       });
 
       if (!response.ok) {
@@ -310,6 +324,56 @@ const attendanceApi = {
       }
 
       return await response.blob();
+    } catch (error) {
+      if (error instanceof Response) {
+        throw await handleApiError(error);
+      }
+      throw error;
+    }
+  },
+
+  async getSecuritySettings(): Promise<AttendanceSecuritySettingsResponse> {
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/attendance/settings`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw await handleApiError(response);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Response) {
+        throw await handleApiError(error);
+      }
+      throw error;
+    }
+  },
+
+  async updateSecuritySettings(payload: {
+    attendanceIpRestrictionEnabled?: boolean;
+    attendanceAllowedIpRanges?: string[];
+    attendanceGeoRestrictionEnabled?: boolean;
+    officeLatitude?: number;
+    officeLongitude?: number;
+    officeRadiusMeters?: number;
+  }): Promise<AttendanceSecuritySettingsResponse> {
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/attendance/settings`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw await handleApiError(response);
+      }
+
+      return await response.json();
     } catch (error) {
       if (error instanceof Response) {
         throw await handleApiError(error);

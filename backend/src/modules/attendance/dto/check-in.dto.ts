@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsLatitude, IsLongitude, IsOptional, IsString } from 'class-validator';
 
 export class CheckInDto {
   @ApiPropertyOptional({
@@ -10,7 +11,24 @@ export class CheckInDto {
   @IsString()
   @IsOptional()
   employeeId?: string;
-}
 
+  @ApiPropertyOptional({
+    description: 'Current latitude of the user (used when geo restriction is enabled)',
+    example: 27.7172,
+  })
+  @Type(() => Number)
+  @IsLatitude()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    description: 'Current longitude of the user (used when geo restriction is enabled)',
+    example: 85.324,
+  })
+  @Type(() => Number)
+  @IsLongitude()
+  @IsOptional()
+  longitude?: number;
+}
 
 

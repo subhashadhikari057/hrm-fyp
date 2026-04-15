@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -40,6 +41,7 @@ import {
   UpdateAttendanceDto,
 } from './dto/manual-attendance.dto';
 import { ImportAttendanceSummaryDto } from './dto/import-attendance.dto';
+import { UpdateAttendanceSecuritySettingsDto } from './dto/update-attendance-security-settings.dto';
 import {
   attendanceCsvFileFilter,
   attendanceCsvLimits,
@@ -53,6 +55,14 @@ import {
 @ApiCookieAuth('access_token')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
+
+  private getClientIp(req: any): string | undefined {
+    const forwarded = req.headers?.['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim()) {
+      return forwarded.split(',')[0]?.trim();
+    }
+    return req.ip || undefined;
+  }
 
   @Post('check-in')
   @Roles(
@@ -85,7 +95,7 @@ export class AttendanceController {
   })
   async checkIn(@Body() dto: CheckInDto, @Req() req: any) {
     return this.attendanceService.checkIn(req.user, dto, {
-      ip: req.ip,
+      ip: this.getClientIp(req),
       userAgent: req.headers['user-agent'],
     });
   }
@@ -125,9 +135,39 @@ export class AttendanceController {
   })
   async checkOut(@Body() dto: CheckOutDto, @Req() req: any) {
     return this.attendanceService.checkOut(req.user, dto, {
-      ip: req.ip,
+      ip: this.getClientIp(req),
       userAgent: req.headers['user-agent'],
     });
+  }
+
+  @Get('settings')
+  @Roles(UserRole.company_admin, UserRole.hr_manager)
+  @ApiOperation({
+    summary: 'Get attendance security settings (Company Admin / HR Manager)',
+  })
+  async getSettings(@Req() req: any) {
+    return this.attendanceService.getSecuritySettings(req.user);
+  }
+
+  @Patch('settings')
+  @Roles(UserRole.company_admin, UserRole.hr_manager)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update attendance security settings (Company Admin / HR Manager)',
+  })
+  async updateSettings(
+    @Body() dto: UpdateAttendanceSecuritySettingsDto,
+    @Req() req: any,
+  ) {
+    if (
+      dto.attendanceGeoRestrictionEnabled === true &&
+      (dto.officeLatitude === undefined || dto.officeLongitude === undefined)
+    ) {
+      throw new BadRequestException(
+        'officeLatitude and officeLongitude are required when geo restriction is enabled',
+      );
+    }
+    return this.attendanceService.updateSecuritySettings(req.user, dto);
   }
 
   @Get('me')
@@ -322,4 +362,3 @@ export class AttendanceController {
     return this.attendanceService.markAbsents(req.user, date);
   }
 }
-
