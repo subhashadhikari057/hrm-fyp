@@ -5,7 +5,11 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { AttendanceLogMethod, AttendanceLogType, UserRole } from '@prisma/client';
+import {
+  AttendanceLogMethod,
+  AttendanceLogType,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { buildPaginationMeta, getPagination } from '../../common/utils/pagination.util';
 import { CheckInDto } from './dto/check-in.dto';
@@ -16,7 +20,9 @@ import {
   UpdateAttendanceDto,
 } from './dto/manual-attendance.dto';
 import { ImportAttendanceSummaryDto } from './dto/import-attendance.dto';
+import { UpdateAttendanceSecuritySettingsDto } from './dto/update-attendance-security-settings.dto';
 import ExcelJS from 'exceljs';
+import { isIP } from 'node:net';
 
 const DEFAULT_GRACE_MINUTES = 30;
 const DEFAULT_BREAK_MINUTES = 0;
@@ -171,6 +177,238 @@ export class AttendanceService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeIp(ip?: string) {
+    if (!ip) return '';
+    return ip.replace(/^::ffff:/, '').trim();
+  }
+
+  private ipv4ToInt(ip: string) {
+    const parts = ip.split('.').map((part) => Number(part));
+    if (
+      parts.length !== 4 ||
+      parts.some((part) => Number.isNaN(part) || part < 0 || part > 255)
+    ) {
+      return null;
+    }
+    return (
+      (((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>>
+      0
+    );
+  }
+
+  private matchesIpRule(clientIpRaw: string, ruleRaw: string) {
+    const clientIp = this.normalizeIp(clientIpRaw);
+    const rule = ruleRaw.trim();
+    if (!clientIp || !rule) return false;
+
+    if (!rule.includes('/')) {
+      return clientIp === this.normalizeIp(rule);
+    }
+
+    const [rangeIpRaw, prefixRaw] = rule.split('/');
+    const rangeIp = this.normalizeIp(rangeIpRaw);
+    const prefix = Number(prefixRaw);
+    if (!Number.isInteger(prefix)) return false;
+
+    if (isIP(clientIp) === 4 && isIP(rangeIp) === 4) {
+      if (prefix < 0 || prefix > 32) return false;
+      const client = this.ipv4ToInt(clientIp);
+      const range = this.ipv4ToInt(rangeIp);
+      if (client === null || range === null) return false;
+      if (prefix === 0) return true;
+      const mask = (0xffffffff << (32 - prefix)) >>> 0;
+      return (client & mask) === (range & mask);
+    }
+
+    return false;
+  }
+
+  private toRadians(value: number) {
+    return (value * Math.PI) / 180;
+  }
+
+  private distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const earthRadius = 6371000;
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLon = this.toRadians(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  private async enforceAttendanceSecurity(
+    companyId: string,
+    meta: { ip?: string; latitude?: number; longitude?: number },
+  ) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        attendanceIpRestrictionEnabled: true,
+        attendanceAllowedIpRanges: true,
+        attendanceGeoRestrictionEnabled: true,
+        officeLatitude: true,
+        officeLongitude: true,
+        officeRadiusMeters: true,
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    if (company.attendanceIpRestrictionEnabled) {
+      const clientIp = this.normalizeIp(meta.ip);
+      if (!clientIp) {
+        throw new ForbiddenException('Attendance requires a valid network IP');
+      }
+
+      const allowedRules = (company.attendanceAllowedIpRanges || []).filter(Boolean);
+      if (allowedRules.length === 0) {
+        throw new ForbiddenException(
+          'Attendance IP restriction is enabled but no office IP rules are configured',
+        );
+      }
+
+      const matched = allowedRules.some((rule) =>
+        this.matchesIpRule(clientIp, rule),
+      );
+      if (!matched) {
+        throw new ForbiddenException(
+          'Attendance is allowed only from approved office network',
+        );
+      }
+    }
+
+    if (company.attendanceGeoRestrictionEnabled) {
+      if (company.officeLatitude === null || company.officeLongitude === null) {
+        throw new ForbiddenException(
+          'Attendance geofence is enabled but office coordinates are not configured',
+        );
+      }
+
+      if (meta.latitude === undefined || meta.longitude === undefined) {
+        throw new ForbiddenException(
+          'Attendance requires location access inside office geofence',
+        );
+      }
+
+      const radius = company.officeRadiusMeters ?? 150;
+      const distance = this.distanceMeters(
+        company.officeLatitude,
+        company.officeLongitude,
+        meta.latitude,
+        meta.longitude,
+      );
+
+      if (distance > radius) {
+        throw new ForbiddenException(
+          'Attendance can only be marked from within the office premises. Please move to the office location and try again.',
+        );
+      }
+    }
+  }
+
+  async getSecuritySettings(currentUser: { companyId?: string | null }) {
+    if (!currentUser.companyId) {
+      throw new ForbiddenException('Company scope is required');
+    }
+
+    const company = await this.prisma.company.findUnique({
+      where: { id: currentUser.companyId },
+      select: {
+        attendanceIpRestrictionEnabled: true,
+        attendanceAllowedIpRanges: true,
+        attendanceGeoRestrictionEnabled: true,
+        officeLatitude: true,
+        officeLongitude: true,
+        officeRadiusMeters: true,
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return {
+      message: 'Attendance security settings retrieved successfully',
+      data: company,
+    };
+  }
+
+  async updateSecuritySettings(
+    currentUser: { companyId?: string | null },
+    dto: UpdateAttendanceSecuritySettingsDto,
+  ) {
+    if (!currentUser.companyId) {
+      throw new ForbiddenException('Company scope is required');
+    }
+
+    const normalizedIpRules = dto.attendanceAllowedIpRanges
+      ?.map((entry) => entry.trim())
+      .filter(Boolean);
+    if (normalizedIpRules?.length) {
+      const invalid = normalizedIpRules.find((entry) => {
+        if (entry.includes('/')) {
+          const [rangeIp, prefixRaw] = entry.split('/');
+          const prefix = Number(prefixRaw);
+          return (
+            isIP(this.normalizeIp(rangeIp)) !== 4 ||
+            !Number.isInteger(prefix) ||
+            prefix < 0 ||
+            prefix > 32
+          );
+        }
+        return isIP(this.normalizeIp(entry)) !== 4;
+      });
+
+      if (invalid) {
+        throw new BadRequestException(`Invalid IP or CIDR entry: "${invalid}"`);
+      }
+    }
+
+    const updated = await this.prisma.company.update({
+      where: { id: currentUser.companyId },
+      data: {
+        ...(dto.attendanceIpRestrictionEnabled !== undefined
+          ? { attendanceIpRestrictionEnabled: dto.attendanceIpRestrictionEnabled }
+          : {}),
+        ...(normalizedIpRules !== undefined
+          ? { attendanceAllowedIpRanges: normalizedIpRules }
+          : {}),
+        ...(dto.attendanceGeoRestrictionEnabled !== undefined
+          ? { attendanceGeoRestrictionEnabled: dto.attendanceGeoRestrictionEnabled }
+          : {}),
+        ...(dto.officeLatitude !== undefined
+          ? { officeLatitude: dto.officeLatitude }
+          : {}),
+        ...(dto.officeLongitude !== undefined
+          ? { officeLongitude: dto.officeLongitude }
+          : {}),
+        ...(dto.officeRadiusMeters !== undefined
+          ? { officeRadiusMeters: dto.officeRadiusMeters }
+          : {}),
+      },
+      select: {
+        attendanceIpRestrictionEnabled: true,
+        attendanceAllowedIpRanges: true,
+        attendanceGeoRestrictionEnabled: true,
+        officeLatitude: true,
+        officeLongitude: true,
+        officeRadiusMeters: true,
+      },
+    });
+
+    return {
+      message: 'Attendance security settings updated successfully',
+      data: updated,
+    };
+  }
+
   private async resolveTargetEmployee(
     currentUser: { id: string; role: UserRole; companyId: string | null },
     explicitEmployeeId?: string,
@@ -276,6 +514,12 @@ export class AttendanceService {
       dto.employeeId,
     );
 
+    await this.enforceAttendanceSecurity(employee.companyId, {
+      ip: meta.ip,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
+
     const shift = await this.getEmployeeShift(employee.id);
     const nowKtm = toKathmanduDate(now);
     const shiftWindow = resolveShiftWindow(nowKtm, shift.startTime, shift.endTime);
@@ -379,6 +623,12 @@ export class AttendanceService {
       currentUser,
       dto.employeeId,
     );
+
+    await this.enforceAttendanceSecurity(employee.companyId, {
+      ip: meta.ip,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
 
     const day = await (this.prisma as any).attendanceDay.findUnique({
       where: {

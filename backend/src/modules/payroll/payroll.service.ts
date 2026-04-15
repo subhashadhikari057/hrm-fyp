@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AttendanceStatus,
   EmployeeStatus,
   PayslipLineItemType,
   PayslipStatus,
@@ -88,6 +89,36 @@ const MONTH_NAMES = [
 @Injectable()
 export class PayrollService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async calculateWorkedDays(employeeId: string, companyId: string, startDate: Date, endDate: Date) {
+    const attendanceDays = await this.prisma.attendanceDay.findMany({
+      where: {
+        employeeId,
+        companyId,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    const total = attendanceDays.reduce((sum, day) => {
+      switch (day.status) {
+        case AttendanceStatus.PRESENT:
+        case AttendanceStatus.LATE:
+          return sum + 1;
+        case AttendanceStatus.HALF_DAY:
+          return sum + 0.5;
+        default:
+          return sum;
+      }
+    }, 0);
+
+    return Number(total.toFixed(2));
+  }
 
   private ensureAdminScope(currentUser: CurrentUser) {
     if (
@@ -914,12 +945,24 @@ export class PayrollService {
     const payslip = await this.prisma.payslip.findFirst({
       where: { id: payslipId, companyId: currentUser.companyId! },
       include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            logoUrl: true,
+            address: true,
+            city: true,
+            country: true,
+          },
+        },
         employee: {
           select: {
             id: true,
             employeeCode: true,
             firstName: true,
             lastName: true,
+            joinDate: true,
             workEmail: true,
             department: {
               select: { id: true, name: true },
@@ -940,9 +983,19 @@ export class PayrollService {
       throw new NotFoundException('Payslip not found');
     }
 
+    const workedDays = await this.calculateWorkedDays(
+      payslip.employeeId,
+      payslip.companyId,
+      payslip.payrollPeriod.startDate,
+      payslip.payrollPeriod.endDate,
+    );
+
     return {
       message: 'Payslip retrieved successfully',
-      data: payslip,
+      data: {
+        ...payslip,
+        workedDays,
+      },
     };
   }
 
@@ -1058,6 +1111,33 @@ export class PayrollService {
         status: PayslipStatus.FINALIZED,
       },
       include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            logoUrl: true,
+            address: true,
+            city: true,
+            country: true,
+          },
+        },
+        employee: {
+          select: {
+            id: true,
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            joinDate: true,
+            workEmail: true,
+            department: {
+              select: { id: true, name: true },
+            },
+            designation: {
+              select: { id: true, name: true },
+            },
+          },
+        },
         payrollPeriod: true,
         lineItems: {
           orderBy: { sortOrder: 'asc' },
@@ -1069,9 +1149,19 @@ export class PayrollService {
       throw new NotFoundException('Payslip not found');
     }
 
+    const workedDays = await this.calculateWorkedDays(
+      payslip.employeeId,
+      payslip.companyId,
+      payslip.payrollPeriod.startDate,
+      payslip.payrollPeriod.endDate,
+    );
+
     return {
       message: 'Payslip retrieved successfully',
-      data: payslip,
+      data: {
+        ...payslip,
+        workedDays,
+      },
     };
   }
 }

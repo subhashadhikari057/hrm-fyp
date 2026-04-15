@@ -31,6 +31,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   companies: 'Companies',
   'company-admins': 'Company Admins',
   employees: 'Employees',
+  'employee-directory': 'Employee Directory',
   departments: 'Departments',
   designations: 'Designations',
   attendance: 'Attendance',
@@ -38,16 +39,16 @@ const SEGMENT_LABELS: Record<string, string> = {
   shifts: 'Shifts',
   'leave-requests': 'Leave Requests',
   'leave-types': 'Leave Types',
-  leave: 'Leave Requests',
-  'leave-usages': 'Leave Usages',
+  leave: 'My Leave Requests',
+  'leave-usages': 'Leave Balance & Usage',
   projects: 'Projects',
   payroll: 'Payroll',
   policies: 'Policy Hub',
   policy: 'Policy',
   complaints: 'Complaints',
   profile: 'Profile',
-  settings: 'Settings',
-  payslips: 'Payslips',
+  settings: 'Attendance Settings',
+  payslips: 'My Payslips',
 };
 
 function prettifySegment(segment: string) {

@@ -94,6 +94,12 @@ model Company {
   enableEmployerSsf Boolean    @default(true)
   employeeSsfRate  Float       @default(0.11)
   employerSsfRate  Float       @default(0.20)
+  attendanceIpRestrictionEnabled Boolean @default(false)
+  attendanceAllowedIpRanges String[] @default([])
+  attendanceGeoRestrictionEnabled Boolean @default(false)
+  officeLatitude  Float?
+  officeLongitude Float?
+  officeRadiusMeters Int? @default(150)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   // Relations
