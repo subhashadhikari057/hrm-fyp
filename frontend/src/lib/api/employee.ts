@@ -78,6 +78,36 @@ export interface EmployeeCompensationHistoryRecord {
     } | null;
 }
 
+export interface EmployeeDirectoryEntry {
+    id: string;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    middleName: string | null;
+    workEmail: string | null;
+    phone: string | null;
+    imageUrl: string | null;
+    joinDate: string | null;
+    employmentType: 'full_time' | 'part_time' | 'contract' | 'intern' | null;
+    status: 'active' | 'on_leave';
+    department?: {
+        id: string;
+        name: string;
+        code: string | null;
+    } | null;
+    designation?: {
+        id: string;
+        name: string;
+        code: string | null;
+    } | null;
+}
+
+export interface EmployeeDirectoryOption {
+    id: string;
+    name: string;
+    code: string | null;
+}
+
 export interface EmployeeFilters {
     search?: string;
     status?: 'active' | 'on_leave' | 'terminated';
@@ -90,6 +120,17 @@ export interface EmployeeFilters {
     page?: number;
     limit?: number;
     sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export interface EmployeeDirectoryFilters {
+    search?: string;
+    departmentId?: string;
+    designationId?: string;
+    employmentType?: 'full_time' | 'part_time' | 'contract' | 'intern';
+    page?: number;
+    limit?: number;
+    sortBy?: 'firstName' | 'lastName' | 'employeeCode' | 'joinDate';
     sortOrder?: 'asc' | 'desc';
 }
 
@@ -176,7 +217,85 @@ export interface EmployeesResponse {
     };
 }
 
+export interface EmployeeDirectoryResponse {
+    message: string;
+    data: EmployeeDirectoryEntry[];
+    meta?: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
+}
+
+export interface EmployeeDirectoryMetaResponse {
+    message: string;
+    data: {
+        departments: EmployeeDirectoryOption[];
+        designations: EmployeeDirectoryOption[];
+    };
+}
+
 const employeeApi = {
+    async getDirectory(filters?: EmployeeDirectoryFilters): Promise<EmployeeDirectoryResponse> {
+        try {
+            const params = new URLSearchParams();
+
+            if (filters?.search) params.append('search', filters.search);
+            if (filters?.departmentId) params.append('departmentId', filters.departmentId);
+            if (filters?.designationId) params.append('designationId', filters.designationId);
+            if (filters?.employmentType) params.append('employmentType', filters.employmentType);
+            if (filters?.page) params.append('page', filters.page.toString());
+            if (filters?.limit) params.append('limit', filters.limit.toString());
+            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+            if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+            const url = params.toString()
+                ? `${API_BASE_URL}/employees/directory?${params.toString()}`
+                : `${API_BASE_URL}/employees/directory`;
+
+            const response = await apiFetch(url, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw await handleApiError(response);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Response) {
+                throw await handleApiError(error);
+            }
+            throw error;
+        }
+    },
+
+    async getDirectoryMeta(): Promise<EmployeeDirectoryMetaResponse> {
+        try {
+            const response = await apiFetch(`${API_BASE_URL}/employees/directory/meta`, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw await handleApiError(response);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Response) {
+                throw await handleApiError(error);
+            }
+            throw error;
+        }
+    },
+
     async getEmployees(filters?: EmployeeFilters): Promise<EmployeesResponse> {
         try {
             const params = new URLSearchParams();

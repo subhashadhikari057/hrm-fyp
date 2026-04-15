@@ -32,6 +32,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
 import { FilterEmployeesDto } from './dto/filter-employees.dto';
+import { FilterEmployeeDirectoryDto } from './dto/filter-employee-directory.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -251,6 +252,44 @@ export class EmployeeController {
       throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
     }
     return this.employeeService.getStatistics(companyId);
+  }
+
+  @Get('directory')
+  @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager, UserRole.employee)
+  @ApiOperation({ summary: 'Get company employee directory with safe public fields only' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by name, code, department, or designation' })
+  @ApiQuery({ name: 'departmentId', required: false, type: String })
+  @ApiQuery({ name: 'designationId', required: false, type: String })
+  @ApiQuery({ name: 'employmentType', required: false, enum: ['full_time', 'part_time', 'contract', 'intern'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 12 })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['firstName', 'lastName', 'employeeCode', 'joinDate'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee directory retrieved successfully',
+  })
+  async findDirectory(@Query() filterDto: FilterEmployeeDirectoryDto, @Request() req: any) {
+    const companyId = req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
+    }
+    return this.employeeService.findDirectory(filterDto, companyId);
+  }
+
+  @Get('directory/meta')
+  @Roles(UserRole.company_admin, UserRole.hr_manager, UserRole.manager, UserRole.employee)
+  @ApiOperation({ summary: 'Get employee directory filters for the current company' })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee directory metadata retrieved successfully',
+  })
+  async getDirectoryMeta(@Request() req: any) {
+    const companyId = req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('Company ID not found in token. This endpoint is only for company-level users.');
+    }
+    return this.employeeService.getDirectoryMeta(companyId);
   }
 
   @Get('me')

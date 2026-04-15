@@ -196,6 +196,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
               ],
             },
             { name: 'Payroll', href: '/dashboard/companyadmin/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
+            { name: 'Employee Directory', href: '/dashboard/companyadmin/employee-directory', icon: IconUsers },
             { name: 'Projects', href: '/dashboard/companyadmin/projects', icon: IconBriefcase, requiredFeature: 'projects' },
             { name: 'Complaints', href: '/dashboard/companyadmin/complaints', icon: IconChat, requiredFeature: 'complaints' },
             { name: 'Policy Hub', href: '/dashboard/companyadmin/policies', icon: IconBriefcase, requiredFeature: 'policy' },
@@ -255,6 +256,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           ],
         },
         { name: 'Payroll', href: '/dashboard/hrmanager/payroll', icon: IconBriefcase, requiredFeature: 'payroll' },
+        { name: 'Employee Directory', href: '/dashboard/hrmanager/employee-directory', icon: IconUsers },
         { name: 'Projects', href: '/dashboard/hrmanager/projects', icon: IconBriefcase, requiredFeature: 'projects' },
         { name: 'Complaints', href: '/dashboard/hrmanager/complaints', icon: IconChat, requiredFeature: 'complaints' },
       ],
@@ -290,6 +292,7 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
           ],
         },
         { name: 'Payslips', href: '/dashboard/employee/payslips', icon: IconBriefcase, requiredFeature: 'payroll' },
+        { name: 'Employee Directory', href: '/dashboard/employee/employee-directory', icon: IconUsers },
         { name: 'Projects', href: '/dashboard/employee/projects', icon: IconBriefcase, requiredFeature: 'projects' },
         { name: 'Complaints', href: '/dashboard/employee/complaints', icon: IconChat, requiredFeature: 'complaints' },
         { name: 'Policy', href: '/dashboard/employee/policy', icon: IconBriefcase, requiredFeature: 'policy' },
@@ -301,6 +304,10 @@ const roleMenuItems: Record<string, MenuGroup[]> = {
     {
       title: 'Main',
       items: [{ name: 'Dashboard', href: '/dashboard/employee', icon: IconDashboard }],
+    },
+    {
+      title: 'Team',
+      items: [{ name: 'Employee Directory', href: '/dashboard/employee/employee-directory', icon: IconUsers }],
     },
   ],
 };

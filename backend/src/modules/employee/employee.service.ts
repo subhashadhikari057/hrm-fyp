@@ -5,6 +5,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
 import { FilterEmployeesDto } from './dto/filter-employees.dto';
+import { FilterEmployeeDirectoryDto } from './dto/filter-employee-directory.dto';
 import { CompensationChangeType, EmployeeStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { unlinkSync } from 'fs';
@@ -456,6 +457,130 @@ export class EmployeeService {
       message: 'Employees retrieved successfully',
       data: employees,
       meta: buildPaginationMeta(total, currentPage, currentLimit),
+    };
+  }
+
+  async findDirectory(filterDto: FilterEmployeeDirectoryDto, companyId: string) {
+    const {
+      search,
+      departmentId,
+      designationId,
+      employmentType,
+      page = 1,
+      limit = 12,
+      sortBy = 'firstName',
+      sortOrder = 'asc',
+    } = filterDto;
+
+    const where: any = {
+      companyId,
+      status: {
+        in: [EmployeeStatus.active, EmployeeStatus.on_leave],
+      },
+    };
+
+    if (departmentId) where.departmentId = departmentId;
+    if (designationId) where.designationId = designationId;
+    if (employmentType) where.employmentType = employmentType;
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { middleName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { employeeCode: { contains: search, mode: 'insensitive' } },
+        { department: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { designation: { is: { name: { contains: search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    const validSortFields = ['firstName', 'lastName', 'employeeCode', 'joinDate'];
+    const validSortBy = validSortFields.includes(sortBy) ? sortBy : 'firstName';
+    const { skip, take, page: currentPage, limit: currentLimit } = getPagination(page, limit);
+
+    const total = await this.prisma.employee.count({ where });
+    const employees = await this.prisma.employee.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [
+        { [validSortBy]: sortOrder },
+        { lastName: 'asc' },
+      ],
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        workEmail: true,
+        phone: true,
+        imageUrl: true,
+        joinDate: true,
+        employmentType: true,
+        status: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        designation: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Employee directory retrieved successfully',
+      data: employees,
+      meta: buildPaginationMeta(total, currentPage, currentLimit),
+    };
+  }
+
+  async getDirectoryMeta(companyId: string) {
+    const [departments, designations] = await Promise.all([
+      this.prisma.department.findMany({
+        where: {
+          companyId,
+          isActive: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      }),
+      this.prisma.designation.findMany({
+        where: {
+          companyId,
+          isActive: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      }),
+    ]);
+
+    return {
+      message: 'Employee directory metadata retrieved successfully',
+      data: {
+        departments,
+        designations,
+      },
     };
   }
 
