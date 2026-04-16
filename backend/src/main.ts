@@ -24,6 +24,7 @@ async function bootstrap() {
       'http://localhost:3000', // Frontend URL
       'http://localhost:3001', // Frontend URL (alt)
       'https://subhash-hrm.vercel.app',
+      'https://hrm.subhashadhikari.dev',
     ],
     credentials: true, // Allow cookies
   });
