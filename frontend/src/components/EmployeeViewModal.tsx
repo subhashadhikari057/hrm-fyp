@@ -20,6 +20,14 @@ interface EmployeeViewModalProps {
     employee: Employee | null;
 }
 
+function resolveImageUrl(imageUrl: string | null | undefined) {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    if (imageUrl.startsWith('/uploads')) return `${API_BASE_URL}${imageUrl}`;
+    if (imageUrl.startsWith('uploads/')) return `${API_BASE_URL}/${imageUrl}`;
+    return `${API_BASE_URL}/uploads/${imageUrl.replace(/^\//, '')}`;
+}
+
 export default function EmployeeViewModal({ isOpen, onClose, employee }: EmployeeViewModalProps) {
     const [compensationHistory, setCompensationHistory] = useState<EmployeeCompensationHistoryRecord[]>([]);
 
@@ -79,7 +87,7 @@ export default function EmployeeViewModal({ isOpen, onClose, employee }: Employe
 
     const fullName = [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(' ');
     const initials = `${employee.firstName.charAt(0)}${employee.lastName.charAt(0)}`.toUpperCase();
-    const imageUrl = employee.imageUrl ? `${API_BASE_URL}/uploads/${employee.imageUrl}` : null;
+    const imageUrl = resolveImageUrl(employee.imageUrl || employee.user?.avatarUrl);
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

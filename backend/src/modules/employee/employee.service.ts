@@ -420,6 +420,7 @@ export class EmployeeService {
             email: true,
             role: true,
             isActive: true,
+            avatarUrl: true,
           },
         },
         department: {
@@ -453,9 +454,14 @@ export class EmployeeService {
       },
     });
 
+    const employeesWithResolvedImage = employees.map((employee) => ({
+      ...employee,
+      imageUrl: employee.imageUrl || employee.user?.avatarUrl || null,
+    }));
+
     return {
       message: 'Employees retrieved successfully',
-      data: employees,
+      data: employeesWithResolvedImage,
       meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
@@ -609,6 +615,7 @@ export class EmployeeService {
             role: true,
             isActive: true,
             createdAt: true,
+            avatarUrl: true,
           },
         },
         department: {
@@ -651,7 +658,10 @@ export class EmployeeService {
 
     return {
       message: 'Employee retrieved successfully',
-      data: employee,
+      data: {
+        ...employee,
+        imageUrl: employee.imageUrl || employee.user?.avatarUrl || null,
+      },
     };
   }
 
@@ -1173,6 +1183,7 @@ export class EmployeeService {
             role: true,
             isActive: true,
             createdAt: true,
+            avatarUrl: true,
           },
         },
         department: {
@@ -1215,7 +1226,10 @@ export class EmployeeService {
 
     return {
       message: 'Profile retrieved successfully',
-      data: employee,
+      data: {
+        ...employee,
+        imageUrl: employee.imageUrl || employee.user?.avatarUrl || null,
+      },
     };
   }
 

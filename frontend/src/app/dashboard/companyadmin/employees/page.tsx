@@ -17,6 +17,14 @@ import { departmentApi, type Department } from '../../../../lib/api/department';
 import { designationApi, type Designation } from '../../../../lib/api/designation';
 import { API_BASE_URL } from '../../../../lib/api/types';
 
+function resolveImageUrl(imageUrl: string | null | undefined) {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    if (imageUrl.startsWith('/uploads')) return `${API_BASE_URL}${imageUrl}`;
+    if (imageUrl.startsWith('uploads/')) return `${API_BASE_URL}/${imageUrl}`;
+    return `${API_BASE_URL}/uploads/${imageUrl.replace(/^\//, '')}`;
+}
+
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
@@ -195,7 +203,7 @@ export default function EmployeesPage() {
             render: (employee) => {
                 const fullName = `${employee.firstName} ${employee.middleName ? employee.middleName + ' ' : ''}${employee.lastName}`;
                 const initial = `${employee.firstName.charAt(0)}${employee.lastName.charAt(0)}`.toUpperCase();
-                const imageUrl = employee.imageUrl ? `${API_BASE_URL}/uploads/${employee.imageUrl}` : null;
+                const imageUrl = resolveImageUrl(employee.imageUrl || employee.user?.avatarUrl);
 
                 return (
                     <div className="flex items-center min-w-[200px]">
