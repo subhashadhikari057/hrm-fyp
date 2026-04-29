@@ -516,6 +516,11 @@ export class EmployeeService {
         workEmail: true,
         phone: true,
         imageUrl: true,
+        user: {
+          select: {
+            avatarUrl: true,
+          },
+        },
         joinDate: true,
         employmentType: true,
         status: true,
@@ -536,9 +541,15 @@ export class EmployeeService {
       },
     });
 
+    const directoryEmployees = employees.map((employee) => ({
+      ...employee,
+      imageUrl: employee.imageUrl || employee.user?.avatarUrl || null,
+      user: undefined,
+    }));
+
     return {
       message: 'Employee directory retrieved successfully',
-      data: employees,
+      data: directoryEmployees,
       meta: buildPaginationMeta(total, currentPage, currentLimit),
     };
   }
