@@ -38,6 +38,7 @@ export interface Employee {
         email: string;
         fullName: string | null;
         role: string;
+        avatarUrl?: string | null;
     };
     department?: {
         id: string;
