@@ -196,14 +196,14 @@ export default function EmployeeDirectoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="gap-3">
-          <CardContent className="flex items-center justify-between pt-6">
+        <Card>
+          <CardContent className="flex items-center justify-between px-4 py-4">
             <div>
-              <p className="text-sm text-gray-500">Visible employees</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{meta.total}</p>
+              <p className="text-xs uppercase tracking-wide text-gray-500">Visible employees</p>
+              <p className="mt-1 text-xl font-semibold text-gray-900">{meta.total}</p>
             </div>
-            <div className="rounded-full bg-blue-100 p-3 text-blue-700">
-              <UsersRound className="h-5 w-5" />
+            <div className="rounded-full bg-blue-100 p-2 text-blue-700">
+              <UsersRound className="h-4 w-4" />
             </div>
           </CardContent>
         </Card>
